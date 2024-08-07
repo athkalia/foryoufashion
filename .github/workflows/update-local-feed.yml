@@ -10,8 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout gh-pages branch
         uses: actions/checkout@v2
+        with:
+          ref: github-pages
 
       - name: Set up JDK 11
         uses: actions/setup-java@v2
@@ -27,11 +29,6 @@ jobs:
 
       - name: Run Kotlin Script
         run: java -jar build/libs/foryoufashion.jar
-
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v2
-        with:
-          ref: github-pages
 
       - name: Copy updated_local_inventory.xml to gh-pages
         run: cp updated_local_inventory.xml .
