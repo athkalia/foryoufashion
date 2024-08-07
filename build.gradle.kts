@@ -16,6 +16,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.3")
     implementation("org.jsoup:jsoup:1.13.1")
     implementation("com.opencsv:opencsv:5.5.2")
+    implementation("javax.xml.bind:jaxb-api:2.3.1")
 }
 
 tasks.test {
