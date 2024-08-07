@@ -11,10 +11,10 @@ import javax.xml.transform.stream.StreamResult
 fun main() {
     val url = "https://foryoufashion.gr/wp-content/uploads/webexpert-google-merchant-product-data-feed/google_merchant.xml"
     val storeCodes = listOf(
-        "4026847598477194766",
-        "6017085857398635205",
-        "11148567353721964103",
-        "17956680230070379877"
+        "04597841450916007485",
+        "16589277753543280044",
+        "08870195738348786533",
+        "03048332263628185324"
     )
     val fileName = "updated_local_inventory.xml"
 
