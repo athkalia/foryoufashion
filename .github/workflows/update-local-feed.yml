@@ -28,8 +28,20 @@ jobs:
       - name: Run Kotlin Script
         run: java -jar build/libs/foryoufashion.jar
 
-      - name: Upload XML artifact
-        uses: actions/upload-artifact@v2
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v2
         with:
-          name: updated-local-inventory
-          path: updated_local_inventory.xml
+          ref: github-pages
+
+#      - name: Copy updated_local_inventory.xml to gh-pages
+#        run: cp updated_local_inventory.xml .
+
+      - name: Commit and push updated file
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add updated_local_inventory.xml
+          git commit -m 'Update local inventory feed'
+          git push origin github-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
