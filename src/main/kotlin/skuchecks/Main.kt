@@ -19,10 +19,10 @@ val mapper = jacksonObjectMapper().registerModule(KotlinModule())
 
 fun main1() {
     val readOnly = true
-    val readOnlyConsumerKey = "ck_b3f17702905e9b1ad2262dcbcfb0535e6d3679e2"
-    val readOnlyConsumerSecret = "cs_ba2de434f60ea06d1784447b83cc65ec86f1b777"
-    val writeConsumerKey = "ck_ee958cd62c3f08d05899ad6e7951d8b02cb6047a"
-    val writeConsumerSecret = "cs_c4d77b617c319fe8f5e2a161206e3f8710ba5b1e"
+    val readOnlyConsumerKey = ""
+    val readOnlyConsumerSecret = ""
+    val writeConsumerKey = ""
+    val writeConsumerSecret = ""
 
     val credentials =
         if (readOnly) {

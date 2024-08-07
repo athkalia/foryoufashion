@@ -30,10 +30,10 @@ fun main() {
     val shouldSwapDescriptions = false
     val shouldUpdateProsforesProductTag = false
 
-    val readOnlyConsumerKey = "ck_b3f17702905e9b1ad2262dcbcfb0535e6d3679e2"
-    val readOnlyConsumerSecret = "cs_ba2de434f60ea06d1784447b83cc65ec86f1b777"
-    val writeConsumerKey = "ck_6f5abc03fdae5341404258141771aa2fd98ee692"
-    val writeConsumerSecret = "cs_5a1a31cadcee2b0f816499f0457b5c6b973bb341"
+    val readOnlyConsumerKey = ""
+    val readOnlyConsumerSecret = ""
+    val writeConsumerKey = ""
+    val writeConsumerSecret = ""
 
     val credentials =
         if (readOnly && (shouldSwapDescriptions || shouldUpdateProsforesProductTag)) {

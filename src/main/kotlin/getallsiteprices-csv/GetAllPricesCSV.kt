@@ -13,8 +13,8 @@ import skuchecks.client
 import skuchecks.mapper
 
 fun main() {
-    val readOnlyConsumerKey = "ck_b3f17702905e9b1ad2262dcbcfb0535e6d3679e2"
-    val readOnlyConsumerSecret = "cs_ba2de434f60ea06d1784447b83cc65ec86f1b777"
+    val readOnlyConsumerKey = ""
+    val readOnlyConsumerSecret = ""
 
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
 
