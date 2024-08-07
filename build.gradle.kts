@@ -3,9 +3,6 @@ plugins {
     application
 }
 
-group = "org.example"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
@@ -17,16 +14,17 @@ dependencies {
     implementation("org.jsoup:jsoup:1.13.1")
     implementation("com.opencsv:opencsv:5.5.2")
     implementation("javax.xml.bind:jaxb-api:2.3.1")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
 }
 
-tasks.test {
-    useJUnitPlatform()
-}
-
-kotlin {
-    jvmToolchain(8)
-}
-
-application {
-    mainClass.set("MainKt")
+tasks.withType<Jar> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes["Main-Class"] = "GenerateLocalProductFeedKt"
+    }
+    from(sourceSets.main.get().output)
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get().filter { it.exists() }.map { if (it.isDirectory) it else zipTree(it) }
+    })
 }
