@@ -22,6 +22,7 @@ tasks.withType<Jar> {
     manifest {
         attributes["Main-Class"] = "GenerateLocalProductFeedKt"
     }
+    archiveFileName.set("foryoufashion.jar")
     from(sourceSets.main.get().output)
     dependsOn(configurations.runtimeClasspath)
     from({
