@@ -28,9 +28,6 @@ jobs:
       - name: Run Kotlin Script
         run: java -jar build/libs/foryoufashion.jar
 
-      - name: Copy updated_local_inventory.xml to gh-pages
-        run: cp updated_local_inventory.xml .
-
       - name: Commit and push updated file
         run: |
           git config --global user.name 'github-actions[bot]'
