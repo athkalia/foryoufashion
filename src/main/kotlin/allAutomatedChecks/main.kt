@@ -9,6 +9,7 @@ import Variation
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.IOException
 import java.time.LocalDate
+import java.time.Month
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlin.math.pow
@@ -24,7 +25,7 @@ import skuchecks.client
 import skuchecks.mapper
 
 const val readOnly = true
-const val skipVariationChecks = true
+const val skipVariationChecks = false
 const val shouldMoveOldOutOfStockProductsToPrivate = false
 const val shouldSwapDescriptions = false
 const val shouldUpdateProsforesProductTag = false
@@ -60,6 +61,7 @@ fun main() {
             checkForStockManagementAtProductLevel(product)
             checkForEmptyOrShortTitles(product)
             checkForMissingSizeGuide(product)
+            checkForMissingToMonteloForaeiTextInDescription(product)
             if (!skipVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 if (shouldUpdateProsforesProductTag) {
@@ -71,8 +73,9 @@ fun main() {
                 }
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 for (variation in productVariations) {
-                    println("variation SKU: ${variation.sku}")
+//                    println("variation SKU: ${variation.sku}")
                     checkForMissingPrices(variation)
+                    checkForInvalidSKUNumbers(product, variation)
                 }
             }
         }
@@ -81,6 +84,39 @@ fun main() {
     checkProductCategories(credentials)
     checkProductAttributes(credentials)
     checkProductTags(credentials)
+}
+
+fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
+    // Some wedding dresses - ignore
+    if (product.sku !in listOf("3821", "8Ε0053", "3858", "3885", "5832", "QC368Bt50")) {
+        val finalProductRegex = Regex("^\\d{5}-\\d{3}\$")
+        if (!product.sku.matches(finalProductRegex)) {
+            println("WARNING Product SKU ${product.sku} does not match Product SKU regex ")
+        }
+        val finalProductVariationRegex = Regex("^\\d{5}-\\d{3}-\\d{1,3}$")
+        if (!variation.sku.matches(finalProductVariationRegex)) {
+            println("WARNING Variation SKU ${variation.sku} does not match Variation SKU regex ")
+        }
+    }
+}
+
+fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
+    // Define the target date
+    val startingCheckDate = LocalDate.of(2024, Month.AUGUST, 9)
+    val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+    val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
+
+    // Check if the product was created on or after the target date
+    if (productCreationDate.isAfter(startingCheckDate)) {
+        if (product.description.contains("μοντελο", ignoreCase = true) ||
+            product.description.contains("μοντέλο", ignoreCase = true)
+        ) {
+            println("WARNING: Product SKU ${product.sku} has info about the size the model is wearing in the long description.")
+        }
+        if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)) {
+            println("WARNING: Product SKU ${product.sku} does not have info about the size the model is wearing in the short description.")
+        }
+    }
 }
 
 fun checkForMissingSizeGuide(product: Product) {
