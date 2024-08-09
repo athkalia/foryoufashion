@@ -36,7 +36,7 @@ fun main() {
     val writeConsumerSecret = ""
 
     val credentials =
-        if (readOnly && (shouldSwapDescriptions || shouldUpdateProsforesProductTag)) {
+        if (readOnly && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag) {
             Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
         } else {
             Credentials.basic(
@@ -109,9 +109,9 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String, s
             swapProductDescriptions(product, credentials)
         }
     }
-    if (product.short_description.length < 75) {
-        println("WARNING Product ${product.sku} has a short short description, with length ${product.short_description.length}")
-        println(product.permalink)
+    if (product.short_description.length < 120 || product.short_description.length > 250) {
+        println("WARNING Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
+        println(product.permalink + " μηκος:" + product.short_description.length)
     }
     if (product.description.length < 150) {
         println("WARNING Product ${product.sku} has a short long description, with length ${product.description.length}")
