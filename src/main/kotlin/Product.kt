@@ -18,7 +18,8 @@ data class Product(
     val stock_quantity: Int?,
     val tags: List<Tag>,
     val attributes: List<Attribute>,
-    val date_created: String
+    val date_created: String,
+    val meta_data: List<MetaData>
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -77,4 +78,11 @@ data class AttributeTerm(
     val id: Int,
     val name: String,
     val count: Int
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaData(
+    val id: Int,
+    val key: String,
+    val value: Any
 )

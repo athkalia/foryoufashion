@@ -59,12 +59,13 @@ fun main() {
             checkForNonSizeAttributesUsedForVariations(product)
             checkForStockManagementAtProductLevel(product)
             checkForEmptyOrShortTitles(product)
+            checkForMissingSizeGuide(product)
             if (!skipVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
-                        println("variation SKU: ${it.sku}")
+//                        println("variation SKU: ${it.sku}")
                         addTagForDiscountedProductsAndRemoveTagForRest(product, it, 30, credentials)
                     }
                 }
@@ -80,6 +81,25 @@ fun main() {
     checkProductCategories(credentials)
     checkProductAttributes(credentials)
     checkProductTags(credentials)
+}
+
+fun checkForMissingSizeGuide(product: Product) {
+//    println(product.meta_data)
+    val metaData = product.meta_data
+    val sizeGuideMetaData = metaData.find { it.key=="size_guide" }
+    val isEmpty = if (sizeGuideMetaData!=null) {
+        when (val sizeGuideMetaDataValue = sizeGuideMetaData.value) {
+            is List<*> -> sizeGuideMetaDataValue.isEmpty()
+            is String -> sizeGuideMetaDataValue.isBlank()
+            else -> true
+        }
+    } else {
+        true
+    }
+    if (isEmpty) {
+//    println(product.meta_data)
+        println("WARNING: No size guide for product with SKU ${product.sku}")
+    }
 }
 
 private fun checkForEmptyOrShortTitles(product: Product) {
