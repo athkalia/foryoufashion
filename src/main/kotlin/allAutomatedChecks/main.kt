@@ -24,6 +24,7 @@ import skuchecks.client
 import skuchecks.mapper
 
 const val skipVariationChecks = false
+const val shouldMoveOldOutOfStockProductsToPrivate = false
 
 fun main() {
     val readOnly = true
@@ -36,12 +37,11 @@ fun main() {
     val writeConsumerSecret = ""
 
     val credentials =
-        if (readOnly && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag) {
+        if (readOnly && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag && !shouldMoveOldOutOfStockProductsToPrivate) {
             Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
         } else {
             Credentials.basic(
-                writeConsumerKey,
-                writeConsumerSecret
+                writeConsumerKey, writeConsumerSecret
             )
         }
     var page = 1
@@ -60,7 +60,6 @@ fun main() {
             checkForNonSizeAttributesUsedForVariations(product)
             checkForStockManagementAtProductLevel(product)
             checkForEmptyOrShortTitles(product)
-            checkForOldProductsThatAreOutOfStock(product, credentials)
             if (!skipVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 if (shouldUpdateProsforesProductTag) {
@@ -70,6 +69,7 @@ fun main() {
                         addTagForDiscountedProductsAndRemoveTagForRest(product, it, 30, credentials)
                     }
                 }
+                checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 for (variation in productVariations) {
                     println("variation SKU: ${variation.sku}")
                     checkForMissingPrices(variation)
@@ -120,9 +120,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String, s
 }
 
 private fun checkForStockManagementAtProductLevel(product: Product) {
-    if (
-        product.variations.isNotEmpty() && product.manage_stock
-    ) {
+    if (product.variations.isNotEmpty() && product.manage_stock) {
         println("WARNING Product ${product.sku} is a variable product with stock management at the product level.")
     }
 }
@@ -183,16 +181,14 @@ private fun isValidHtml(html: String): Boolean {
 }
 
 private fun swapProductDescriptions(
-    product: Product,
-    credentials: String
+    product: Product, credentials: String
 ) {
     println("reversing descriptions for product ${product.sku}")
 
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
     val json = mapper.writeValueAsString(
         mapOf(
-            "short_description" to product.description,
-            "description" to product.short_description
+            "short_description" to product.description, "description" to product.short_description
         )
     )
     val body = json.toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
@@ -368,19 +364,47 @@ private fun checkForNonSizeAttributesUsedForVariations(product: Product) {
     }
 }
 
-fun checkForOldProductsThatAreOutOfStock(product: Product, credentials: String) {    // TODO
-    if (!skipVariationChecks) {
+fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
+    product: Product, productVariations: List<Variation>, credentials: String
+) {
+    if (product.status!="private") {
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val productDate = LocalDate.parse(product.date_created, dateFormatter)
-        val twoYearsAgo = LocalDate.now().minus(4, ChronoUnit.YEARS)
+        val twoYearsAgo = LocalDate.now().minus(2, ChronoUnit.YEARS)
         if (productDate.isBefore(twoYearsAgo)) {
-            val productVariations = getVariations(product.id, credentials)
             val allOutOfStock = productVariations.all { it.stock_status=="outofstock" }
-
             if (allOutOfStock) {
                 println("WARNING Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.")
                 println(product.permalink)
+                if (shouldMoveOldOutOfStockProductsToPrivate) {
+                    updateProductStatusToPrivate(product, credentials)
+                }
             }
+        }
+    }
+}
+
+private fun updateProductStatusToPrivate(
+    product: Product, credentials: String
+) {
+    println("Updating status for product ${product.sku} to 'private'")
+
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val json = mapper.writeValueAsString(
+        mapOf(
+            "status" to "private"
+        )
+    )
+    val body = json.toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+    val request = Request.Builder().url(url).put(body).header("Authorization", credentials)
+        .header("Content-Type", "application/json").build()
+
+    client.newCall(request).execute().use { response ->
+        val responseBody = response.body?.string()
+        if (!response.isSuccessful) {
+            throw IOException("Unexpected code $response, body: $responseBody")
+        } else {
+            println("Successfully updated product ${product.sku} status to 'private'.")
         }
     }
 }
