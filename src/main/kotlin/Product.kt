@@ -44,7 +44,7 @@ data class Variation(
     val attributes: List<Attribute>,
     val regular_price: String,
     val sale_price: String,
-    val price: String      ,
+    val price: String,
     val stock_status: String,
 )
 

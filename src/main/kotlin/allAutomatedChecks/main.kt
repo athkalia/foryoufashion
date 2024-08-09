@@ -23,14 +23,13 @@ import org.jsoup.parser.Parser
 import skuchecks.client
 import skuchecks.mapper
 
-const val skipVariationChecks = false
+const val readOnly = true
+const val skipVariationChecks = true
 const val shouldMoveOldOutOfStockProductsToPrivate = false
+const val shouldSwapDescriptions = false
+const val shouldUpdateProsforesProductTag = false
 
 fun main() {
-    val readOnly = true
-    val shouldSwapDescriptions = false
-    val shouldUpdateProsforesProductTag = false
-
     val readOnlyConsumerKey = ""
     val readOnlyConsumerSecret = ""
     val writeConsumerKey = ""
@@ -111,11 +110,11 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String, s
     }
     if (product.short_description.length < 120 || product.short_description.length > 250) {
         println("WARNING Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
-        println(product.permalink + " μηκος:" + product.short_description.length)
+        println(product.permalink + " συντομη περιγραφη μηκος:" + product.short_description.length)
     }
-    if (product.description.length < 150) {
-        println("WARNING Product ${product.sku} has a short long description, with length ${product.description.length}")
-        println(product.permalink)
+    if (product.description.length < 250 || product.description.length > 550) {
+        println("WARNING Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
+        println(product.permalink + " μεγαλη περιγραφη μηκος:" + product.description.length)
     }
 }
 
