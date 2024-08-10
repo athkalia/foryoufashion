@@ -61,6 +61,7 @@ fun main() {
             checkForStockManagementAtProductLevel(product)
             checkForEmptyOrShortTitles(product)
             checkForMissingSizeGuide(product)
+            checkForDraftProducts(product)
             checkForMissingToMonteloForaeiTextInDescription(product)
             if (!skipVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
@@ -84,6 +85,18 @@ fun main() {
     checkProductCategories(credentials)
     checkProductAttributes(credentials)
     checkProductTags(credentials)
+}
+
+fun checkForDraftProducts(product: Product) {
+    if (product.status.equals("draft", ignoreCase = true)) {
+        println("WARNING Product SKU ${product.sku} is draft.")
+        val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+        val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
+        val twoWeeksAgo = LocalDate.now().minus(2, ChronoUnit.WEEKS)
+        if (productCreationDate.isBefore(twoWeeksAgo)) {
+            println("WARNING: Product SKU ${product.sku} has been in draft status for more than 2 weeks.")
+        }
+    }
 }
 
 fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
