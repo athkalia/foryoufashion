@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
+import kotlin.system.exitProcess
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
@@ -29,6 +30,7 @@ const val skipVariationChecks = false
 const val shouldMoveOldOutOfStockProductsToPrivate = false
 const val shouldSwapDescriptions = false
 const val shouldUpdateProsforesProductTag = false
+const val shouldUpdatePricesToEndIn99 = false
 
 fun main() {
     val readOnlyConsumerKey = ""
@@ -37,7 +39,7 @@ fun main() {
     val writeConsumerSecret = ""
 
     val credentials =
-        if (readOnly && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag && !shouldMoveOldOutOfStockProductsToPrivate) {
+        if (readOnly && !shouldUpdatePricesToEndIn99 && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag && !shouldMoveOldOutOfStockProductsToPrivate) {
             Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
         } else {
             Credentials.basic(
@@ -55,7 +57,7 @@ fun main() {
                 continue
             }
 //            println("product SKU: ${product.sku}")
-            checkForInvalidDescriptions(product, credentials, shouldSwapDescriptions)
+//            checkForInvalidDescriptions(product, credentials, shouldSwapDescriptions)
             checkForMissingImages(product)
             checkForNonSizeAttributesUsedForVariations(product)
             checkForStockManagementAtProductLevel(product)
@@ -75,7 +77,7 @@ fun main() {
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 for (variation in productVariations) {
 //                    println("variation SKU: ${variation.sku}")
-                    checkForMissingPrices(variation)
+                    checkForMissingOrWrongPricesAndUpdateEndTo99(product, variation, credentials)
                     checkForInvalidSKUNumbers(product, variation)
                 }
             }
@@ -193,10 +195,142 @@ private fun checkForStockManagementAtProductLevel(product: Product) {
     }
 }
 
-private fun checkForMissingPrices(variation: Variation) {
-    if (variation.regular_price.isEmpty()) {
-        println("WARNING regular price empty")
+private fun checkForMissingOrWrongPricesAndUpdateEndTo99(product: Product, variation: Variation, credentials: String) {
+    val regularPrice = variation.regular_price
+    val salePrice = variation.sale_price
+
+    if (regularPrice.isEmpty()) {
+        println("WARNING product SKU ${product.sku} regular price empty")
     }
+    if (regularPrice.isNotEmpty() && priceHasIncorrectPennies(regularPrice)) {
+        println("WARNING product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
+        if (shouldUpdatePricesToEndIn99) {
+            val updatedRegularPrice = adjustPrice(regularPrice.toDouble())
+            if (updatedRegularPrice!=regularPrice) {
+                println("Updating product SKU ${product.sku} variation SKU ${variation.sku} regular price from $regularPrice to $updatedRegularPrice")
+                if (isSignificantPriceDifference(regularPrice.toDouble(), updatedRegularPrice.toDouble())) {
+                    println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
+                    exitProcess(1)
+                }
+                updateProductPrice(
+                    product.id,
+                    variation.id,
+                    updatedPrice = updatedRegularPrice,
+                    PriceType.REGULAR_PRICE, credentials
+                )
+                println(product.permalink)
+            }
+        }
+    }
+    if (salePrice.isNotEmpty() && priceHasIncorrectPennies(salePrice)) {
+        println("WARNING product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
+        if (shouldUpdatePricesToEndIn99) {
+            val updatedSalePrice = adjustPrice(salePrice.toDouble())
+            println("Updating product SKU ${product.sku} variation SKU {${variation.sku} sale price from $salePrice to $updatedSalePrice")
+            if (isSignificantPriceDifference(salePrice.toDouble(), updatedSalePrice.toDouble())) {
+                println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
+                exitProcess(1)
+            }
+            updateProductPrice(product.id, variation.id, updatedSalePrice, PriceType.SALE_PRICE, credentials)
+            println(product.permalink)
+        }
+    }
+}
+
+private fun priceHasIncorrectPennies(regularPrice: String): Boolean {
+    val regularPriceValue = regularPrice.toDouble()
+    if (regularPriceValue < 70) {
+        if (!regularPrice.endsWith(",99")) {
+            return true
+        }
+    } else {
+        if (regularPriceValue % 1!=0.0) {
+            return true
+        }
+    }
+    return false
+}
+
+fun isSignificantPriceDifference(oldPrice: Double, newPrice: Double): Boolean {
+    return Math.abs(oldPrice - newPrice) > 1.00
+}
+
+fun adjustPrice(price: Double): String {
+    return if (price < 70) {
+        adjustPriceBelow70(price)
+    } else {
+        adjustPriceAbove70(price)
+    }
+}
+
+private fun adjustPriceBelow70(price: Double): String {
+    val majorDigits = price.toInt()
+
+    return when {
+        majorDigits % 10==9 -> {
+            // If the major digits end in 9, add .99
+            String.format("%.2f", Math.floor(price) + 0.99)
+        }
+
+        price % 1==0.0 -> {
+            // If the price ends in .00, remove 1 cent
+            String.format("%.2f", price - 0.01)
+        }
+
+        else -> {
+            // Otherwise, make the price end in .99
+            String.format("%.2f", Math.floor(price) + 0.99)
+        }
+    }
+}
+
+private fun adjustPriceAbove70(price: Double): String {
+    val majorDigits = price.toInt()
+
+    return if (price % 1!=0.0) {
+        if (majorDigits % 10==9) {
+            // If the major digits end in 9, strip the pennies
+            String.format("%.0f", Math.floor(price))
+        } else {
+            // Otherwise, round up to the next major digit
+            String.format("%.0f", Math.ceil(price))
+        }
+    } else {
+        // If there are no pennies, return the price as is
+        String.format("%.0f", price)
+    }
+}
+
+private fun updateProductPrice(
+    productId: Int,
+    variationId: Int,
+    updatedPrice: String,
+    priceType: PriceType,
+    credentials: String
+) {
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/$productId/variations/$variationId"
+    val json =
+        if (priceType==PriceType.REGULAR_PRICE) mapper.writeValueAsString(mapOf("regular_price" to updatedPrice)) else mapper.writeValueAsString(
+            mapOf("sale_price" to updatedPrice)
+        )
+    val body = json.toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+    val request = Request.Builder()
+        .url(url)
+        .put(body)
+        .header("Authorization", credentials)
+        .header("Content-Type", "application/json")
+        .build()
+
+    client.newCall(request).execute().use { response ->
+        val responseBody = response.body?.string()
+        if (!response.isSuccessful) {
+            throw IOException("Unexpected code $response, body: $responseBody")
+        }
+    }
+}
+
+enum class PriceType {
+    REGULAR_PRICE, SALE_PRICE
 }
 
 private fun checkForMissingImages(product: Product) {
