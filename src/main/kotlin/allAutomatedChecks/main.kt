@@ -61,7 +61,7 @@ fun main() {
             checkForMissingImages(product)
             checkForNonSizeAttributesUsedForVariations(product)
             checkForStockManagementAtProductLevel(product)
-            checkForEmptyOrShortTitles(product)
+            checkForEmptyOrShortTitlesOrLongTitles(product)
             checkForMissingSizeGuide(product)
             checkForDraftProducts(product)
             checkForMissingToMonteloForaeiTextInDescription(product)
@@ -153,10 +153,13 @@ fun checkForMissingSizeGuide(product: Product) {
     }
 }
 
-private fun checkForEmptyOrShortTitles(product: Product) {
-    val title = product.name
+private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
+    val title = product.name.replace("&amp", "&")
     if (title.isEmpty() || title.length < 20) {
         println("WARNING Product ${product.sku} has an empty or too short title: '$title'.")
+//        println(product.permalink)
+    } else if (title.length > 65) {
+        println("WARNING Product ${product.sku} has a too long title: '$title'.")
         println(product.permalink)
     }
 }
@@ -171,7 +174,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String, s
         println(product.permalink)
     }
     if (product.short_description.length > product.description.length) {
-        println("WARNING short description logner than long description for product: ${product.sku}")
+        println("WARNING short description longer than long description for product: ${product.sku}")
         println(product.permalink)
 //        println("long description ${product.description}")
 //        println("short description ${product.short_description}")
@@ -202,7 +205,7 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(product: Product, varia
     if (regularPrice.isEmpty()) {
         println("WARNING product SKU ${product.sku} regular price empty")
     }
-    if (regularPrice.isNotEmpty() && priceHasIncorrectPennies(regularPrice)) {
+    if (regularPrice.isNotEmpty() && !priceHasCorrectPennies(regularPrice)) {
         println("WARNING product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
         if (shouldUpdatePricesToEndIn99) {
             val updatedRegularPrice = adjustPrice(regularPrice.toDouble())
@@ -222,7 +225,7 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(product: Product, varia
             }
         }
     }
-    if (salePrice.isNotEmpty() && priceHasIncorrectPennies(salePrice)) {
+    if (salePrice.isNotEmpty() && !priceHasCorrectPennies(salePrice)) {
         println("WARNING product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
         if (shouldUpdatePricesToEndIn99) {
             val updatedSalePrice = adjustPrice(salePrice.toDouble())
@@ -237,14 +240,14 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(product: Product, varia
     }
 }
 
-private fun priceHasIncorrectPennies(regularPrice: String): Boolean {
+private fun priceHasCorrectPennies(regularPrice: String): Boolean {
     val regularPriceValue = regularPrice.toDouble()
     if (regularPriceValue < 70) {
-        if (!regularPrice.endsWith(",99")) {
+        if (regularPrice.endsWith(".99")) {
             return true
         }
     } else {
-        if (regularPriceValue % 1!=0.0) {
+        if (regularPriceValue % 1==0.0) {
             return true
         }
     }
