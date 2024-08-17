@@ -19,7 +19,8 @@ data class Product(
     val tags: List<Tag>,
     val attributes: List<Attribute>,
     val date_created: String,
-    val meta_data: List<MetaData>
+    val meta_data: List<MetaData>,
+    val categories: List<Category>
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -34,7 +35,8 @@ data class ProductImage(
 data class Tag(
     val id: Int? = null,
     val name: String,
-    val count: Int? = null
+    val count: Int? = null,
+    val slug: String? = null,
 )
 
 
@@ -69,6 +71,7 @@ data class JsonEntry(
 data class Category(
     val id: Int,
     val name: String,
+    val slug: String,
     val count: Int
 )
 

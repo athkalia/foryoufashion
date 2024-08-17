@@ -65,6 +65,9 @@ fun main() {
             checkForMissingSizeGuide(product)
             checkForDraftProducts(product)
             checkForMissingToMonteloForaeiTextInDescription(product)
+            checkForIncorrectPlusSizeCategorizationAndTagging(product)
+            checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product)
+            checkForProductsInParentCategoryOnly(product)
             if (!skipVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 if (shouldUpdateProsforesProductTag) {
@@ -87,6 +90,48 @@ fun main() {
     checkProductCategories(credentials)
     checkProductAttributes(credentials)
     checkProductTags(credentials)
+}
+
+fun checkForProductsInParentCategoryOnly(product: Product) {
+    val parentCategories = listOf("foremata", "panoforia")
+    val productCategorySlugs = product.categories.map { it.slug }.toSet()
+    if ((productCategorySlugs - parentCategories).isEmpty()) {
+        println("WARNING: Product SKU ${product.sku} is only in parent categories but should be in a more specific sub-category.")
+        println(product.permalink)
+    }
+}
+
+fun checkForIncorrectPlusSizeCategorizationAndTagging(product: Product) {
+    val plusSizeCategorySlug = "plus-size"
+    val plusSizeForemataCategorySlug = "plus-size-foremata"
+    val olosomesFormesCategorySlug = "olosomes-formes"
+    val plusSizeTagSlug = "plus-size"
+
+    val inPlusSizeCategory = product.categories.any { it.slug==plusSizeCategorySlug }
+    val inPlusSizeForemataCategory = product.categories.any { it.slug==plusSizeForemataCategorySlug }
+    val inOlosomesFormesCategory = product.categories.any { it.slug==olosomesFormesCategorySlug }
+    val hasPlusSizeTag = product.tags.any { it.slug==plusSizeTagSlug }
+
+    if (inPlusSizeCategory) {
+        if (!((inOlosomesFormesCategory || inPlusSizeForemataCategory) && hasPlusSizeTag)) {
+            println("WARNING: Product SKU ${product.sku} is in 'Plus size' category but is not in 'Plus Size' or 'Ολόσωμες Φόρμες' categories and or does not have 'Plus Size' tag.")
+        }
+    }
+}
+
+fun checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product: Product) {
+    val specialOccasionCategorySlug = "special-occasion"
+    val plusSizeCategorySlug = "plus-size"
+
+    val inSpecialOccasionCategory = product.categories.any { it.slug==specialOccasionCategorySlug }
+    val inPlusSizeCategory = product.categories.any { it.slug==plusSizeCategorySlug }
+    val inAnyOtherCategories =
+        product.categories.any { it.slug!=specialOccasionCategorySlug && it.slug!=plusSizeCategorySlug }
+
+
+    if ((inSpecialOccasionCategory || inPlusSizeCategory) && !inAnyOtherCategories) {
+        println("WARNING: Product SKU ${product.sku} is only in the 'Special Occasion' or 'Plus size' category and not in any other category.")
+    }
 }
 
 fun checkForDraftProducts(product: Product) {
