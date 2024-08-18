@@ -145,20 +145,23 @@ fun checkForImagesWithTooLowResolution(product: Product) {
 }
 
 fun checkForImagesWithTooHighResolution(product: Product) {
-    val cache = loadImageCache()
-    for (image in product.images) {
-        val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
-            cache[image.src] = it
+    if (
+        product.sku!="57642-022" // skipped by EWWWW Image optimizer as resizing did not decrease file size
+    ) {
+        val cache = loadImageCache()
+        for (image in product.images) {
+            val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
+                cache[image.src] = it
+            }
+            if (dimensions.first > 1500) {
+                println("WARNING: Product ${product.sku} has an image with too high resolution (width > 1500px).")
+                println("Image width: ${dimensions.first}px")
+                println("Image URL: ${image.src}")
+                println(product.permalink)
+            }
         }
-
-        if (dimensions.first > 1500) {
-            println("WARNING: Product ${product.sku} has an image with too high resolution (width > 1500px).")
-            println("Image width: ${dimensions.first}px")
-            println("Image URL: ${image.src}")
-            println(product.permalink)
-        }
+        saveImageCache(cache)
     }
-    saveImageCache(cache)
 }
 
 fun checkForProductsInParentCategoryOnly(product: Product) {
