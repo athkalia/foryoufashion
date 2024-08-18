@@ -71,6 +71,8 @@ fun main() {
 //            checkForInvalidDescriptions(product, credentials, shouldSwapDescriptions)
             checkForMissingImages(product)
             checkForNonPortraitImagesWithCache(product)
+            checkForImagesWithTooHighResolution(product)
+            checkForImagesWithIncorrectWidthHeightRatio(product)
             checkForNonSizeAttributesUsedForVariations(product)
             checkForStockManagementAtProductLevel(product)
             checkForEmptyOrShortTitlesOrLongTitles(product)
@@ -102,6 +104,44 @@ fun main() {
     checkProductCategories(credentials)
     checkProductAttributes(credentials)
     checkProductTags(credentials)
+}
+
+fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
+    val cache = loadImageCache()
+    for (image in product.images) {
+        val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
+            cache[image.src] = it
+        }
+
+        val ratio = dimensions.second.toDouble() / dimensions.first.toDouble()
+        if (ratio > 1.51 || ratio < 1.49) {
+            println("WARNING: Product ${product.sku} has the wrong resolution ratio")
+            println("Image width: ${dimensions.first}px")
+            println("Image height: ${dimensions.second}px")
+            println("Image URL: ${image.src}")
+            println("Image ratio: $ratio")
+            println(product.permalink)
+        }
+    }
+    saveImageCache(cache)
+}
+
+
+fun checkForImagesWithTooHighResolution(product: Product) {
+    val cache = loadImageCache()
+    for (image in product.images) {
+        val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
+            cache[image.src] = it
+        }
+
+        if (dimensions.first > 1500) {
+            println("WARNING: Product ${product.sku} has an image with too high resolution (width > 1500px).")
+            println("Image width: ${dimensions.first}px")
+            println("Image URL: ${image.src}")
+            println(product.permalink)
+        }
+    }
+    saveImageCache(cache)
 }
 
 fun checkForProductsInParentCategoryOnly(product: Product) {
