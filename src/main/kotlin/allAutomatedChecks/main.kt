@@ -1,5 +1,8 @@
 package allAutomatedChecks
 
+import java.io.File
+import java.io.IOException
+import okhttp3.Request
 import Attribute
 import AttributeTerm
 import Category
@@ -7,18 +10,19 @@ import Product
 import Tag
 import Variation
 import com.fasterxml.jackson.module.kotlin.readValue
-import java.io.IOException
+import com.twelvemonkeys.imageio.plugins.webp.WebPImageReaderSpi
 import java.time.LocalDate
 import java.time.Month
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import javax.imageio.ImageIO
+import javax.imageio.spi.IIORegistry
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.system.exitProcess
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
@@ -31,6 +35,13 @@ const val shouldMoveOldOutOfStockProductsToPrivate = false
 const val shouldSwapDescriptions = false
 const val shouldUpdateProsforesProductTag = false
 const val shouldUpdatePricesToEndIn99 = false
+
+private const val CACHE_FILE_PATH = "image_cache.csv"
+
+private fun registerWebPReader() {
+    val registry = IIORegistry.getDefaultInstance()
+    registry.registerServiceProvider(WebPImageReaderSpi())
+}
 
 fun main() {
     val readOnlyConsumerKey = ""
@@ -59,6 +70,7 @@ fun main() {
 //            println("product SKU: ${product.sku}")
 //            checkForInvalidDescriptions(product, credentials, shouldSwapDescriptions)
             checkForMissingImages(product)
+            checkForNonPortraitImagesWithCache(product)
             checkForNonSizeAttributesUsedForVariations(product)
             checkForStockManagementAtProductLevel(product)
             checkForEmptyOrShortTitlesOrLongTitles(product)
@@ -379,6 +391,70 @@ private fun updateProductPrice(
 
 enum class PriceType {
     REGULAR_PRICE, SALE_PRICE
+}
+
+fun checkForNonPortraitImagesWithCache(product: Product) {
+    val cache = loadImageCache()
+    for (image in product.images) {
+        val cachedDimensions = cache[image.src]
+        val dimensions = if (cachedDimensions!=null) {
+//            println("DEBUG: Cache hit found!")
+            cachedDimensions
+        } else {
+            getImageDimensions(image.src).also {
+                cache[image.src] = it
+            }
+        }
+
+        if (dimensions.first > dimensions.second) {
+            println("WARNING: Product ${product.sku} has a non-portrait image.")
+            println(product.permalink)
+        }
+    }
+    saveImageCache(cache)
+}
+
+private fun loadImageCache(): MutableMap<String, Pair<Int, Int>> {
+    val cache = mutableMapOf<String, Pair<Int, Int>>()
+    val file = File(CACHE_FILE_PATH)
+    if (file.exists()) {
+        file.forEachLine { line ->
+            val parts = line.split(",")
+            if (parts.size==3) {
+                val url = parts[0]
+                val width = parts[1].toIntOrNull()
+                val height = parts[2].toIntOrNull()
+                if (width!=null && height!=null) {
+                    cache[url] = width to height
+                }
+            }
+        }
+    }
+    return cache
+}
+
+private fun saveImageCache(cache: Map<String, Pair<Int, Int>>) {
+    val file = File(CACHE_FILE_PATH)
+    file.printWriter().use { writer ->
+        cache.forEach { (url, dimensions) ->
+            writer.println("${url},${dimensions.first},${dimensions.second}")
+        }
+    }
+}
+
+private fun getImageDimensions(imageUrl: String): Pair<Int, Int> {
+    registerWebPReader()  // Register WebP support
+    println("DEBUG: downloading image: $imageUrl")
+    val request = Request.Builder().url(imageUrl).build()
+    client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) throw IOException("Unexpected code $response")
+        val imageBytes = response.body?.bytes()
+        val image = ImageIO.read(imageBytes?.inputStream())
+
+        image?.let {
+            return it.width to it.height
+        } ?: throw IOException("Failed to read image dimensions")
+    }
 }
 
 private fun checkForMissingImages(product: Product) {

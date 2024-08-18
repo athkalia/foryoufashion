@@ -12,6 +12,7 @@ tasks.test {
 }
 
 dependencies {
+    implementation("com.twelvemonkeys.imageio:imageio-webp:3.8.2")
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.3")

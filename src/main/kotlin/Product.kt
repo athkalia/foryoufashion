@@ -28,7 +28,9 @@ data class ProductImage(
     val id: Int,
     val src: String,
     val name: String,
-    val alt: String
+    val alt: String,
+    val width: Int,
+    val height: Int
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
