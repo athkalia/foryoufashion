@@ -71,6 +71,7 @@ fun main() {
 //            checkForInvalidDescriptions(product, credentials, shouldSwapDescriptions)
             checkForMissingImages(product)
             checkForNonPortraitImagesWithCache(product)
+            checkForImagesWithTooLowResolution(product)
             checkForImagesWithTooHighResolution(product)
             checkForImagesWithIncorrectWidthHeightRatio(product)
             checkForNonSizeAttributesUsedForVariations(product)
@@ -126,6 +127,22 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
     saveImageCache(cache)
 }
 
+fun checkForImagesWithTooLowResolution(product: Product) {
+    val cache = loadImageCache()
+    for (image in product.images) {
+        val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
+            cache[image.src] = it
+        }
+
+        if (dimensions.first < 1200) {
+            println("WARNING: Product ${product.sku} has an image with too low resolution (width < 1200px).")
+            println("Image width: ${dimensions.first}px")
+            println("Image URL: ${image.src}")
+            println(product.permalink)
+        }
+    }
+    saveImageCache(cache)
+}
 
 fun checkForImagesWithTooHighResolution(product: Product) {
     val cache = loadImageCache()
