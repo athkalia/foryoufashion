@@ -6,6 +6,7 @@ import okhttp3.Request
 import Attribute
 import AttributeTerm
 import Category
+import Media
 import Product
 import Tag
 import Variation
@@ -15,6 +16,7 @@ import java.time.LocalDate
 import java.time.Month
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.Base64
 import javax.imageio.ImageIO
 import javax.imageio.spi.IIORegistry
 import kotlin.math.pow
@@ -30,11 +32,12 @@ import skuchecks.client
 import skuchecks.mapper
 
 const val readOnly = true
-const val skipVariationChecks = false
+const val skipVariationChecks = true
 const val shouldMoveOldOutOfStockProductsToPrivate = false
 const val shouldSwapDescriptions = false
 const val shouldUpdateProsforesProductTag = false
 const val shouldUpdatePricesToEndIn99 = false
+const val checkForUnusedImages = true // takes a long time.
 
 private const val CACHE_FILE_PATH = "image_cache.csv"
 
@@ -48,7 +51,11 @@ fun main() {
     val readOnlyConsumerSecret = ""
     val writeConsumerKey = ""
     val writeConsumerSecret = ""
+    val wordPressUsername = ""
+    val wordPressApplicationPassword = ""
 
+    val wordPressWriteCredentials =
+        Base64.getEncoder().encodeToString("$wordPressUsername:$wordPressApplicationPassword".toByteArray())
     val credentials =
         if (readOnly && !shouldUpdatePricesToEndIn99 && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag && !shouldMoveOldOutOfStockProductsToPrivate) {
             Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
@@ -57,54 +64,126 @@ fun main() {
                 writeConsumerKey, writeConsumerSecret
             )
         }
+
+    val allProducts = mutableListOf<Product>()
     var page = 1
     var products: List<Product>
     do {
         products = getProducts(page, credentials)
-        println("Products size: ${products.size}")
-        for (product in products) {
-            // offer and discount empty products, not sure what these are.
-            if (product.id==27948 || product.id==27947) {
-                continue
-            }
-//            println("product SKU: ${product.sku}")
-//            checkForInvalidDescriptions(product, credentials, shouldSwapDescriptions)
-            checkForMissingImages(product)
-            checkForNonPortraitImagesWithCache(product)
-            checkForImagesWithTooLowResolution(product)
-            checkForImagesWithTooHighResolution(product)
-            checkForImagesWithIncorrectWidthHeightRatio(product)
-            checkForNonSizeAttributesUsedForVariations(product)
-            checkForStockManagementAtProductLevel(product)
-            checkForEmptyOrShortTitlesOrLongTitles(product)
-            checkForMissingSizeGuide(product)
-            checkForDraftProducts(product)
-            checkForMissingToMonteloForaeiTextInDescription(product)
-            checkForIncorrectPlusSizeCategorizationAndTagging(product)
-            checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product)
-            checkForProductsInParentCategoryOnly(product)
-            if (!skipVariationChecks) {
-                val productVariations = getVariations(productId = product.id, credentials)
-                if (shouldUpdateProsforesProductTag) {
-                    val firstVariation = productVariations.firstOrNull()
-                    firstVariation?.let {
-//                        println("variation SKU: ${it.sku}")
-                        addTagForDiscountedProductsAndRemoveTagForRest(product, it, 30, credentials)
-                    }
-                }
-                checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
-                for (variation in productVariations) {
-//                    println("variation SKU: ${variation.sku}")
-                    checkForMissingOrWrongPricesAndUpdateEndTo99(product, variation, credentials)
-                    checkForInvalidSKUNumbers(product, variation)
-                }
-            }
-        }
+        allProducts.addAll(products)
         page++
     } while (products.isNotEmpty())
+
+    println("DEBUG: Total products fetched: ${allProducts.size}")
+
+    if (checkForUnusedImages) {
+        checkForUnusedImages(allProducts, wordPressWriteCredentials)
+    }
+    for (product in allProducts) {
+        // offer and discount empty products, not sure what these are.
+        if (product.id==27948 || product.id==27947) {
+            continue
+        }
+//            println("product SKU: ${product.sku}")
+//            checkForInvalidDescriptions(product, credentials, shouldSwapDescriptions)
+        checkForMissingImages(product)
+        checkForNonPortraitImagesWithCache(product)
+        checkForImagesWithTooLowResolution(product)
+        checkForImagesWithTooHighResolution(product)
+        checkForImagesWithIncorrectWidthHeightRatio(product)
+        checkForNonSizeAttributesUsedForVariations(product)
+        checkForStockManagementAtProductLevel(product)
+        checkForEmptyOrShortTitlesOrLongTitles(product)
+        checkForMissingSizeGuide(product)
+        checkForDraftProducts(product)
+        checkForMissingToMonteloForaeiTextInDescription(product)
+        checkForIncorrectPlusSizeCategorizationAndTagging(product)
+        checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product)
+        checkForProductsInParentCategoryOnly(product)
+
+        if (!skipVariationChecks) {
+            val productVariations = getVariations(productId = product.id, credentials)
+            if (shouldUpdateProsforesProductTag) {
+                val firstVariation = productVariations.firstOrNull()
+                firstVariation?.let {
+//                        println("variation SKU: ${it.sku}")
+                    addTagForDiscountedProductsAndRemoveTagForRest(product, it, 30, credentials)
+                }
+            }
+            checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
+            for (variation in productVariations) {
+//                    println("variation SKU: ${variation.sku}")
+                checkForMissingOrWrongPricesAndUpdateEndTo99(product, variation, credentials)
+                checkForInvalidSKUNumbers(product, variation)
+            }
+        }
+    }
     checkProductCategories(credentials)
     checkProductAttributes(credentials)
     checkProductTags(credentials)
+}
+
+fun checkForUnusedImages(allProducts: List<Product>, wordPressWriteCredentials: String) {
+    val allMedia = getAllNonRecentMedia(wordPressWriteCredentials)
+    println("Total media files: ${allMedia.size}")
+
+    val allProductImages: Set<String> = allProducts.flatMap { it.images }.map { it.src }.toSet()
+    println("DEBUG: Total product images: ${allProductImages.size}")
+
+    val unusedImages = findUnusedImages(allMedia, allProductImages)
+    println("WARNING: Unused images in media library: ${unusedImages.size}")
+    unusedImages.forEach {
+        println("https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit")
+    }
+}
+
+fun getAllNonRecentMedia(wordPressWriteCredentials: String): List<Media> {
+    val formatter = DateTimeFormatter.ISO_DATE_TIME // Adjust if needed
+    val threeMonthsAgo = LocalDate.now().minusMonths(3)
+    val url = "https://foryoufashion.gr/wp-json/wp/v2/media?per_page=100&page="
+    val allMedia = mutableListOf<Media>()
+    var page = 1
+    do {
+        println("DEBUG: Performing request to get media, page $page")
+        val requestUrl = "$url$page"
+        val media = executeWithRetry {
+            val request = Request.Builder().url(requestUrl)
+                .header("Authorization", "Basic $wordPressWriteCredentials")
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    val errorBody = response.body?.string()
+                    if (response.code==400 && errorBody?.contains("rest_post_invalid_page_number")==true) {
+                        return@executeWithRetry emptyList<Media>()
+                    } else {
+                        println("Error Response: $errorBody")
+                        throw IOException("Unexpected code $response")
+                    }
+                } else {
+                    mapper.readValue(response.body?.string() ?: "")
+                }
+            }
+        }
+
+        val filteredMedia = media.filter {
+            val mediaDate = LocalDate.parse(it.date, formatter)
+            mediaDate.isBefore(threeMonthsAgo)
+        }
+
+        allMedia.addAll(filteredMedia)
+//        println("DEBUG: $media")
+        page++
+    } while (media.isNotEmpty())
+    return allMedia
+}
+
+fun findUnusedImages(
+    allMedia: List<Media>,
+    allProductImages: Set<String>
+): List<Media> {
+    return allMedia.filter { media ->
+        media.post==null && media.source_url !in allProductImages && media.media_type=="image"
+    }
 }
 
 fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
@@ -315,7 +394,11 @@ private fun checkForStockManagementAtProductLevel(product: Product) {
     }
 }
 
-private fun checkForMissingOrWrongPricesAndUpdateEndTo99(product: Product, variation: Variation, credentials: String) {
+private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
+    product: Product,
+    variation: Variation,
+    credentials: String
+) {
     val regularPrice = variation.regular_price
     val salePrice = variation.sale_price
 
@@ -536,6 +619,7 @@ private fun checkForMissingImages(product: Product) {
 private fun getProducts(page: Int, credentials: String): List<Product> {
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products?page=$page&per_page=100"
     return executeWithRetry {
+        println("DEBUG: Performing request to get products, page $page")
         val request = Request.Builder().url(url).header("Authorization", credentials).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected code $response")

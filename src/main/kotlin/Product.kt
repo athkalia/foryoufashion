@@ -34,6 +34,16 @@ data class ProductImage(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+data class Media(
+    val id: Int,
+    val post: Int?, // This indicates if the media is attached to a post or not
+    val media_type: String, // Should be "image" for images
+    val mime_type: String, // MIME type to ensure you're working with images
+    val source_url: String, // The URL of the image file
+    val date: String // Date when the media was uploaded (ISO 8601 format)
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Tag(
     val id: Int? = null,
     val name: String,
