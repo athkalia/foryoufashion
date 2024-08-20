@@ -181,7 +181,7 @@ private fun saveMediaCache(cache: Map<String, MediaCacheEntry>) {
 }
 
 private fun isCacheExpired(lastChecked: LocalDate, today: LocalDate): Boolean {
-    return lastChecked.plusMonths(3).isBefore(today)
+    return lastChecked.plusMonths(1).isBefore(today)
 }
 
 private fun checkIfFileExists(url: String): Boolean {
