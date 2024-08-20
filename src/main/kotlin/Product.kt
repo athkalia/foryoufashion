@@ -1,4 +1,5 @@
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import java.time.LocalDate
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Product(
@@ -21,6 +22,13 @@ data class Product(
     val date_created: String,
     val meta_data: List<MetaData>,
     val categories: List<Category>
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MediaCacheEntry(
+    val url: String,
+    val isFileMissing: Boolean,
+    val lastChecked: LocalDate
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

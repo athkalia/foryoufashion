@@ -7,6 +7,7 @@ import Attribute
 import AttributeTerm
 import Category
 import Media
+import MediaCacheEntry
 import Product
 import Tag
 import Variation
@@ -25,6 +26,7 @@ import kotlin.random.Random
 import kotlin.system.exitProcess
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
@@ -37,9 +39,12 @@ const val shouldMoveOldOutOfStockProductsToPrivate = false
 const val shouldSwapDescriptions = false
 const val shouldUpdateProsforesProductTag = false
 const val shouldUpdatePricesToEndIn99 = false
-const val checkForUnusedImages = true // takes a long time.
+const val checkMediaLibraryChecks = true // takes a long time.
 
-private const val CACHE_FILE_PATH = "image_cache.csv"
+private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
+private const val MEDIA_LIBRARY_CACHE_FILE_PATH = "media_library_missing_files_cache.csv"
+private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
 
 private fun registerWebPReader() {
     val registry = IIORegistry.getDefaultInstance()
@@ -76,8 +81,9 @@ fun main() {
 
     println("DEBUG: Total products fetched: ${allProducts.size}")
 
-    if (checkForUnusedImages) {
-        checkForUnusedImages(allProducts, wordPressWriteCredentials)
+    if (checkMediaLibraryChecks) {
+        val allMedia = checkForUnusedImages(allProducts, wordPressWriteCredentials)
+        checkForMissingFilesInsideMediaLibraryEntries(allMedia)
     }
     for (product in allProducts) {
         // offer and discount empty products, not sure what these are.
@@ -123,7 +129,68 @@ fun main() {
     checkProductTags(credentials)
 }
 
-fun checkForUnusedImages(allProducts: List<Product>, wordPressWriteCredentials: String) {
+fun checkForMissingFilesInsideMediaLibraryEntries(allMedia: List<Media>) {
+    val cache = loadMediaCache()
+    val today = LocalDate.now()
+    allMedia.forEach { media ->
+        val cachedEntry = cache[media.source_url]
+        val isFileMissing = if (cachedEntry!=null && !isCacheExpired(cachedEntry.lastChecked, today)) {
+            // Cache hit and still valid
+            cachedEntry.isFileMissing
+        } else {
+            // Cache miss or expired, check file existence
+            val fileExists = checkIfFileExists(media.source_url)
+            cache[media.source_url] = MediaCacheEntry(media.source_url, !fileExists, today)
+            !fileExists
+        }
+
+        if (isFileMissing) {
+            println("WARNING: File missing for Media ID: ${media.id}, URL: ${media.source_url}")
+        }
+    }
+    saveMediaCache(cache)
+}
+
+private fun loadMediaCache(): MutableMap<String, MediaCacheEntry> {
+    val cache = mutableMapOf<String, MediaCacheEntry>()
+    val file = File(MEDIA_LIBRARY_CACHE_FILE_PATH)
+    if (file.exists()) {
+        file.forEachLine { line ->
+            val parts = line.split(",")
+            if (parts.size==3) {
+                val url = parts[0]
+                val isFileMissing = parts[1].toBoolean()
+                val lastChecked = LocalDate.parse(parts[2], formatter)
+                cache[url] = MediaCacheEntry(url, isFileMissing, lastChecked)
+            }
+        }
+    }
+    return cache
+}
+
+private fun saveMediaCache(cache: Map<String, MediaCacheEntry>) {
+    val file = File(MEDIA_LIBRARY_CACHE_FILE_PATH)
+    file.printWriter().use { writer ->
+        cache.forEach { (_, entry) ->
+            writer.println("${entry.url},${entry.isFileMissing},${entry.lastChecked.format(formatter)}")
+        }
+    }
+}
+
+private fun isCacheExpired(lastChecked: LocalDate, today: LocalDate): Boolean {
+    return lastChecked.plusMonths(3).isBefore(today)
+}
+
+private fun checkIfFileExists(url: String): Boolean {
+    println("DEBUG: downloading image: $url")
+    val client = OkHttpClient()
+    val request = Request.Builder().url(url).build()
+    return client.newCall(request).execute().use { response ->
+        response.isSuccessful // Returns true if file exists (HTTP 200), false otherwise
+    }
+}
+
+fun checkForUnusedImages(allProducts: List<Product>, wordPressWriteCredentials: String): List<Media> {
     val allMedia = getAllNonRecentMedia(wordPressWriteCredentials)
     println("Total media files: ${allMedia.size}")
 
@@ -135,6 +202,7 @@ fun checkForUnusedImages(allProducts: List<Product>, wordPressWriteCredentials: 
     unusedImages.forEach {
         println("https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit")
     }
+    return allMedia
 }
 
 fun getAllNonRecentMedia(wordPressWriteCredentials: String): List<Media> {
