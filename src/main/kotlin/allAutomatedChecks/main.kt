@@ -146,6 +146,9 @@ fun checkForMissingFilesInsideMediaLibraryEntries(allMedia: List<Media>) {
 
         if (isFileMissing) {
             println("WARNING: File missing for Media ID: ${media.id}, URL: ${media.source_url}")
+            println("https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit")
+//            val desktop = Desktop.getDesktop()
+//            desktop.browse(URI("https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit"));
         }
     }
     saveMediaCache(cache)
