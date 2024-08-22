@@ -27,6 +27,7 @@ import kotlin.system.exitProcess
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
@@ -40,11 +41,11 @@ const val shouldSwapDescriptions = false
 const val shouldUpdateProsforesProductTag = false
 const val shouldUpdatePricesToEndIn99 = false
 const val checkMediaLibraryChecks = true // takes a long time.
+const val shouldAutomaticallyDeleteUnusedImages = false
 
 private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
 private const val MEDIA_LIBRARY_CACHE_FILE_PATH = "media_library_missing_files_cache.csv"
 private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
-
 
 private fun registerWebPReader() {
     val registry = IIORegistry.getDefaultInstance()
@@ -201,12 +202,37 @@ fun checkForUnusedImages(allProducts: List<Product>, wordPressWriteCredentials: 
     println("DEBUG: Total product images: ${allProductImages.size}")
 
     val unusedImages = findUnusedImages(allMedia, allProductImages)
-    println("WARNING: Unused images in media library: ${unusedImages.size}")
+    if (unusedImages.isNotEmpty()) {
+        println("WARNING: Unused images in media library: ${unusedImages.size}")
+    }
     unusedImages.forEach {
         println("https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit")
+        if (shouldAutomaticallyDeleteUnusedImages) {
+            deleteUnusedImage(it, wordPressWriteCredentials)
+        }
     }
     return allMedia
 }
+
+fun deleteUnusedImage(unusedImage: Media, wordPressWriteCredentials: String) {
+    val client = OkHttpClient()
+    val deleteUrl = "https://foryoufashion.gr/wp-json/wp/v2/media/${unusedImage.id}?force=true"
+    val request = Request.Builder()
+        .url(deleteUrl)
+        .delete(RequestBody.create(null, ByteArray(0))) // Empty body for DELETE request
+        .header("Authorization", "Basic $wordPressWriteCredentials")
+        .build()
+
+    client.newCall(request).execute().use { response ->
+        if (response.isSuccessful) {
+            println("Successfully deleted unusedImage ID: ${unusedImage.id}")
+        } else {
+            println("Failed to delete unusedImage ID: ${unusedImage.id}. Response code: ${response.code}")
+            println("Response message: ${response.message}")
+        }
+    }
+}
+
 
 fun getAllNonRecentMedia(wordPressWriteCredentials: String): List<Media> {
     val formatter = DateTimeFormatter.ISO_DATE_TIME // Adjust if needed
