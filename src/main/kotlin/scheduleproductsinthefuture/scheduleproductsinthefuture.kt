@@ -61,7 +61,9 @@ fun main() {
 }
 
 private fun getDraftProductsThatAreReadyToSchedule(page: Int, credentials: String): List<Product> {
-    val url = "https://foryoufashion.gr/wp-json/wc/v3/products?page=$page&per_page=100&status=draft"
+    val tagEtoimoGiaAnevasmaId = "1554"
+    val url =
+        "https://foryoufashion.gr/wp-json/wc/v3/products?page=$page&per_page=100&status=draft&tag=$tagEtoimoGiaAnevasmaId"
     val request = Request.Builder().url(url).header("Authorization", credentials).build()
 
     client.newCall(request).execute().use { response ->

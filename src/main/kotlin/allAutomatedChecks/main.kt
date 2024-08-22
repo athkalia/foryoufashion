@@ -808,9 +808,9 @@ fun checkForDraftProducts(product: Product) {
         println("WARNING Product SKU ${product.sku} is draft.")
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
-        val twoWeeksAgo = LocalDate.now().minus(2, ChronoUnit.WEEKS)
-        if (productCreationDate.isBefore(twoWeeksAgo)) {
-            println("WARNING: Product SKU ${product.sku} has been in draft status for more than 2 weeks.")
+        val oneMonthAgo = LocalDate.now().minus(1, ChronoUnit.MONTHS)
+        if (productCreationDate.isBefore(oneMonthAgo)) {
+            println("WARNING: Product SKU ${product.sku} has been in draft status for more than 1 month.")
         }
     }
 }
