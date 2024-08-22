@@ -1,7 +1,6 @@
 package scheduleproductsinthefuture
 
 import Product
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import okhttp3.Credentials
@@ -23,7 +22,7 @@ fun main() {
 
     // Get all draft products
     do {
-        val products = getDraftProducts(page, credentials)
+        val products = getDraftProductsThatAreReadyToSchedule(page, credentials)
         draftProducts.addAll(products)
         page++
     } while (products.isNotEmpty())
@@ -61,7 +60,7 @@ fun main() {
     }
 }
 
-private fun getDraftProducts(page: Int, credentials: String): List<Product> {
+private fun getDraftProductsThatAreReadyToSchedule(page: Int, credentials: String): List<Product> {
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products?page=$page&per_page=100&status=draft"
     val request = Request.Builder().url(url).header("Authorization", credentials).build()
 
