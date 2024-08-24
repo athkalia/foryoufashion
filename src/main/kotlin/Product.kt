@@ -19,7 +19,7 @@ data class Product(
     val stock_quantity: Int?,
     val tags: List<Tag>,
     val attributes: List<Attribute>,
-    val date_created: String,
+    val date_created: String? = null,
     val meta_data: List<MetaData>,
     val categories: List<Category>
 )
@@ -54,7 +54,7 @@ data class Media(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Tag(
     val id: Int? = null,
-    val name: String,
+    val name: String? = null,
     val count: Int? = null,
     val slug: String? = null,
 )

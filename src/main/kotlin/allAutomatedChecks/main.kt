@@ -39,6 +39,7 @@ const val readOnly = true
 // Slow
 const val skipVariationChecks = true
 const val checkMediaLibraryChecks = true
+const val shouldCheckForInvalidDescriptions = false
 
 // Require manual input
 const val shouldCheckForLargeImagesOutsideMediaLibrary = false
@@ -97,7 +98,9 @@ fun main() {
                 continue
             }
 //            println("product SKU: ${product.sku}")
-//            checkForInvalidDescriptions(product, credentials, shouldSwapDescriptions)
+            if (shouldCheckForInvalidDescriptions) {
+                checkForInvalidDescriptions(product, credentials)
+            }
             checkForMissingImages(product)
             checkForNonPortraitImagesWithCache(product)
             checkForImagesWithTooLowResolution(product)
@@ -781,10 +784,14 @@ fun checkForIncorrectPlusSizeCategorizationAndTagging(product: Product) {
     val inOlosomesFormesCategory = product.categories.any { it.slug==olosomesFormesCategorySlug }
     val hasPlusSizeTag = product.tags.any { it.slug==plusSizeTagSlug }
 
-    if (inPlusSizeCategory) {
-        if (!((inOlosomesFormesCategory || inPlusSizeForemataCategory) && hasPlusSizeTag)) {
-            println("WARNING: Product SKU ${product.sku} is in 'Plus size' category but is not in 'Plus Size' or 'Ολόσωμες Φόρμες' categories and or does not have 'Plus Size' tag.")
-        }
+    if ((inPlusSizeCategory || inPlusSizeForemataCategory) && !hasPlusSizeTag) {
+        println("WARNING: Product SKU ${product.sku} is missing a plus size tag.")
+        println(product.permalink)
+    }
+
+    if (inPlusSizeCategory && !inOlosomesFormesCategory && !inPlusSizeForemataCategory) {
+        println("WARNING: Product SKU ${product.sku} is in the plus category but it's not in olosomes formes or plus size foremata category")
+        println(product.permalink)
     }
 }
 
@@ -878,7 +885,7 @@ private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
     }
 }
 
-private fun checkForInvalidDescriptions(product: Product, credentials: String, shouldSwapDescriptions: Boolean) {
+private fun checkForInvalidDescriptions(product: Product, credentials: String) {
 //    println("long description ${product.description}")
 //    println("short description ${product.short_description}")
     isValidHtml(product.short_description)
@@ -947,7 +954,7 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
         println("WARNING product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
         if (shouldUpdatePricesToEndIn99) {
             val updatedSalePrice = adjustPrice(salePrice.toDouble())
-            println("Updating product SKU ${product.sku} variation SKU {${variation.sku} sale price from $salePrice to $updatedSalePrice")
+            println("Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
             if (isSignificantPriceDifference(salePrice.toDouble(), updatedSalePrice.toDouble())) {
                 println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
                 exitProcess(1)
@@ -1230,9 +1237,9 @@ private fun addTagForDiscountedProductsAndRemoveTagForRest(
         val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
         if (discountPercentage >= addTagAboveThisDiscount) {
             println("Adding tag 'prosfores'")
-            if (!product.tags.any { it.name=="prosfores" }) {
+            if (!product.tags.any { it.slug=="prosfores" }) {
                 val updatedTags = product.tags.toMutableList()
-                updatedTags.add(Tag(id = 1552, name = "prosfores"))
+                updatedTags.add(Tag(id = 1552, slug = "prosfores"))
                 val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
                 println("Updating product ${product.id} with tags: $data")
                 val body = data.toRequestBody("application/json".toMediaTypeOrNull())
@@ -1251,8 +1258,8 @@ private fun addTagForDiscountedProductsAndRemoveTagForRest(
             }
         } else {
             println("Removing tag 'prosfores'")
-            if (product.tags.any { it.name=="prosfores" }) {
-                val updatedTags = product.tags.filter { it.name!="prosfores" }
+            if (product.tags.any { it.slug=="prosfores" }) {
+                val updatedTags = product.tags.filter { it.slug!="prosfores" }
                 val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
                 println("Updating product ${product.id} with tags: $data")
                 val body = data.toRequestBody("application/json".toMediaTypeOrNull())
