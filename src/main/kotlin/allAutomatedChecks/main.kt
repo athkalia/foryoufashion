@@ -46,11 +46,19 @@ const val shouldCheckForLargeImagesOutsideMediaLibrary = false
 
 // Updates
 const val shouldMoveOldOutOfStockProductsToPrivate = false
+const val shouldUpdatePricesToEndIn99 = false
 const val shouldSwapDescriptions = false
 const val shouldUpdateProsforesProductTag = false
-const val shouldUpdateNeesAfikseisProductTag = true
-const val shouldUpdatePricesToEndIn99 = false
+const val shouldUpdateNeesAfikseisProductTag = false
 const val shouldAutomaticallyDeleteUnusedImages = false
+
+val allWooCommerceApiUpdateVariables = listOf(
+    shouldMoveOldOutOfStockProductsToPrivate,
+    shouldUpdatePricesToEndIn99,
+    shouldSwapDescriptions,
+    shouldUpdateProsforesProductTag,
+    shouldUpdateNeesAfikseisProductTag,
+)
 
 private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
 private const val MEDIA_LIBRARY_CACHE_FILE_PATH = "media_library_missing_files_cache.csv"
@@ -71,16 +79,16 @@ fun main() {
 
     val wordPressWriteCredentials =
         Base64.getEncoder().encodeToString("$wordPressUsername:$wordPressApplicationPassword".toByteArray())
-    val credentials =
-        if (readOnly && !shouldUpdatePricesToEndIn99 && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag
-            && !shouldUpdateNeesAfikseisProductTag && !shouldMoveOldOutOfStockProductsToPrivate
-        ) {
-            Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
-        } else {
-            Credentials.basic(
-                writeConsumerKey, writeConsumerSecret
-            )
-        }
+
+    if (!readOnly && (allWooCommerceApiUpdateVariables.any { it })) {
+        throw Exception("Something set for update but readOnly is set to 'false'")
+    }
+
+    val credentials = if (allWooCommerceApiUpdateVariables.any { it }) {
+        Credentials.basic(writeConsumerKey, writeConsumerSecret)
+    } else {
+        Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
+    }
 
     if (shouldCheckForLargeImagesOutsideMediaLibrary) {
         checkForLargeImagesOutsideMediaLibrary(
