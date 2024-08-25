@@ -1210,13 +1210,15 @@ private fun swapProductDescriptions(
 
 fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
     val today = LocalDate.now()
-    val eigthWeeksAgo = today.minusWeeks(8)
+    val sixWeeksAgo = today.minusWeeks(6)
     val formatter = DateTimeFormatter.ISO_DATE_TIME
     val neesAfikseisTag = Tag(id = 1555, slug = "nees-afikseis", name = "Νέες Αφίξεις")
-    
+    val excludedCategorySlug = "papoutsia"
+
     val newProductsInTheLast8Weeks = products.filter { product ->
         val productDate = LocalDate.parse(product.date_created, formatter)
-        productDate.isAfter(eigthWeeksAgo)
+        val isInExcludedCategory = product.categories.any { it.slug==excludedCategorySlug }
+        productDate.isAfter(sixWeeksAgo) && !isInExcludedCategory
     }.sortedByDescending { product ->
         LocalDate.parse(product.date_created, formatter)
     }
@@ -1224,8 +1226,12 @@ fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
     val finalNewProductsList = if (newProductsInTheLast8Weeks.size >= 80) {
         newProductsInTheLast8Weeks
     } else {
-        val additionalProducts = products.filter { product -> product !in newProductsInTheLast8Weeks }
-            .sortedByDescending { product -> LocalDate.parse(product.date_created, formatter) }
+        val additionalProducts = products.filter { product ->
+            val isInExcludedCategory = product.categories.any { it.slug==excludedCategorySlug }
+            product !in newProductsInTheLast8Weeks && !isInExcludedCategory
+        }.sortedByDescending { product ->
+            LocalDate.parse(product.date_created, formatter)
+        }
         newProductsInTheLast8Weeks + additionalProducts.take(80 - newProductsInTheLast8Weeks.size)
     }
 
