@@ -38,7 +38,7 @@ const val readOnly = true
 
 // Slow
 const val skipVariationChecks = true
-const val checkMediaLibraryChecks = true
+const val checkMediaLibraryChecks = false
 const val shouldCheckForInvalidDescriptions = false
 
 // Require manual input
@@ -48,6 +48,7 @@ const val shouldCheckForLargeImagesOutsideMediaLibrary = false
 const val shouldMoveOldOutOfStockProductsToPrivate = false
 const val shouldSwapDescriptions = false
 const val shouldUpdateProsforesProductTag = false
+const val shouldUpdateNeesAfikseisProductTag = true
 const val shouldUpdatePricesToEndIn99 = false
 const val shouldAutomaticallyDeleteUnusedImages = false
 
@@ -71,7 +72,9 @@ fun main() {
     val wordPressWriteCredentials =
         Base64.getEncoder().encodeToString("$wordPressUsername:$wordPressApplicationPassword".toByteArray())
     val credentials =
-        if (readOnly && !shouldUpdatePricesToEndIn99 && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag && !shouldMoveOldOutOfStockProductsToPrivate) {
+        if (readOnly && !shouldUpdatePricesToEndIn99 && !shouldSwapDescriptions && !shouldUpdateProsforesProductTag
+            && !shouldUpdateNeesAfikseisProductTag && !shouldMoveOldOutOfStockProductsToPrivate
+        ) {
             Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
         } else {
             Credentials.basic(
@@ -91,6 +94,9 @@ fun main() {
         if (checkMediaLibraryChecks) {
             val allMedia = checkForUnusedImagesInsideMediaLibrary(allProducts, wordPressWriteCredentials)
             checkForMissingFilesInsideMediaLibraryEntries(allMedia)
+        }
+        if (shouldUpdateNeesAfikseisProductTag) {
+            updateNeesAfikseisProducts(allProducts, credentials)
         }
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
@@ -122,7 +128,7 @@ fun main() {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
 //                        println("variation SKU: ${it.sku}")
-                        addTagForDiscountedProductsAndRemoveTagForRest(product, it, 30, credentials)
+                        addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 30, credentials)
                     }
                 }
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
@@ -1202,6 +1208,43 @@ private fun swapProductDescriptions(
     }
 }
 
+fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
+    val today = LocalDate.now()
+    val eigthWeeksAgo = today.minusWeeks(8)
+    val formatter = DateTimeFormatter.ISO_DATE_TIME
+    val neesAfikseisTag = Tag(id = 1555, slug = "nees-afikseis", name = "Νέες Αφίξεις")
+    
+    val newProductsInTheLast8Weeks = products.filter { product ->
+        val productDate = LocalDate.parse(product.date_created, formatter)
+        productDate.isAfter(eigthWeeksAgo)
+    }.sortedByDescending { product ->
+        LocalDate.parse(product.date_created, formatter)
+    }
+
+    val finalNewProductsList = if (newProductsInTheLast8Weeks.size >= 80) {
+        newProductsInTheLast8Weeks
+    } else {
+        val additionalProducts = products.filter { product -> product !in newProductsInTheLast8Weeks }
+            .sortedByDescending { product -> LocalDate.parse(product.date_created, formatter) }
+        newProductsInTheLast8Weeks + additionalProducts.take(80 - newProductsInTheLast8Weeks.size)
+    }
+
+    products.forEach { product ->
+        val hasNeesAfikseisTag = product.tags.any { it.slug==neesAfikseisTag.slug }
+        val shouldHaveNeesAfikseisTag = finalNewProductsList.contains(product)
+
+        when {
+            !hasNeesAfikseisTag && shouldHaveNeesAfikseisTag -> {
+                addNeesAfikseisTag(product, neesAfikseisTag, credentials)
+            }
+
+            hasNeesAfikseisTag && !shouldHaveNeesAfikseisTag -> {
+                removeNeesAfikseisTag(product, neesAfikseisTag, credentials)
+            }
+        }
+    }
+}
+
 private fun <T> executeWithRetry(action: () -> T): T {
     val maxRetries = 5
     val initialDelay = 1000L
@@ -1223,9 +1266,51 @@ private fun <T> executeWithRetry(action: () -> T): T {
     throw IOException("Failed after $maxRetries retries")
 }
 
-private fun addTagForDiscountedProductsAndRemoveTagForRest(
+fun addNeesAfikseisTag(product: Product, neesAfikseisTag: Tag, credentials: String) {
+    val updatedTags = product.tags.toMutableList().apply { add(neesAfikseisTag) }
+    val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+    val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
+
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string() ?: ""
+            if (!response.isSuccessful) {
+                println("Error adding 'nees-afikseis' tag to product ${product.id}: $responseBody")
+                throw IOException("Unexpected code $response")
+            } else {
+                println("Tag 'nees-afikseis' added to product ${product.id}")
+            }
+        }
+    }
+}
+
+fun removeNeesAfikseisTag(product: Product, neesAfikseisTag: Tag, credentials: String) {
+    val updatedTags = product.tags.filter { it.slug!=neesAfikseisTag.slug }
+    val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+    val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
+
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string() ?: ""
+            if (!response.isSuccessful) {
+                println("Error removing 'nees-afikseis' tag from product ${product.id}: $responseBody")
+                throw IOException("Unexpected code $response")
+            } else {
+                println("Tag 'nees-afikseis' removed from product ${product.id}")
+            }
+        }
+    }
+}
+
+
+private fun addProsforesTagForDiscountedProductsAndRemoveItForRest(
     product: Product, variation: Variation, addTagAboveThisDiscount: Int, credentials: String
 ) {
+    val prosforesTag = Tag(id = 1552, slug = "prosfores", name = "Προσφορές")
     val regularPrice = variation.regular_price.toDoubleOrNull()
     val salePrice = variation.sale_price.toDoubleOrNull()
     println("variation regular price $regularPrice")
@@ -1237,9 +1322,9 @@ private fun addTagForDiscountedProductsAndRemoveTagForRest(
         val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
         if (discountPercentage >= addTagAboveThisDiscount) {
             println("Adding tag 'prosfores'")
-            if (!product.tags.any { it.slug=="prosfores" }) {
+            if (!product.tags.any { it.slug==prosforesTag.slug }) {
                 val updatedTags = product.tags.toMutableList()
-                updatedTags.add(Tag(id = 1552, slug = "prosfores"))
+                updatedTags.add(prosforesTag)
                 val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
                 println("Updating product ${product.id} with tags: $data")
                 val body = data.toRequestBody("application/json".toMediaTypeOrNull())
@@ -1258,8 +1343,8 @@ private fun addTagForDiscountedProductsAndRemoveTagForRest(
             }
         } else {
             println("Removing tag 'prosfores'")
-            if (product.tags.any { it.slug=="prosfores" }) {
-                val updatedTags = product.tags.filter { it.slug!="prosfores" }
+            if (product.tags.any { it.slug==prosforesTag.slug }) {
+                val updatedTags = product.tags.filter { it.slug!=prosforesTag.slug }
                 val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
                 println("Updating product ${product.id} with tags: $data")
                 val body = data.toRequestBody("application/json".toMediaTypeOrNull())
