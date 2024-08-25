@@ -54,11 +54,10 @@ data class Media(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Tag(
     val id: Int? = null,
-    val name: String? = null,
+    val name: String ,
     val count: Int? = null,
-    val slug: String? = null,
+    val slug: String,
 )
-
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Variation(

@@ -79,7 +79,7 @@ fun main() {
     val wordPressWriteCredentials =
         Base64.getEncoder().encodeToString("$wordPressUsername:$wordPressApplicationPassword".toByteArray())
 
-    if (!readOnly && (allWooCommerceApiUpdateVariables.any { it })) {
+    if (readOnly && (allWooCommerceApiUpdateVariables.any { it })) {
         throw Exception("Something set for update but readOnly is set to 'false'")
     }
 
@@ -90,9 +90,7 @@ fun main() {
     }
 
     if (shouldCheckForLargeImagesOutsideMediaLibrary) {
-        checkForLargeImagesOutsideMediaLibrary(
-            wordPressApplicationPassword, credentials
-        )
+        checkForLargeImagesOutsideMediaLibrary(wordPressApplicationPassword, credentials)
     } else {
         val allProducts = fetchAllProducts(credentials)
 
@@ -110,7 +108,7 @@ fun main() {
             if (product.id==27948 || product.id==27947) {
                 continue
             }
-//            println("product SKU: ${product.sku}")
+//            println("DEBUG: product SKU: ${product.sku}")
             if (shouldCheckForInvalidDescriptions) {
                 checkForInvalidDescriptions(product, credentials)
             }
@@ -134,13 +132,13 @@ fun main() {
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
-//                        println("variation SKU: ${it.sku}")
+//                        println("DEBUG: variation SKU: ${it.sku}")
                         addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 30, credentials)
                     }
                 }
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 for (variation in productVariations) {
-//                    println("variation SKU: ${variation.sku}")
+//                    println("DEBUG: variation SKU: ${variation.sku}")
                     checkForMissingOrWrongPricesAndUpdateEndTo99(product, variation, credentials)
                     checkForInvalidSKUNumbers(product, variation)
                 }
@@ -559,9 +557,8 @@ fun checkForLargeImagesOutsideMediaLibrary(wordPressWriteCredentials: String, cr
 
     largeImages.forEach { imagePath ->
         val imageUrl = imagePath.replace("/home/www/webex29/foryoufashion.gr/www", "https://foryoufashion.gr")
-
         if (imageUrl !in allMediaUrls && imageUrl !in allProductImages) {
-            println("DEBUG: Unused image detected: $imagePath")
+            println("WARNING: Unused image detected: $imagePath")
         }
     }
 }
@@ -584,7 +581,7 @@ fun checkForMissingFilesInsideMediaLibraryEntries(allMedia: List<Media>) {
 
         if (isFileMissing) {
             println("WARNING: File missing for Media ID: ${media.id}, URL: ${media.source_url}")
-            println("https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit")
+            println("LINK: https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit")
 //            val desktop = Desktop.getDesktop()
 //            desktop.browse(URI("https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit"));
         }
@@ -633,7 +630,7 @@ private fun checkIfFileExists(url: String): Boolean {
 
 fun checkForUnusedImagesInsideMediaLibrary(allProducts: List<Product>, wordPressWriteCredentials: String): List<Media> {
     val allMedia = getAllNonRecentMedia(wordPressWriteCredentials)
-    println("Total media files: ${allMedia.size}")
+    println("DEBUG: Total media files: ${allMedia.size}")
 
     val allProductImages: Set<String> = allProducts.flatMap { it.images }.map { it.src }.toSet()
     println("DEBUG: Total product images: ${allProductImages.size}")
@@ -643,7 +640,7 @@ fun checkForUnusedImagesInsideMediaLibrary(allProducts: List<Product>, wordPress
         println("WARNING: Unused images in media library: ${unusedImages.size}")
     }
     unusedImages.forEach {
-        println("https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit")
+        println("LINK: https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit")
         if (shouldAutomaticallyDeleteUnusedImages) {
             deleteUnusedImage(it, wordPressWriteCredentials)
         }
@@ -662,10 +659,10 @@ fun deleteUnusedImage(unusedImage: Media, wordPressWriteCredentials: String) {
 
     client.newCall(request).execute().use { response ->
         if (response.isSuccessful) {
-            println("Successfully deleted unusedImage ID: ${unusedImage.id}")
+            println("ACTION: Successfully deleted unusedImage ID: ${unusedImage.id}")
         } else {
-            println("Failed to delete unusedImage ID: ${unusedImage.id}. Response code: ${response.code}")
-            println("Response message: ${response.message}")
+            println("ERROR: Failed to delete unusedImage ID: ${unusedImage.id}. Response code: ${response.code}")
+            println("ERROR: Response message: ${response.message}")
         }
     }
 }
@@ -690,7 +687,7 @@ fun getAllNonRecentMedia(wordPressWriteCredentials: String): List<Media> {
                     if (response.code==400 && errorBody?.contains("rest_post_invalid_page_number")==true) {
                         return@executeWithRetry emptyList<Media>()
                     } else {
-                        println("Error Response: $errorBody")
+                        println("ERROR: Error Response: $errorBody")
                         throw IOException("Unexpected code $response")
                     }
                 } else {
@@ -730,10 +727,10 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
         val ratio = dimensions.second.toDouble() / dimensions.first.toDouble()
         if (ratio > 1.51 || ratio < 1.49) {
             println("WARNING: Product ${product.sku} has the wrong resolution ratio")
-            println("Image width: ${dimensions.first}px")
-            println("Image height: ${dimensions.second}px")
-            println("Image URL: ${image.src}")
-            println("Image ratio: $ratio")
+            println("DEBUG: Image width: ${dimensions.first}px")
+            println("DEBUG: Image height: ${dimensions.second}px")
+            println("DEBUG: Image URL: ${image.src}")
+            println("DEBUG: Image ratio: $ratio")
             println(product.permalink)
         }
     }
@@ -749,9 +746,9 @@ fun checkForImagesWithTooLowResolution(product: Product) {
 
         if (dimensions.first < 1200) {
             println("WARNING: Product ${product.sku} has an image with too low resolution (width < 1200px).")
-            println("Image width: ${dimensions.first}px")
-            println("Image URL: ${image.src}")
-            println(product.permalink)
+            println("DEBUG: Image width: ${dimensions.first}px")
+            println("DEBUG: Image URL: ${image.src}")
+            println("LINK: ${product.permalink}")
         }
     }
     saveImageCache(cache)
@@ -768,9 +765,9 @@ fun checkForImagesWithTooHighResolution(product: Product) {
             }
             if (dimensions.first > 1500) {
                 println("WARNING: Product ${product.sku} has an image with too high resolution (width > 1500px).")
-                println("Image width: ${dimensions.first}px")
-                println("Image URL: ${image.src}")
-                println(product.permalink)
+                println("DEBUG: Image width: ${dimensions.first}px")
+                println("DEBUG: Image URL: ${image.src}")
+                println("LINK: ${product.permalink}")
             }
         }
         saveImageCache(cache)
@@ -782,7 +779,7 @@ fun checkForProductsInParentCategoryOnly(product: Product) {
     val productCategorySlugs = product.categories.map { it.slug }.toSet()
     if ((productCategorySlugs - parentCategories).isEmpty()) {
         println("WARNING: Product SKU ${product.sku} is only in parent categories but should be in a more specific sub-category.")
-        println(product.permalink)
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -799,12 +796,12 @@ fun checkForIncorrectPlusSizeCategorizationAndTagging(product: Product) {
 
     if ((inPlusSizeCategory || inPlusSizeForemataCategory) && !hasPlusSizeTag) {
         println("WARNING: Product SKU ${product.sku} is missing a plus size tag.")
-        println(product.permalink)
+        println("LINK: ${product.permalink}")
     }
 
     if (inPlusSizeCategory && !inOlosomesFormesCategory && !inPlusSizeForemataCategory) {
         println("WARNING: Product SKU ${product.sku} is in the plus category but it's not in olosomes formes or plus size foremata category")
-        println(product.permalink)
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -869,7 +866,7 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
 }
 
 fun checkForMissingSizeGuide(product: Product) {
-//    println(product.meta_data)
+    println("DEBUG: product meta data ${product.meta_data}")
     val metaData = product.meta_data
     val sizeGuideMetaData = metaData.find { it.key=="size_guide" }
     val isEmpty = if (sizeGuideMetaData!=null) {
@@ -882,7 +879,6 @@ fun checkForMissingSizeGuide(product: Product) {
         true
     }
     if (isEmpty) {
-//    println(product.meta_data)
         println("WARNING: No size guide for product with SKU ${product.sku}")
     }
 }
@@ -891,27 +887,27 @@ private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
     val title = product.name.replace("&amp", "&")
     if (title.isEmpty() || title.length < 20) {
         println("WARNING Product ${product.sku} has an empty or too short title: '$title'.")
-//        println(product.permalink)
+        println("LINK: ${product.permalink}")
     } else if (title.length > 65) {
         println("WARNING Product ${product.sku} has a too long title: '$title'.")
-        println(product.permalink)
+        println("LINK: ${product.permalink}")
     }
 }
 
 private fun checkForInvalidDescriptions(product: Product, credentials: String) {
-//    println("long description ${product.description}")
-//    println("short description ${product.short_description}")
+//    println("DEBUG: long description ${product.description}")
+//    println("DEBUG: short description ${product.short_description}")
     isValidHtml(product.short_description)
     isValidHtml(product.description)
     if (product.short_description.equals(product.description, ignoreCase = true)) {
         println("WARNING same short and long descriptions found for product: ${product.sku}")
-        println(product.permalink)
+        println("LINK: ${product.permalink}")
     }
     if (product.short_description.length > product.description.length) {
         println("WARNING short description longer than long description for product: ${product.sku}")
-        println(product.permalink)
-//        println("long description ${product.description}")
-//        println("short description ${product.short_description}")
+        println("LINK: ${product.permalink}")
+//        println("DEBUG: long description ${product.description}")
+//        println("DEBUG: short description ${product.short_description}")
         if (shouldSwapDescriptions) {
             swapProductDescriptions(product, credentials)
         }
