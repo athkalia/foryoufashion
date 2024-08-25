@@ -31,8 +31,14 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
+import readOnlyConsumerKey
+import readOnlyConsumerSecret
 import skuchecks.client
 import skuchecks.mapper
+import wordPressApplicationPassword
+import wordPressUsername
+import writeConsumerKey
+import writeConsumerSecret
 
 const val readOnly = true
 
@@ -70,13 +76,6 @@ private fun registerWebPReader() {
 }
 
 fun main() {
-    val readOnlyConsumerKey = ""
-    val readOnlyConsumerSecret = ""
-    val writeConsumerKey = ""
-    val writeConsumerSecret = ""
-    val wordPressUsername = ""
-    val wordPressApplicationPassword = ""
-
     val wordPressWriteCredentials =
         Base64.getEncoder().encodeToString("$wordPressUsername:$wordPressApplicationPassword".toByteArray())
 
