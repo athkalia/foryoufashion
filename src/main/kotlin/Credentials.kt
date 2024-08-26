@@ -1,0 +1,6 @@
+const val readOnlyConsumerKey = ""
+const val readOnlyConsumerSecret = ""
+const val writeConsumerKey = ""
+const val writeConsumerSecret = ""
+const val wordPressUsername = ""
+const val wordPressApplicationPassword = ""
