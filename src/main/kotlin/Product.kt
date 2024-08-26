@@ -5,7 +5,9 @@ import java.time.LocalDate
 data class Order(
     val id: Int,
     val date_created: String,
-    val status: String
+    val status: String,
+    val payment_method_title: String,
+    val payment_method: String
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
