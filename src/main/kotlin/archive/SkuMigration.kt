@@ -1,4 +1,4 @@
-package skuchecks
+package archive
 
 import JsonEntry
 import Product
@@ -6,7 +6,6 @@ import Variation
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import java.awt.Desktop
 import java.io.IOException
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -370,7 +369,7 @@ fun updateProductSKU(productId: Int, newSKU: String, credentials: String) {
 }
 
 
-fun getProducts(page: Int, credentials: String): List<Product> {
+private fun getProducts(page: Int, credentials: String): List<Product> {
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products?page=$page&per_page=100"
     val request = Request.Builder()
         .url(url)

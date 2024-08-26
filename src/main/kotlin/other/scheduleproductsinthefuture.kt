@@ -1,6 +1,7 @@
-package scheduleproductsinthefuture
+package other
 
 import Product
+import archive.client
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import okhttp3.Credentials
@@ -9,7 +10,6 @@ import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import skuchecks.client
 
 fun main() {
     val writeConsumerKey = ""

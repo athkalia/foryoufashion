@@ -1,4 +1,4 @@
-package comparepricesagainstlocaljson
+package archive
 
 import Product
 import Variation
@@ -10,8 +10,6 @@ import java.io.IOException
 import java.math.BigDecimal
 import okhttp3.Credentials
 import okhttp3.Request
-import skuchecks.client
-import skuchecks.mapper
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class LocalProduct(

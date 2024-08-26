@@ -1,7 +1,9 @@
-package swapdescriptions
+package other
 
 import Product
 import Variation
+import archive.client
+import archive.mapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.opencsv.CSVWriter
 import java.io.File
@@ -9,8 +11,6 @@ import java.io.FileWriter
 import java.io.IOException
 import okhttp3.Credentials
 import okhttp3.Request
-import skuchecks.client
-import skuchecks.mapper
 
 fun main() {
     val readOnlyConsumerKey = ""

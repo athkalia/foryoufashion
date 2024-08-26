@@ -11,6 +11,8 @@ import MediaCacheEntry
 import Product
 import Tag
 import Variation
+import archive.client
+import archive.mapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.twelvemonkeys.imageio.plugins.webp.WebPImageReaderSpi
 import java.time.LocalDate
@@ -33,8 +35,6 @@ import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
 import readOnlyConsumerKey
 import readOnlyConsumerSecret
-import skuchecks.client
-import skuchecks.mapper
 import wordPressApplicationPassword
 import wordPressUsername
 import writeConsumerKey
