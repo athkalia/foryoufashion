@@ -23,7 +23,8 @@ import readOnlyConsumerSecret
 fun main() {
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val orders = fetchAllOrders(credentials)
-
+    val groupedOrders = orders.map { it.status }.groupBy { it }
+    println("DEBUG: Grouped orders: $groupedOrders")
     println("DEBUG: Total orders fetched: ${orders.size}")
 
     val orderStatusMap = processOrdersByMonth(orders)
@@ -63,50 +64,54 @@ fun fetchAllOrders(credentials: String): List<Order> {
     }
 }
 
-fun processOrdersByMonth(orders: List<Order>): Map<String, Double> {
+fun processOrdersByMonth(orders: List<Order>): Map<String, Map<String, Double>> {
     val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
     val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
     val orderCountMap = mutableMapOf<String, Int>()
-    val cancellationCountMap = mutableMapOf<String, Int>()
+    val statusCountMaps = mutableMapOf<String, MutableMap<String, Int>>()
 
     orders.forEach { order ->
         val date = LocalDate.parse(order.date_created, dateFormatter)
         val month = monthFormatter.format(date)
         val status = order.status
 
-        // Count total orders and cancellations
+        // Count total orders
         orderCountMap.merge(month, 1) { oldValue, newValue -> oldValue + newValue }
-        if (status.equals("cancelled", ignoreCase = true)) {
-            cancellationCountMap.merge(month, 1) { oldValue, newValue -> oldValue + newValue }
+
+        if (status !in statusCountMaps) {
+            statusCountMaps[status] = mutableMapOf()
+        }
+        statusCountMaps[status]!!.merge(month, 1) { oldValue, newValue -> oldValue + newValue }
+    }
+
+    val statusPercentageMap = mutableMapOf<String, MutableMap<String, Double>>()
+
+    statusCountMaps.forEach { (status, countMap) ->
+        statusPercentageMap[status] = mutableMapOf()
+        countMap.forEach { (month, count) ->
+            val totalOrders = orderCountMap.getValue(month)
+            val percentage = (count.toDouble() / totalOrders.toDouble()) * 100
+            statusPercentageMap[status]!![month] = percentage
+        }
+    }
+    println("DEBUG: $orderCountMap")
+    return statusPercentageMap
+}
+
+fun plotOrders(statusPercentageMap: Map<String, Map<String, Double>>) {
+    val dataset = DefaultCategoryDataset()
+
+    statusPercentageMap.forEach { (status, percentageMap) ->
+        val sortedPercentageMap = percentageMap.toSortedMap()
+        sortedPercentageMap.forEach { (month, percentage) ->
+            dataset.addValue(percentage, "$status %", month)
         }
     }
 
-    // Calculate the cancellation percentage per month
-    val cancellationPercentageMap = mutableMapOf<String, Double>()
-    cancellationCountMap.forEach { (month, cancellations) ->
-        val totalOrders = orderCountMap.getValue(month)
-        val percentage = (cancellations.toDouble() / totalOrders.toDouble()) * 100
-        cancellationPercentageMap[month] = percentage
-    }
-    println("DEBUG: $cancellationCountMap")
-    println("DEBUG: $orderCountMap")
-    return cancellationPercentageMap
-}
-
-fun plotOrders(cancellationPercentageMap: Map<String, Double>) {
-    val dataset = DefaultCategoryDataset()
-
-    // Sort the map by the month key to ensure the order is correct on the x-axis
-    val sortedCancellationPercentageMap = cancellationPercentageMap.toSortedMap()
-
-    sortedCancellationPercentageMap.forEach { (month, percentage) ->
-        dataset.addValue(percentage, "Cancellation Percentage", month)
-    }
-
     val chart = ChartFactory.createLineChart(
-        "Order Cancellation Percentage Over Time (Grouped by Month)",
+        "Order Status Percentage Over Time (Grouped by Month)",
         "Month",
-        "Cancellation Percentage (%)",
+        "Order Status Percentage (%)",
         dataset,
         PlotOrientation.VERTICAL,
         true,
@@ -119,7 +124,7 @@ fun plotOrders(cancellationPercentageMap: Map<String, Double>) {
     val domainAxis = categoryPlot.domainAxis as CategoryAxis
     domainAxis.categoryLabelPositions = CategoryLabelPositions.UP_45
 
-    val chartFile = File("order_cancellation_percentage_by_month.png")
+    val chartFile = File("order_status_percentage_by_month.png")
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
 }
 
@@ -148,8 +153,8 @@ fun processPaymentMethods(orders: List<Order>): Map<String, Map<String, Double>>
         val monthMap = paymentMethodCountMap.getOrPut(month) { mutableMapOf() }
         monthMap.merge(paymentMethod, 1) { oldValue, newValue -> oldValue + newValue }
         totalOrdersPerMonthMap.merge(month, 1) { oldValue, newValue -> oldValue + newValue }
-        println("DEBUG: Payment types: $differentPaymentTypes")
     }
+    println("DEBUG: Payment types: $differentPaymentTypes")
 
     // Convert counts to percentages
     val paymentMethodPercentageMap = mutableMapOf<String, MutableMap<String, Double>>()
