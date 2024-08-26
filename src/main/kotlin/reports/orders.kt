@@ -86,6 +86,8 @@ fun processOrdersByMonth(orders: List<Order>): Map<String, Double> {
         val percentage = (cancellations.toDouble() / totalOrders.toDouble()) * 100
         cancellationPercentageMap[month] = percentage
     }
+    println("DEBUG: $cancellationCountMap")
+    println("DEBUG: $orderCountMap")
     return cancellationPercentageMap
 }
 
