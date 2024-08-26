@@ -20,6 +20,7 @@ dependencies {
     implementation("com.opencsv:opencsv:5.5.2")
     implementation("javax.xml.bind:jaxb-api:2.3.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
+    implementation("org.jfree:jfreechart:1.5.3")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 }

@@ -30,7 +30,7 @@ fun main() {
     println("Total draft products: ${draftProducts.size}")
 
     // Determine the scheduling interval to fit all products within 3 weeks (21 days)
-    val totalDays = 21
+    val totalDays = 4
     val intervalDays = if (draftProducts.size <= totalDays) 1 else totalDays.toDouble() / draftProducts.size
 
     // Get the last publish date (if any) or start from today

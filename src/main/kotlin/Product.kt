@@ -2,6 +2,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.LocalDate
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+data class Order(
+    val id: Int,
+    val date_created: String,
+    val status: String
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Product(
     val id: Int,
     val name: String,
@@ -54,7 +61,7 @@ data class Media(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Tag(
     val id: Int? = null,
-    val name: String ,
+    val name: String,
     val count: Int? = null,
     val slug: String,
 )

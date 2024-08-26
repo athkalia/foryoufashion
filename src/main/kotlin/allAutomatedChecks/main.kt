@@ -117,8 +117,8 @@ fun main() {
             checkForImagesWithTooLowResolution(product)
             checkForImagesWithTooHighResolution(product)
             checkForImagesWithIncorrectWidthHeightRatio(product)
-            checkForNonSizeAttributesUsedForVariations(product)
-            checkForStockManagementAtProductLevel(product)
+            checkForNonSizeAttributesUsedForVariationsEgColour(product)
+            checkForStockManagementAtProductLevelOutOfVariations(product)
             checkForEmptyOrShortTitlesOrLongTitles(product)
             checkForMissingSizeGuide(product)
             checkForDraftProducts(product)
@@ -922,9 +922,9 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
     }
 }
 
-private fun checkForStockManagementAtProductLevel(product: Product) {
+private fun checkForStockManagementAtProductLevelOutOfVariations(product: Product) {
     if (product.variations.isNotEmpty() && product.manage_stock) {
-        println("WARNING Product ${product.sku} is a variable product with stock management at the product level.")
+        println("WARNING Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level")
     }
 }
 
@@ -1442,7 +1442,7 @@ private fun checkProductTags(credentials: String) {
     }
 }
 
-private fun checkForNonSizeAttributesUsedForVariations(product: Product) {
+private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product) {
     product.attributes.let { attributes ->
         attributes.forEach { attribute ->
             if (!attribute.name.equals("Μέγεθος", ignoreCase = true) && attribute.variation) {
