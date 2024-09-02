@@ -17,6 +17,7 @@ data class Plugin(val name: String, val version: String)
 data class Product(
     val id: Int,
     val name: String,
+    val slug: String,
     val variations: List<Int>,
     val sku: String,
     val status: String,

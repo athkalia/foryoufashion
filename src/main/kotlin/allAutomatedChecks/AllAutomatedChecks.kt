@@ -116,6 +116,7 @@ fun main() {
             if (shouldCheckForInvalidDescriptions) {
                 checkForInvalidDescriptions(product, credentials)
             }
+            checkForGreekCharactersInSlug(product)
             checkForMissingImages(product)
             checkForNonPortraitImagesWithCache(product)
             checkForImagesWithTooLowResolution(product)
@@ -151,6 +152,14 @@ fun main() {
         checkProductCategories(credentials)
         checkProductAttributes(credentials)
         checkProductTags(credentials)
+    }
+}
+
+fun checkForGreekCharactersInSlug(product: Product) {
+    val greekCharRegex = Regex("[\u0370-\u03FF\u1F00-\u1FFF]")
+    if (greekCharRegex.containsMatchIn(product.slug)) {
+        println("WARNING: Product SKU ${product.sku} has a slug containing Greek characters.")
+//        println("LINK: ${product.permalink}")
     }
 }
 
