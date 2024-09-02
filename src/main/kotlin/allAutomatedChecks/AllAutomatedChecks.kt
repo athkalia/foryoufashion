@@ -8,11 +8,13 @@ import AttributeTerm
 import Category
 import Media
 import MediaCacheEntry
+import Plugin
 import Product
 import Tag
 import Variation
 import archive.client
 import archive.mapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.twelvemonkeys.imageio.plugins.webp.WebPImageReaderSpi
 import java.time.LocalDate
@@ -69,6 +71,7 @@ val allWooCommerceApiUpdateVariables = listOf(
 private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
 private const val MEDIA_LIBRARY_CACHE_FILE_PATH = "media_library_missing_files_cache.csv"
 private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+private const val PLUGINS_FILE_PATH = "installed_plugins.json"
 
 private fun registerWebPReader() {
     val registry = IIORegistry.getDefaultInstance()
@@ -96,6 +99,7 @@ fun main() {
 
         println("DEBUG: Total products fetched: ${allProducts.size}")
 
+        checkPluginsList(wordPressWriteCredentials)
         if (checkMediaLibraryChecks) {
             val allMedia = checkForUnusedImagesInsideMediaLibrary(allProducts, wordPressWriteCredentials)
             checkForMissingFilesInsideMediaLibraryEntries(allMedia)
@@ -822,11 +826,10 @@ fun checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product: P
 
 fun checkForDraftProducts(product: Product) {
     if (product.status.equals("draft", ignoreCase = true)) {
-        println("WARNING Product SKU ${product.sku} is draft.")
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-        val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
+        val productLastModificationDate = LocalDate.parse(product.date_modified, dateFormatter)
         val oneMonthAgo = LocalDate.now().minus(1, ChronoUnit.MONTHS)
-        if (productCreationDate.isBefore(oneMonthAgo)) {
+        if (productLastModificationDate.isBefore(oneMonthAgo)) {
             println("WARNING: Product SKU ${product.sku} has been in draft status for more than 1 month.")
         }
     }
@@ -847,6 +850,9 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
 }
 
 fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
+    if (product.status!="publish") {
+        return
+    }
     // Define the target date
     val startingCheckDate = LocalDate.of(2024, Month.AUGUST, 9)
     val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -866,7 +872,7 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
 }
 
 fun checkForMissingSizeGuide(product: Product) {
-    println("DEBUG: product meta data ${product.meta_data}")
+//    println("DEBUG: product meta data ${product.meta_data}")
     val metaData = product.meta_data
     val sizeGuideMetaData = metaData.find { it.key=="size_guide" }
     val isEmpty = if (sizeGuideMetaData!=null) {
@@ -1495,5 +1501,67 @@ private fun updateProductStatusToPrivate(
         } else {
             println("Successfully updated product ${product.sku} status to 'private'.")
         }
+    }
+}
+
+fun checkPluginsList(wordPressWriteCredentials: String) {
+    val plugins = fetchInstalledPlugins(wordPressWriteCredentials)
+    val pluginsFile = File(PLUGINS_FILE_PATH)
+    if (!pluginsFile.exists()) {
+        savePluginsToFile(plugins, pluginsFile)
+        println("ACTION: Plugins file created with the current list of installed plugins.")
+    } else {
+        val storedPlugins = loadPluginsFromFile(pluginsFile)
+        checkForPluginChanges(storedPlugins, plugins, pluginsFile)
+    }
+}
+
+fun fetchInstalledPlugins(wordPressWriteCredentials: String): List<Plugin> {
+    val url = "https://foryoufashion.gr/wp-json/wp/v2/plugins"
+    val client = OkHttpClient()
+    val request = Request.Builder()
+        .url(url)
+        .header("Authorization", "Basic $wordPressWriteCredentials")
+        .build()
+
+    return client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) throw IOException("Unexpected code $response")
+        jacksonObjectMapper().readValue(response.body?.string() ?: "")
+    }
+}
+
+fun savePluginsToFile(plugins: List<Plugin>, file: File) {
+    file.writeText(jacksonObjectMapper().writeValueAsString(plugins))
+}
+
+fun loadPluginsFromFile(file: File): List<Plugin> {
+    return jacksonObjectMapper().readValue(file)
+}
+
+fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plugin>, pluginsFile: File) {
+    val newPlugins = currentPlugins.filterNot { plugin ->
+        storedPlugins.any { stored -> stored.name==plugin.name }
+    }
+
+    val deletedPlugins = storedPlugins.filterNot { stored ->
+        currentPlugins.any { plugin -> plugin.name==stored.name }
+    }
+
+    val updatedPlugins = currentPlugins.filter { current ->
+        storedPlugins.any { stored -> stored.name==current.name && stored.version!=current.version }
+    }
+    if (newPlugins.isNotEmpty()) {
+        println("WARNING: The following plugins have been installed:")
+        newPlugins.forEach { println("- ${it.name} v${it.version}") }
+    }
+
+    if (deletedPlugins.isNotEmpty()) {
+        println("WARNING: The following plugins have been deleted:")
+        deletedPlugins.forEach { println("- ${it.name} v${it.version}") }
+    }
+
+    if (updatedPlugins.isNotEmpty()) {
+        println("WARNING: The following plugins have been updated:")
+        updatedPlugins.forEach { println("- ${it.name} updated to v${it.version}") }
     }
 }

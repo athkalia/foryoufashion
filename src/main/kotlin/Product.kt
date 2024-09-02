@@ -11,6 +11,9 @@ data class Order(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+data class Plugin(val name: String, val version: String)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Product(
     val id: Int,
     val name: String,
@@ -29,6 +32,7 @@ data class Product(
     val tags: List<Tag>,
     val attributes: List<Attribute>,
     val date_created: String? = null,
+    val date_modified: String? = null,
     val meta_data: List<MetaData>,
     val categories: List<Category>
 )
