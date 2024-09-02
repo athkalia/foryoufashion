@@ -6,6 +6,7 @@ import okhttp3.Request
 import okhttp3.Credentials
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import java.awt.BasicStroke
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.jfree.chart.ChartFactory
@@ -17,6 +18,8 @@ import org.jfree.data.category.DefaultCategoryDataset
 import java.io.File
 import java.io.IOException
 import org.apache.commons.text.StringEscapeUtils
+import org.jfree.chart.plot.CategoryPlot
+import org.jfree.chart.renderer.category.LineAndShapeRenderer
 import readOnlyConsumerKey
 import readOnlyConsumerSecret
 
@@ -124,8 +127,20 @@ fun plotOrders(statusPercentageMap: Map<String, Map<String, Double>>) {
     val domainAxis = categoryPlot.domainAxis as CategoryAxis
     domainAxis.categoryLabelPositions = CategoryLabelPositions.UP_45
 
+    thickenLines(categoryPlot, dataset)
     val chartFile = File("order_status_percentage_by_month.png")
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
+}
+
+private fun thickenLines(
+    categoryPlot: CategoryPlot,
+    dataset: DefaultCategoryDataset
+) {
+    val renderer = categoryPlot.renderer as LineAndShapeRenderer
+    val seriesCount = dataset.rowCount
+    for (i in 0 until seriesCount) {
+        renderer.setSeriesStroke(i, BasicStroke(3.0f))
+    }
 }
 
 fun processPaymentMethods(orders: List<Order>): Map<String, Map<String, Double>> {
@@ -138,9 +153,8 @@ fun processPaymentMethods(orders: List<Order>): Map<String, Map<String, Double>>
     orders.forEach { order ->
         val date = LocalDate.parse(order.date_created, dateFormatter)
         val month = monthFormatter.format(date)
-
-        val decodedPaymentMethod = StringEscapeUtils.unescapeJava(order.payment_method)
-        val paymentMethod = when (decodedPaymentMethod) {
+//            println("DEBUG: Order payment method: ${order.payment_method} payment method title: ${order.payment_method_title}")
+        val paymentMethod = when (StringEscapeUtils.unescapeJava(order.payment_method)) {
             "stripe_applepay" -> "Apple Pay (Stripe)"
             "stripe_googlepay" -> "Google Pay (Stripe)"
             else -> when (order.payment_method_title) {
@@ -154,7 +168,8 @@ fun processPaymentMethods(orders: List<Order>): Map<String, Map<String, Double>>
         monthMap.merge(paymentMethod, 1) { oldValue, newValue -> oldValue + newValue }
         totalOrdersPerMonthMap.merge(month, 1) { oldValue, newValue -> oldValue + newValue }
     }
-    println("DEBUG: Payment types: $differentPaymentTypes")
+//    println("DEBUG: Payment types: $differentPaymentTypes")
+//    println("DEBUG: Payments map: $totalOrdersPerMonthMap")
 
     // Convert counts to percentages
     val paymentMethodPercentageMap = mutableMapOf<String, MutableMap<String, Double>>()
@@ -166,13 +181,12 @@ fun processPaymentMethods(orders: List<Order>): Map<String, Map<String, Double>>
             percentageMap[paymentMethod] = percentage
         }
     }
-
+//    println("DEBUG: Payments percentage map: $paymentMethodPercentageMap")
     return paymentMethodPercentageMap
 }
 
 fun plotPaymentMethods(paymentMethodPercentageMap: Map<String, Map<String, Double>>) {
     val dataset = DefaultCategoryDataset()
-
     val sortedPaymentMethodPercentageMap = paymentMethodPercentageMap.toSortedMap()
 
     sortedPaymentMethodPercentageMap.forEach { (month, paymentMethods) ->
@@ -197,6 +211,7 @@ fun plotPaymentMethods(paymentMethodPercentageMap: Map<String, Map<String, Doubl
     val domainAxis = categoryPlot.domainAxis as CategoryAxis
     domainAxis.categoryLabelPositions = CategoryLabelPositions.UP_45
 
+    thickenLines(categoryPlot, dataset)
     val chartFile = File("payment_method_percentage_distribution.png")
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
 }
