@@ -11,7 +11,17 @@ data class Order(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class Plugin(val name: String, val version: String)
+data class Plugin(
+    val name: String,
+    val version: String,
+    val status: String,
+    val description: Description
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Description(
+        val rendered: String
+    )
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Product(

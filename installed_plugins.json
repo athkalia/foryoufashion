@@ -1,0 +1,614 @@
+[
+  {
+    "name": "Add Featured Videos in Product Gallery for WooCommerce",
+    "version": "1.3.1",
+    "status": "active",
+    "description": {
+      "rendered": "Display product featured video on product and shop page.Add videos in product gallery and videos bar. <cite>By FME ADDONS.</cite>"
+    },
+    "sakis_description": "Added by me to add videos in products"
+  },
+  {
+    "name": "Advanced Custom Fields: Table Field",
+    "version": "1.3.24",
+    "status": "active",
+    "description": {
+      "rendered": "This free Add-on adds a table field type for the Advanced Custom Fields plugin. <cite>By <a href=\"http://www.johannheyne.de/\">Johann Heyne</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Advanced Custom Fields PRO",
+    "version": "6.3.6",
+    "status": "active",
+    "description": {
+      "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "AfterShip Tracking - All-In-One WooCommerce Order Tracking (Free plan available)",
+    "version": "1.17.15",
+    "status": "active",
+    "description": {
+      "rendered": "Track orders in one place. shipment tracking, automated notifications, order lookup, branded tracking page, delivery day prediction <cite>By <a href=\"http://aftership.com\">AfterShip</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "B2BKing Core",
+    "version": "4.7.10",
+    "status": "inactive",
+    "description": {
+      "rendered": "B2BKing is the complete solution for turning WooCommerce into an enterprise-level B2B e-commerce platform. Core Plugin. <cite>By <a href=\"http://webwizards.dev\">WebWizards</a>.</cite>"
+    },
+    "sakis_description": "Old b2b plugin"
+  },
+  {
+    "name": "B2BKing Pro",
+    "version": "4.5.30",
+    "status": "inactive",
+    "description": {
+      "rendered": "B2BKing is the complete solution for turning WooCommerce into an enterprise-level B2B e-commerce platform. <cite>By <a href=\"http://webwizards.dev\">WebWizards</a>.</cite>"
+    },
+    "sakis_description": "Old b2b plugin"
+  },
+  {
+    "name": "Category Order and Taxonomy Terms Order",
+    "version": "1.8.2",
+    "status": "active",
+    "description": {
+      "rendered": "Order Categories and all custom taxonomies terms (hierarchically) and child terms using a Drag and Drop Sortable javascript capability. <cite>By <a href=\"https://www.nsp-code.com\">Nsp-Code</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Classic Editor",
+    "version": "1.6.4",
+    "status": "active",
+    "description": {
+      "rendered": "Ενεργοποιεί τον κλασικό κειμενογράφο του WordPress και την δική του (TinyMCE, μετα κουτιά, κλπ.) διάταξη της οθόνης επεξεργασίας κειμένων. Υποστηρίζει τα παλαιότερα πρόσθετα που επεκτείνουν τις δυνατότητες επεξεργασίας. <cite>By <a href=\"https://github.com/WordPress/classic-editor/\">Συντελεστές WordPress</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Classic Widgets",
+    "version": "0.3",
+    "status": "active",
+    "description": {
+      "rendered": "Ενεργοποιεί τις κλασικές οθόνες ρυθμίσεων μικροεφαρμογών στο Εμφάνιση &#8211; Μικροεφαρμογές και στον Προσαρμογέα. Απενεργοποιεί τον Επεξεργαστή Μπλοκ για τη διαχείριση μικροεφαρμογών. <cite>By <a href=\"https://github.com/WordPress/classic-widgets/\">Συντελεστές WordPress</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Cloudflare",
+    "version": "4.12.8",
+    "status": "active",
+    "description": {
+      "rendered": "Cloudflare speeds up and protects your WordPress site. <cite>By Cloudflare, Inc..</cite>"
+    },
+    "sakis_description": ""
+  },
+  {
+    "name": "CTX Feed",
+    "version": "6.5.16",
+    "status": "active",
+    "description": {
+      "rendered": "Easily generate woocommerce product feed for any marketing channel like Google Shopping(Merchant), Facebook Remarketing, Bing, eBay &amp; more. Support 100+ Merchants. <cite>By <a href=\"https://webappick.com/\">WebAppick</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "ΕΛΤΑ Courier Voucher for WooCommerce",
+    "version": "1.0.39",
+    "status": "active",
+    "description": {
+      "rendered": "Το ΕΛΤΑ Voucher for WooCommerce σας επιτρέπει να δημιουργείτε/εκδίδετε και ελέγχετε τα voucher αποστολής για την ΕΛΤΑ <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "EWWW Image Optimizer",
+    "version": "7.8.0",
+    "status": "active",
+    "description": {
+      "rendered": "Smaller Images, Faster Sites, Happier Visitors. Comprehensive image optimization that doesn&#8217;t require a degree in rocket science. <cite>By <a href=\"https://ewww.io/\">Exactly WWW</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "First Order Discount Woocommerce",
+    "version": "1.22",
+    "status": "inactive",
+    "description": {
+      "rendered": "&#8220;First Order Discount Woocommerce&#8221; allows administrator to offer customers tempting promotions on their first purchase. Admin can offer either flat discount in terms of money or offer some products for free. <cite>By <a href=\"https://quanticedge.co.in/?utm-source=free-plugin&#038;utm-medium=wooextend\">QuanticEdge</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Google Analytics for WooCommerce",
+    "version": "2.1.6",
+    "status": "active",
+    "description": {
+      "rendered": "Allows Google Analytics tracking code to be inserted into WooCommerce store pages. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Hide Admin Notices",
+    "version": "2.1",
+    "status": "active",
+    "description": {
+      "rendered": "New &amp; improved! Hide – or show – WordPress Dashboard Notices, Messages, Update Nags etc. &#8230; for everything! <cite>By <a href=\"https://pontetlabs.com\">PontetLabs</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Hotjar",
+    "version": "1.0.16",
+    "status": "active",
+    "description": {
+      "rendered": "The fast &amp; visual way to understand your users. <cite>By <a href=\"https://www.hotjar.com/?utm_source=wordpress&#038;utm_medium=plugin\">Hotjar</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "InfiniteWP - Client",
+    "version": "1.13.0",
+    "status": "active",
+    "description": {
+      "rendered": "This is the client plugin of InfiniteWP that communicates with the InfiniteWP Admin panel. <cite>By <a href=\"http://www.revmakx.com\">Revmakx</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Jetpack",
+    "version": "13.7",
+    "status": "active",
+    "description": {
+      "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Jetpack VideoPress",
+    "version": "1.9",
+    "status": "active",
+    "description": {
+      "rendered": "High quality, ad-free video. <cite>By <a href=\"https://jetpack.com/videopress/\">Automattic - Jetpack Video team</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Klarna Order Management for WooCommerce",
+    "version": "1.9.2",
+    "status": "active",
+    "description": {
+      "rendered": "Provides order management for Klarna Payments and Klarna Checkout gateways. <cite>By <a href=\"https://krokedil.se/\">klarna, krokedil</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Klarna Payments for WooCommerce",
+    "version": "3.6.1",
+    "status": "active",
+    "description": {
+      "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Linked Variation for WooCommerce",
+    "version": "1.0.5",
+    "status": "inactive",
+    "description": {
+      "rendered": "This is a helper plugin of WooCommerce built to link separate products together by attributes. <cite>By <a href=\"https://raazon.com/\">Razon Komar Pal</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "MC4WP: Mailchimp for WordPress",
+    "version": "4.9.15",
+    "status": "active",
+    "description": {
+      "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Media Cleaner (Pro)",
+    "version": "6.7.7",
+    "status": "active",
+    "description": {
+      "rendered": "Clean your WordPress! Eliminate unused and broken media files. For a faster, and better website. <cite>By <a href=\"https://jordymeow.com\">Jordy Meow</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Payment Gateway Based Fees and Discounts for WooCommerce",
+    "version": "2.13.0",
+    "status": "inactive",
+    "description": {
+      "rendered": "Set payment gateways fees and discounts in WooCommerce. <cite>By <a href=\"https://www.tychesoftwares.com/\">Tyche Softwares</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Payment Plugins for Stripe WooCommerce",
+    "version": "3.3.75",
+    "status": "active",
+    "description": {
+      "rendered": "Accept Credit Cards, Google Pay, Apple Pay, ACH, Klarna and more using Stripe. <cite>By Payment Plugins, support@paymentplugins.com.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Piraeus Bank WooCommerce Payment Gateway",
+    "version": "2.0.7",
+    "status": "inactive",
+    "description": {
+      "rendered": "Piraeus Bank Payment Gateway allows you to accept payment through various channels such as Maestro, Mastercard, AMex cards, Diners  and Visa cards On your Woocommerce Powered Site. <cite>By <a href=\"https://www.papaki.com\">Papaki</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Pixel Caffeine",
+    "version": "2.1.3",
+    "status": "active",
+    "description": {
+      "rendered": "The simplest and easiest way to manage your Facebook Pixel. Create laser focused custom audiences on WordPress for 100% free. <cite>By <a href=\"https://adespresso.com/\">AdEspresso</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Product Feed on WooCommerce for Google, Awin, Shareasale, Bing, and More",
+    "version": "3.5.7",
+    "status": "inactive",
+    "description": {
+      "rendered": "WooCommerce Product Feed Export :: <a href=\"http://www.exportfeed.com/tos/\">How-To Click Here</a> <cite>By <a href=\"http://www.exportfeed.com\">ExportFeed.com</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Query Monitor",
+    "version": "3.16.4",
+    "status": "inactive",
+    "description": {
+      "rendered": "The developer tools panel for WordPress. <cite>By <a href=\"https://querymonitor.com/\">John Blackbourn</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Redirection",
+    "version": "5.5.0",
+    "status": "active",
+    "description": {
+      "rendered": "Manage all your 301 redirects and monitor 404 errors <cite>By John Godley.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Redis Object Cache",
+    "version": "2.5.3",
+    "status": "active",
+    "description": {
+      "rendered": "A persistent object cache backend powered by Redis. Supports Predis, PhpRedis, Relay, replication, sentinels, clustering and WP-CLI. <cite>By <a href=\"https://objectcache.pro/?ref=oss&#038;utm_source=wp-plugin&#038;utm_medium=author\">Till Krüss</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Regenerate Thumbnails",
+    "version": "3.1.6",
+    "status": "active",
+    "description": {
+      "rendered": "Αναδημιουργήστε τις μικρογραφίες για μία ή περισσότερες εικόνες. Χρήσιμο όταν αλλάζετε τα μεγέθη τους ή το θέμα εμφάνιση του ιστοτόπου σας. <cite>By <a href=\"https://alex.blog/\">Alex Mills (Viper007Bond)</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Relevanssi Premium",
+    "version": "2.25.2",
+    "status": "active",
+    "description": {
+      "rendered": "This premium plugin replaces WordPress search with a relevance-sorting search. <cite>By <a href=\"https://www.mikkosaari.fi/\">Mikko Saari</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Smash Balloon Instagram Feed",
+    "version": "6.5.0",
+    "status": "active",
+    "description": {
+      "rendered": "Display beautifully clean, customizable, and responsive Instagram feeds. <cite>By <a href=\"https://smashballoon.com/\">Smash Balloon</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Timologio for WooCommerce",
+    "version": "2.1.29",
+    "status": "active",
+    "description": {
+      "rendered": "Το πρόσθετο Web Expert Timologio for WooCommerce προσθέτει δυνατότητα επιλογής απόδειξης/τιμολογίου κατά την ολοκλήρωση παραγγελίας. Προαιρετικά ενσωματώνει δυνατότητα απαλλαγής λόγω VIES ή ΠΟΛ.1150/2017. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "TI WooCommerce Wishlist",
+    "version": "2.8.2",
+    "status": "active",
+    "description": {
+      "rendered": "Λειτουργικότητα λίστας επιθυμιών για το κατάστημα WooCommerce. <cite>By <a href=\"https://templateinvaders.com/\">TemplateInvaders</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WC Hide Shipping Methods",
+    "version": "1.8",
+    "status": "inactive",
+    "description": {
+      "rendered": "Hides other shipping methods when &#8220;Free shipping&#8221; is available. <cite>By <a href=\"https://profiles.wordpress.org/rynald0s/\">Rynaldo Stoltz</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert Core",
+    "version": "1.0.59",
+    "status": "active",
+    "description": {
+      "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert - Αξιολόγηση καταστήματος",
+    "version": "2.0.3",
+    "status": "active",
+    "description": {
+      "rendered": "Το πρόσθετο Web Expert Customer Review plugin στέλνει ένα email αξιολόγησης καταστήματος στον πελάτη, έπειτα από ένα επιλεγμένο αριθμό ημερών, εφόσον η παραγγελία του έχει ολοκληρωθεί. Το email που αποστέλλεται περιέχει συνδέσμους όπως Skroutz, BestPrice, Facebook και Google. <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert Greeklish Permalinks",
+    "version": "1.0.3",
+    "status": "active",
+    "description": {
+      "rendered": "Automatically convert any greek characters to proper latin (Greeklish), based on Google&#8217;s SEO results. <cite>By <a href=\"http://www.webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Μεταφορικά βάσει Ελληνικών Νομών από την Web Expert",
+    "version": "1.0.7",
+    "status": "active",
+    "description": {
+      "rendered": "Web Expert Greek States Based Shipping helps you define different shipping rates and zones, based on Greek States. <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert Piraeus Bank WooCommerce Payment Gateway",
+    "version": "1.0.52",
+    "status": "active",
+    "description": {
+      "rendered": "Web Expert Piraeus Bank WooCommerce Payment Gateway allows you to accept payments through various credit cards such as Maestro, Mastercard, and Visa on your Woocommerce Site. <cite>By <a href=\"http://www.webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert SoftOne ERP Bridge",
+    "version": "1.0.68",
+    "status": "active",
+    "description": {
+      "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert SoftOne ERP Bridge (For U)",
+    "version": "1.0.0",
+    "status": "active",
+    "description": {
+      "rendered": "This is the main ERP bridge file for Soft1 to WooCommerce. <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert WooCommerce Blacklist",
+    "version": "1.0.5",
+    "status": "active",
+    "description": {
+      "rendered": "Το πρόσθετο σας επιτρέπει να αποκρύψετε ορισμένες πύλες πληρωμής από χρήστες με συγκεκριμένα κριτήρια. Για παράδειγμα, μπορείτε να απενεργοποιήσετε την Αντικαταβολή για συγκεκριμένους χρήστες ή αριθμούς τηλεφώνου. <cite>By <a href=\"https://webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert WooCommerce Google Merchant Product Data Feed",
+    "version": "1.0.5",
+    "status": "active",
+    "description": {
+      "rendered": "Το Web Expert WooCommerce Google Merchant Product Data Feed είναι ένα πρόσθετο για το WooCommerce που δημιουργεί έγκυρη ροή δεδομένων για το Google Merchant. <cite>By <a href=\"http://www.webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Web Expert WooCommerce Order Tracking",
+    "version": "1.0.28",
+    "status": "active",
+    "description": {
+      "rendered": "Το πρόσθετο Web Expert WooCommerce Order Tracking σας επιτρέπει να στέλνετε ένα αυτοματοποιημένο email στον πελάτη, με αριθμό αποστολής και σύνδεσμο παρακολούθησης. Το πρόσθετο μπορεί να χρησιμοποιηθεί με το Web Expert WooCommerce SMS για να στέλνετε τον αριθμό παρακολούθησης και μέσω SMS. <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Woo Back In Stock Notifications",
+    "version": "1.7.1",
+    "status": "active",
+    "description": {
+      "rendered": "Ειδοποιήστε τους πελάτες σας όταν τα αγαπημένα τους προϊόντα είναι ξανά διαθέσιμα. <cite>By <a href=\"https://woocommerce.com/\">Woo</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce",
+    "version": "9.1.2",
+    "status": "active",
+    "description": {
+      "rendered": "Μια e-commerce πλατφόρμα που θα σας βοηθήσει να πουλήσετε τα πάντα. Όμορφα. <cite>By <a href=\"https://woocommerce.com\">Automattic</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce.com Update Manager",
+    "version": "1.0.3",
+    "status": "active",
+    "description": {
+      "rendered": "Receive updates and streamlined support included in your Woo.com subscriptions. <cite>By <a href=\"https://woocommerce.com/\">Automattic</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce added to cart popup (Ajax)",
+    "version": "1.7",
+    "status": "active",
+    "description": {
+      "rendered": "Το WooCommerce Add στο Cart Popup εμφανίζει ένα αναδυόμενο παράθυρο όταν προστίθεται ένα προϊόν στο καλάθι χωρίς να ανανεώνει τη σελίδα <cite>By <a href=\"http://xootix.com\">XootiX</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce Advanced Bulk Edit",
+    "version": "5.4.2.3",
+    "status": "active",
+    "description": {
+      "rendered": "Edit your products both individually or in bulk. <cite>By <a href=\"https://wpmelon.com\">George Iron &amp; Yas G.</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce Advanced Shipping",
+    "version": "1.1.2",
+    "status": "active",
+    "description": {
+      "rendered": "With Advanced Shipping for WooCommerce setting up conditional shipping rates is easier and more flexible than ever! <cite>By <a href=\"https://jeroensormani.com/\">Jeroen Sormani</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce AJAX Products Filter",
+    "version": "3.1.4.6",
+    "status": "active",
+    "description": {
+      "rendered": "Unlimited AJAX products filters to make your shop perfect <cite>By <a href=\"https://berocket.com?utm_source=paid_plugin&#038;utm_medium=plugins&#038;utm_campaign=ajax_filters\">BeRocket</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce Dynamic Pricing &amp; Discounts",
+    "version": "2.4.5",
+    "status": "active",
+    "description": {
+      "rendered": "All-purpose product pricing, cart discount and checkout fee tool for WooCommerce <cite>By <a href=\"http://www.rightpress.net\">RightPress</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce Legacy REST API",
+    "version": "1.0.4",
+    "status": "active",
+    "description": {
+      "rendered": "The legacy WooCommerce REST API, which used to be part of WooCommerce itself but is removed as of WooCommerce 9.0. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce PayPal Payments",
+    "version": "2.9.0",
+    "status": "active",
+    "description": {
+      "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
+    "version": "4.6.1",
+    "status": "active",
+    "description": {
+      "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce Smart COD",
+    "version": "1.7.2",
+    "status": "active",
+    "description": {
+      "rendered": "A powerful plugin that extends WooCommerce COD (Cash on Delivery) Gateway, supporting multiple extra fees and a multiple factor gateway restriction. <cite>By <a href=\"https://woosmartcod.com\">woosmartcod.com</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce Stripe Gateway",
+    "version": "8.6.1",
+    "status": "inactive",
+    "description": {
+      "rendered": "Take credit card payments on your store using Stripe. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Διαχείριση αρχείων WP",
+    "version": "8.0",
+    "status": "active",
+    "description": {
+      "rendered": "Manage your WP files. <cite>By <a href=\"https://profiles.wordpress.org/mndpsingh287\">mndpsingh287</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WP Mail SMTP",
+    "version": "4.1.1",
+    "status": "active",
+    "description": {
+      "rendered": "Reconfigures the <code>wp_mail()</code> function to use Gmail/Mailgun/SendGrid/SMTP instead of the default <code>mail()</code> and creates an options page to manage the settings. <cite>By <a href=\"https://wpmailsmtp.com/\">WP Mail SMTP</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WP Rocket",
+    "version": "3.16.2.1",
+    "status": "active",
+    "description": {
+      "rendered": "The best WordPress performance plugin. <cite>By <a href=\"https://wp-media.me\">WP Media</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "WP Rocket | Exclude X first images from Lazy Load by Attribute",
+    "version": "",
+    "status": "active",
+    "description": {
+      "rendered": "Disables lazy load for the first X images by Attribute. <cite>By <a href=\"http://wp-rocket.me/\">WP Rocket Support Team</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Yoast SEO",
+    "version": "23.3",
+    "status": "active",
+    "description": {
+      "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Yoast SEO: WooCommerce",
+    "version": "16.2",
+    "status": "active",
+    "description": {
+      "rendered": "Η επέκταση, του Woocommerce και του Yoast SEO κάνει εφικτή την άψογη επικοινωνία και συνεργατική λειτουργία μεταξύ των δύο αυτών προσθέτων <cite>By <a href=\"https://yoa.st/team-yoast-woocommerce\">Η ομάδα του Yoast</a>.</cite>"
+    },
+    "sakis_description": "missing"
+  }
+]
