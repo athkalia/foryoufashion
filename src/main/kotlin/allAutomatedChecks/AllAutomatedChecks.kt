@@ -85,6 +85,9 @@ fun main() {
     if (readOnly && (allWooCommerceApiUpdateVariables.any { it })) {
         throw Exception("Something set for update but readOnly is set to 'false'")
     }
+    if (shouldUpdateProsforesProductTag && shouldSkipVariationChecks) {
+        throw Exception("Cannot update prosfores if variation checks is disabled")
+    }
 
     val credentials = if (allWooCommerceApiUpdateVariables.any { it }) {
         Credentials.basic(writeConsumerKey, writeConsumerSecret)
@@ -132,7 +135,7 @@ fun main() {
             checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product)
             checkForProductsInParentCategoryOnly(product)
 
-            if (!skipVariationChecks) {
+            if (!shouldSkipVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
@@ -1337,57 +1340,68 @@ private fun addProsforesTagForDiscountedProductsAndRemoveItForRest(
     val prosforesTag = Tag(id = 1552, slug = "prosfores", name = "Προσφορές")
     val regularPrice = variation.regular_price.toDoubleOrNull()
     val salePrice = variation.sale_price.toDoubleOrNull()
-    println("variation regular price $regularPrice")
-    println("variation sale price $salePrice")
-
-    if (regularPrice!=null && salePrice!=null && regularPrice > 0) {
-        val discountPercentage = ((regularPrice - salePrice) / regularPrice * 100).roundToInt()
-        println("discount found $discountPercentage")
+    println("DEBUG: variation regular price $regularPrice")
+    println("DEBUG: variation sale price $salePrice")
+    if (regularPrice!=null && regularPrice > 0) {
         val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
-        if (discountPercentage >= addTagAboveThisDiscount) {
-            println("Adding tag 'prosfores'")
-            if (!product.tags.any { it.slug==prosforesTag.slug }) {
-                val updatedTags = product.tags.toMutableList()
-                updatedTags.add(prosforesTag)
-                val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
-                println("Updating product ${product.id} with tags: $data")
-                val body = data.toRequestBody("application/json".toMediaTypeOrNull())
-                val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
-                executeWithRetry {
-                    client.newCall(request).execute().use { response ->
-                        val responseBody = response.body?.string() ?: ""
-                        if (!response.isSuccessful) {
-                            println("Error updating product ${product.id}: $responseBody")
-                            throw IOException("Unexpected code $response")
-                        }
-                    }
-                }
+        if (salePrice!=null) {
+            val discountPercentage = ((regularPrice - salePrice) / regularPrice * 100).roundToInt()
+            println("discount found $discountPercentage")
+            if (discountPercentage >= addTagAboveThisDiscount) {
+                addTagProsfores(product, prosforesTag, url, credentials)
             } else {
-                println("Tag already exists")
+                removeTagProsfores(product, prosforesTag, url, credentials)
             }
         } else {
-            println("Removing tag 'prosfores'")
-            if (product.tags.any { it.slug==prosforesTag.slug }) {
-                val updatedTags = product.tags.filter { it.slug!=prosforesTag.slug }
-                val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
-                println("Updating product ${product.id} with tags: $data")
-                val body = data.toRequestBody("application/json".toMediaTypeOrNull())
-                val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
-                executeWithRetry {
-                    client.newCall(request).execute().use { response ->
-                        val responseBody = response.body?.string() ?: ""
-                        if (!response.isSuccessful) {
-                            println("Error updating product ${product.id}: $responseBody")
-                            throw IOException("Unexpected code $response")
-                        }
-                    }
+            removeTagProsfores(product, prosforesTag, url, credentials)
+        }
+    } else {
+        println("WARNING: Could not determine discount because regular price empty or negative")
+    }
+}
+
+private fun addTagProsfores(product: Product, prosforesTag: Tag, url: String, credentials: String) {
+    println("Adding tag 'prosfores'")
+    if (!product.tags.any { it.slug==prosforesTag.slug }) {
+        val updatedTags = product.tags.toMutableList()
+        updatedTags.add(prosforesTag)
+        val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
+        println("Updating product ${product.id} with tags: $data")
+        val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+        val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
+        executeWithRetry {
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string() ?: ""
+                if (!response.isSuccessful) {
+                    println("Error updating product ${product.id}: $responseBody")
+                    throw IOException("Unexpected code $response")
                 }
-            } else {
-                println("Tag doesn't exist anyway")
             }
         }
     } else {
-        println("Warning could not determine discount")
+        println("DEBUG: Prosfores tag doesn't exist anyway")
+    }
+}
+
+private fun removeTagProsfores(product: Product, prosforesTag: Tag, url: String, credentials: String) {
+    println("Removing tag 'prosfores'")
+    if (product.tags.any { it.slug==prosforesTag.slug }) {
+        val updatedTags = product.tags.filter { it.slug!=prosforesTag.slug }
+        val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
+        println("Updating product ${product.id} with tags: $data")
+        val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+        val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
+        executeWithRetry {
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string() ?: ""
+                if (!response.isSuccessful) {
+                    println("Error updating product ${product.id}: $responseBody")
+                    throw IOException("Unexpected code $response")
+                }
+            }
+        }
+    } else {
+        println("DEBUG: Prosfores tag doesn't exist anyway")
     }
 }
 
@@ -1471,7 +1485,7 @@ private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product)
 fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
     product: Product, productVariations: List<Variation>, credentials: String
 ) {
-    if (product.status!="private") {
+    if (product.status!="private" && product.status!="draft") {
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val productDate = LocalDate.parse(product.date_created, dateFormatter)
         val twoYearsAgo = LocalDate.now().minus(2, ChronoUnit.YEARS)
