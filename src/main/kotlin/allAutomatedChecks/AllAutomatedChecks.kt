@@ -851,11 +851,11 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
     if (product.sku !in listOf("3821", "8Ε0053", "3858", "3885", "5832", "QC368Bt50")) {
         val finalProductRegex = Regex("^\\d{5}-\\d{3}\$")
         if (!product.sku.matches(finalProductRegex)) {
-            println("WARNING Product SKU ${product.sku} does not match Product SKU regex ")
+            println("WARNING: Product SKU ${product.sku} does not match Product SKU regex ")
         }
         val finalProductVariationRegex = Regex("^\\d{5}-\\d{3}-\\d{1,3}$")
         if (!variation.sku.matches(finalProductVariationRegex)) {
-            println("WARNING Variation SKU ${variation.sku} does not match Variation SKU regex ")
+            println("WARNING: Variation SKU ${variation.sku} does not match Variation SKU regex ")
         }
     }
 }
@@ -903,10 +903,10 @@ fun checkForMissingSizeGuide(product: Product) {
 private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
     val title = product.name.replace("&amp", "&")
     if (title.isEmpty() || title.length < 20) {
-        println("WARNING Product ${product.sku} has an empty or too short title: '$title'.")
+        println("WARNING: Product ${product.sku} has an empty or too short title: '$title'.")
         println("LINK: ${product.permalink}")
     } else if (title.length > 65) {
-        println("WARNING Product ${product.sku} has a too long title: '$title'.")
+        println("WARNING: Product ${product.sku} has a too long title: '$title'.")
         println("LINK: ${product.permalink}")
     }
 }
@@ -917,11 +917,11 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
     isValidHtml(product.short_description)
     isValidHtml(product.description)
     if (product.short_description.equals(product.description, ignoreCase = true)) {
-        println("WARNING same short and long descriptions found for product: ${product.sku}")
+        println("WARNING: same short and long descriptions found for product: ${product.sku}")
         println("LINK: ${product.permalink}")
     }
     if (product.short_description.length > product.description.length) {
-        println("WARNING short description longer than long description for product: ${product.sku}")
+        println("WARNING: short description longer than long description for product: ${product.sku}")
         println("LINK: ${product.permalink}")
 //        println("DEBUG: long description ${product.description}")
 //        println("DEBUG: short description ${product.short_description}")
@@ -930,15 +930,15 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
     }
     if (product.short_description.length < 120 || product.short_description.length > 250) {
-        println("WARNING Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
+        println("WARNING: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
 //        println("DEBUG: ${product.permalink} συντομη περιγραφη μηκος: ${product.short_description.length}")
     }
     if (product.description.length < 250 || product.description.length > 550) {
-        println("WARNING Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
+        println("WARNING: Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
 //        println("DEBUG: ${product.permalink} μεγαλη περιγραφη μηκος: ${product.description.length}")
     }
     if (product.description.contains("&nbsp;")) {
-        println("WARNING Product ${product.sku} has unnecessary line breaks in description")
+        println("WARNING: Product ${product.sku} has unnecessary line breaks in description")
         if (shouldRemoveEmptyLinesFromDescriptions) {
             updateProductDescriptions(
                 product,
@@ -949,7 +949,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
     }
     if (product.short_description.contains("&nbsp;")) {
-        println("WARNING Product ${product.sku} has unnecessary line breaks in short description")
+        println("WARNING: Product ${product.sku} has unnecessary line breaks in short description")
         if (shouldRemoveEmptyLinesFromDescriptions) {
             updateProductDescriptions(
                 product,
@@ -963,7 +963,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
 
 private fun checkForStockManagementAtProductLevelOutOfVariations(product: Product) {
     if (product.variations.isNotEmpty() && product.manage_stock) {
-        println("WARNING Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level")
+        println("WARNING: Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level")
     }
 }
 
@@ -976,10 +976,10 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
     val salePrice = variation.sale_price
 
     if (regularPrice.isEmpty()) {
-        println("WARNING product SKU ${product.sku} regular price empty")
+        println("WARNING: product SKU ${product.sku} regular price empty")
     }
     if (regularPrice.isNotEmpty() && !priceHasCorrectPennies(regularPrice)) {
-        println("WARNING product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
+        println("WARNING: product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
         if (shouldUpdatePricesToEndIn99) {
             val updatedRegularPrice = adjustPrice(regularPrice.toDouble())
             if (updatedRegularPrice!=regularPrice) {
@@ -999,7 +999,7 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
         }
     }
     if (salePrice.isNotEmpty() && !priceHasCorrectPennies(salePrice)) {
-        println("WARNING product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
+        println("WARNING: product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
         if (shouldUpdatePricesToEndIn99) {
             val updatedSalePrice = adjustPrice(salePrice.toDouble())
             println("Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
@@ -1179,12 +1179,12 @@ private fun checkForMissingImages(product: Product) {
     val galleryImagesMissing = images.size < 3
 
     if (mainImageMissing) {
-        println("WARNING Product ${product.sku} is missing a main image.")
+        println("WARNING: Product ${product.sku} is missing a main image.")
         println(product.permalink)
     }
 
     if (galleryImagesMissing) {
-        println("WARNING Product ${product.sku} only has ${images.size} images.")
+        println("WARNING: Product ${product.sku} only has ${images.size} images.")
         println(product.permalink)
     }
 }
@@ -1447,7 +1447,7 @@ private fun checkProductCategories(credentials: String) {
     for (category in categories) {
         val productCount = category.count
         if (productCount < 10) {
-            println("WARNING Category '${category.name}' contains only $productCount products.")
+            println("WARNING: Category '${category.name}' contains only $productCount products.")
         }
     }
 }
@@ -1476,7 +1476,7 @@ private fun checkProductAttributes(credentials: String) {
         for (term in terms) {
             val productCount = term.count
             if (productCount < 10) {
-                println("WARNING Attribute '${attribute.name}' with term '${term.name}' contains only $productCount products.")
+                println("WARNING: Attribute '${attribute.name}' with term '${term.name}' contains only $productCount products.")
             }
         }
     }
@@ -1495,7 +1495,7 @@ private fun checkProductTags(credentials: String) {
     for (tag in tags) {
         val productCount = tag.count
         if (productCount!! < 10) {
-            println("WARNING Tag '${tag.name}' contains $productCount products.")
+            println("WARNING: Tag '${tag.name}' contains $productCount products.")
         }
     }
 }
@@ -1504,7 +1504,7 @@ private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product)
     product.attributes.let { attributes ->
         attributes.forEach { attribute ->
             if (!attribute.name.equals("Μέγεθος", ignoreCase = true) && attribute.variation) {
-                println("WARNING Product ${product.sku} has the '${attribute.name}' attribute marked as used for variations.")
+                println("WARNING: Product ${product.sku} has the '${attribute.name}' attribute marked as used for variations.")
                 println(product.permalink)
             }
         }
@@ -1521,7 +1521,7 @@ fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
         if (productDate.isBefore(twoYearsAgo)) {
             val allOutOfStock = productVariations.all { it.stock_status=="outofstock" }
             if (allOutOfStock) {
-                println("WARNING Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.")
+                println("WARNING: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.")
                 println(product.permalink)
                 if (shouldMoveOldOutOfStockProductsToPrivate) {
                     updateProductStatusToPrivate(product, credentials)
