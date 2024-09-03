@@ -7,7 +7,8 @@ data class Order(
     val date_created: String,
     val status: String,
     val payment_method_title: String,
-    val payment_method: String
+    val payment_method: String,
+    val total:String
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

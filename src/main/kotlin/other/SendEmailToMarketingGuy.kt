@@ -1,0 +1,139 @@
+package other
+
+import javax.mail.*
+import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeMessage
+import Order
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Credentials
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import java.io.IOException
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Properties
+import readOnlyConsumerKey
+import readOnlyConsumerSecret
+import sakisForYouFashionEmailPassword
+
+fun main(args: Array<String>) {
+    val toEmail = "ads@conversion.gr"
+    val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
+    val currentMonthOrders = fetchCurrentMonthOrders(credentials)
+    val totalRevenue = calculateTotalRevenue(currentMonthOrders)
+    val cancelledOrdersPercentage = calculateCancelledOrdersPercentage(currentMonthOrders)
+    val refundedOrdersPercentage = calculateRefundedOrdersPercentage(currentMonthOrders)
+    val completedRevenue = calculateCompletedRevenue(currentMonthOrders)
+
+    val monthAndYear = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+    val emailContent = generateEmailContent(
+        totalRevenue,
+        cancelledOrdersPercentage,
+        refundedOrdersPercentage,
+        completedRevenue,
+        monthAndYear
+    )
+    sendEmail(toEmail, emailContent)
+    println("ACTION: Email sent to $toEmail")
+}
+
+fun fetchCurrentMonthOrders(credentials: String): List<Order> {
+    val client = OkHttpClient()
+    val orders = mutableListOf<Order>()
+    val currentMonth = LocalDate.now().monthValue
+    val currentYear = LocalDate.now().year
+    var page = 1
+    var hasMoreOrders: Boolean
+
+    do {
+        val url = "https://foryoufashion.gr/wp-json/wc/v3/orders?page=$page&per_page=100"
+        val request = Request.Builder().url(url).header("Authorization", credentials).build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+            val body = response.body?.string()!!
+            val mapper = jacksonObjectMapper()
+            val fetchedOrders: List<Order> = mapper.readValue(body)
+            orders.addAll(fetchedOrders.filter {
+                val orderDate = LocalDate.parse(it.date_created.substring(0, 10))
+                orderDate.monthValue==currentMonth && orderDate.year==currentYear
+            })
+            hasMoreOrders = fetchedOrders.isNotEmpty()
+        }
+        page++
+    } while (hasMoreOrders)
+
+    return orders
+}
+
+fun calculateTotalRevenue(orders: List<Order>): Double {
+    return orders.sumOf { it.total.toDouble() }
+}
+
+fun calculateCancelledOrdersPercentage(orders: List<Order>): Double {
+    val totalOrders = orders.size
+    val cancelledOrders = orders.count { it.status=="cancelled" }
+    return if (totalOrders > 0) (cancelledOrders.toDouble() / totalOrders.toDouble()) * 100 else 0.0
+}
+
+fun calculateRefundedOrdersPercentage(orders: List<Order>): Double {
+    val totalOrders = orders.size
+    val returnedOrders = orders.count { it.status=="refunded" }
+    return if (totalOrders > 0) (returnedOrders.toDouble() / totalOrders.toDouble()) * 100 else 0.0
+}
+
+fun calculateCompletedRevenue(orders: List<Order>): Double {
+    return orders.filter { it.status=="completed" }.sumOf { it.total.toDouble() }
+}
+
+fun generateEmailContent(
+    allOrdersRevenue: Double,
+    cancelledOrdersPercentage: Double,
+    returnedOrdersPercentage: Double,
+    completedOrdersRevenue: Double,
+    monthAndYear: String
+): String {
+    return """
+        Καλησπέρα,
+
+        Σας επισυνάπτω τις πωλήσεις απο το site για το μήνα $monthAndYear
+        - Συνολικά Έσοδα: €${"%.2f".format(allOrdersRevenue)}
+        - Ακυρώσεις %: ${"%.2f".format(cancelledOrdersPercentage)}%
+        - Επιστροφές %: ${"%.2f".format(returnedOrdersPercentage)}%
+        - Επιστροφές + Ακυρώσεις %: ${"%.2f".format(cancelledOrdersPercentage + returnedOrdersPercentage)}%
+        - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue)}
+
+        Φιλικά,
+        Σάκης
+    """.trimIndent()
+}
+
+fun sendEmail(recipientEmail: String, content: String) {
+    val username = "sakis@foryoufashion.gr"
+    val props = Properties()
+    props["mail.smtp.auth"] = "true"
+    props["mail.smtp.starttls.enable"] = "true"
+    props["mail.smtp.host"] = "mail.foryoufashion.gr"
+    props["mail.smtp.port"] = "587"
+
+    val session = Session.getInstance(props,
+        object : Authenticator() {
+            override fun getPasswordAuthentication(): PasswordAuthentication {
+                return PasswordAuthentication(username, sakisForYouFashionEmailPassword)
+            }
+        })
+
+    try {
+        val message = MimeMessage(session)
+        message.setFrom(InternetAddress(username))
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail))
+        message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("k.kaliakouda@foryoufashion.gr"))
+        message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
+        message.subject = "For You Fashion - Έσοδα μήνα"
+        message.setText(content)
+        Transport.send(message)
+    } catch (e: MessagingException) {
+        throw RuntimeException(e)
+    }
+}
