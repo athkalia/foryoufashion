@@ -10,17 +10,15 @@ import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import writeConsumerKey
+import writeConsumerSecret
 
 fun main() {
-    val writeConsumerKey = ""
-    val writeConsumerSecret = ""
-
     val credentials = Credentials.basic(writeConsumerKey, writeConsumerSecret)
 
     var page = 1
     val draftProducts: MutableList<Product> = mutableListOf()
 
-    // Get all draft products
     do {
         val products = getDraftProductsThatAreReadyToSchedule(page, credentials)
         draftProducts.addAll(products)
@@ -30,7 +28,7 @@ fun main() {
     println("Total draft products: ${draftProducts.size}")
 
     // Determine the scheduling interval to fit all products within 3 weeks (21 days)
-    val totalDays = 4
+    val totalDays = 10
     val intervalDays = if (draftProducts.size <= totalDays) 1 else totalDays.toDouble() / draftProducts.size
 
     // Get the last publish date (if any) or start from today

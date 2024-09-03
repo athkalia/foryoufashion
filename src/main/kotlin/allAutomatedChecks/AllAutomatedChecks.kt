@@ -45,9 +45,8 @@ import writeConsumerSecret
 const val readOnly = true
 
 // Slow
-const val skipVariationChecks = true
+const val shouldSkipVariationChecks = true
 const val checkMediaLibraryChecks = false
-const val shouldCheckForInvalidDescriptions = false
 
 // Require manual input
 const val shouldCheckForLargeImagesOutsideMediaLibrary = false
@@ -56,6 +55,7 @@ const val shouldCheckForLargeImagesOutsideMediaLibrary = false
 const val shouldMoveOldOutOfStockProductsToPrivate = false
 const val shouldUpdatePricesToEndIn99 = false
 const val shouldSwapDescriptions = false
+const val shouldRemoveEmptyLinesFromDescriptions = false
 const val shouldUpdateProsforesProductTag = false
 const val shouldUpdateNeesAfikseisProductTag = false
 const val shouldAutomaticallyDeleteUnusedImages = false
@@ -64,6 +64,7 @@ val allWooCommerceApiUpdateVariables = listOf(
     shouldMoveOldOutOfStockProductsToPrivate,
     shouldUpdatePricesToEndIn99,
     shouldSwapDescriptions,
+    shouldRemoveEmptyLinesFromDescriptions,
     shouldUpdateProsforesProductTag,
     shouldUpdateNeesAfikseisProductTag,
 )
@@ -116,9 +117,7 @@ fun main() {
                 continue
             }
 //            println("DEBUG: product SKU: ${product.sku}")
-            if (shouldCheckForInvalidDescriptions) {
-                checkForInvalidDescriptions(product, credentials)
-            }
+            checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMissingImages(product)
             checkForNonPortraitImagesWithCache(product)
@@ -932,11 +931,33 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
     }
     if (product.short_description.length < 120 || product.short_description.length > 250) {
         println("WARNING Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
-        println(product.permalink + " συντομη περιγραφη μηκος:" + product.short_description.length)
+//        println("DEBUG: ${product.permalink} συντομη περιγραφη μηκος: ${product.short_description.length}")
     }
     if (product.description.length < 250 || product.description.length > 550) {
         println("WARNING Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
-        println(product.permalink + " μεγαλη περιγραφη μηκος:" + product.description.length)
+//        println("DEBUG: ${product.permalink} μεγαλη περιγραφη μηκος: ${product.description.length}")
+    }
+    if (product.description.contains("&nbsp;")) {
+        println("WARNING Product ${product.sku} has unnecessary line breaks in description")
+        if (shouldRemoveEmptyLinesFromDescriptions) {
+            updateProductDescriptions(
+                product,
+                product.short_description,
+                product.description.replace("&nbsp;", ""),
+                credentials
+            )
+        }
+    }
+    if (product.short_description.contains("&nbsp;")) {
+        println("WARNING Product ${product.sku} has unnecessary line breaks in short description")
+        if (shouldRemoveEmptyLinesFromDescriptions) {
+            updateProductDescriptions(
+                product,
+                product.short_description.replace("&nbsp;", ""),
+                product.description,
+                credentials
+            )
+        }
     }
 }
 
@@ -1202,15 +1223,15 @@ private fun isValidHtml(html: String): Boolean {
     }
 }
 
-private fun swapProductDescriptions(
-    product: Product, credentials: String
+private fun updateProductDescriptions(
+    product: Product, updatedShortDescription: String, updatedDescription: String, credentials: String
 ) {
-    println("reversing descriptions for product ${product.sku}")
-
+    println("Updating descriptions for product ${product.sku}")
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
     val json = mapper.writeValueAsString(
         mapOf(
-            "short_description" to product.description, "description" to product.short_description
+            "short_description" to updatedShortDescription,
+            "description" to updatedDescription
         )
     )
     val body = json.toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
@@ -1227,6 +1248,14 @@ private fun swapProductDescriptions(
             throw IOException("Unexpected code $response, body: $responseBody")
         }
     }
+}
+
+
+private fun swapProductDescriptions(
+    product: Product, credentials: String
+) {
+    println("reversing descriptions for product ${product.sku}")
+    updateProductDescriptions(product, product.description, product.short_description, credentials)
 }
 
 fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
