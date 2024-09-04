@@ -595,12 +595,12 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "23.3",
+    "version": "23.4",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
     },
-    "sakis_description": "missing"
+    "sakis_description": ""
   },
   {
     "name": "Yoast SEO: WooCommerce",
@@ -609,6 +609,6 @@
     "description": {
       "rendered": "Η επέκταση, του Woocommerce και του Yoast SEO κάνει εφικτή την άψογη επικοινωνία και συνεργατική λειτουργία μεταξύ των δύο αυτών προσθέτων <cite>By <a href=\"https://yoa.st/team-yoast-woocommerce\">Η ομάδα του Yoast</a>.</cite>"
     },
-    "sakis_description": "missing"
+    "sakis_description": ""
   }
 ]
