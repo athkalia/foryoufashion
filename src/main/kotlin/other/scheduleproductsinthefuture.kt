@@ -27,10 +27,6 @@ fun main() {
 
     println("Total draft products: ${draftProducts.size}")
 
-    // Determine the scheduling interval to fit all products within 3 weeks (21 days)
-    val totalDays = 10
-    val intervalDays = if (draftProducts.size <= totalDays) 1 else totalDays.toDouble() / draftProducts.size
-
     // Get the last publish date (if any) or start from today
     var lastPublishDate = getLastPublishDate(credentials) ?: LocalDateTime.now()
 
@@ -51,7 +47,7 @@ fun main() {
         val response = updateProduct(product.id, updateData, credentials)
         if (response) {
             println("Scheduled product '${product.name}' to go live on $scheduleDate")
-            scheduleDate = scheduleDate.plusDays(intervalDays.toLong())
+            scheduleDate = scheduleDate.plusDays(1)
         } else {
             println("Failed to schedule product '${product.name}'")
         }

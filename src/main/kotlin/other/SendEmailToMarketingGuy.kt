@@ -17,32 +17,37 @@ import readOnlyConsumerKey
 import readOnlyConsumerSecret
 import sakisForYouFashionEmailPassword
 
+const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 0.0
+
 fun main(args: Array<String>) {
     val toEmail = "ads@conversion.gr"
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
-    val currentMonthOrders = fetchCurrentMonthOrders(credentials)
+    val previousMonthDate = getPreviousMonthDate()
+    val currentMonthOrders = fetchOrders(previousMonthDate, credentials)
     val totalRevenue = calculateTotalRevenue(currentMonthOrders)
     val cancelledOrdersPercentage = calculateCancelledOrdersPercentage(currentMonthOrders)
     val refundedOrdersPercentage = calculateRefundedOrdersPercentage(currentMonthOrders)
     val completedRevenue = calculateCompletedRevenue(currentMonthOrders)
 
-    val monthAndYear = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+    val monthAndYear = previousMonthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val emailContent = generateEmailContent(
         totalRevenue,
         cancelledOrdersPercentage,
         refundedOrdersPercentage,
         completedRevenue,
-        monthAndYear
+        monthAndYear,
     )
     sendEmail(toEmail, emailContent)
     println("ACTION: Email sent to $toEmail")
 }
 
-fun fetchCurrentMonthOrders(credentials: String): List<Order> {
+private fun getPreviousMonthDate(): LocalDate = LocalDate.now().minusMonths(1)
+
+fun fetchOrders(previousMonthDate: LocalDate, credentials: String): List<Order> {
     val client = OkHttpClient()
     val orders = mutableListOf<Order>()
-    val currentMonth = LocalDate.now().monthValue
-    val currentYear = LocalDate.now().year
+    val currentMonth = previousMonthDate.monthValue
+    val currentYear = previousMonthDate.year
     var page = 1
     var hasMoreOrders: Boolean
 
@@ -92,7 +97,7 @@ fun generateEmailContent(
     cancelledOrdersPercentage: Double,
     returnedOrdersPercentage: Double,
     completedOrdersRevenue: Double,
-    monthAndYear: String
+    monthAndYear: String,
 ): String {
     return """
         Καλησπέρα,
@@ -103,6 +108,8 @@ fun generateEmailContent(
         - Επιστροφές %: ${"%.2f".format(returnedOrdersPercentage)}%
         - Επιστροφές + Ακυρώσεις %: ${"%.2f".format(cancelledOrdersPercentage + returnedOrdersPercentage)}%
         - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue)}
+        - Συνολικό Έξοδα marketing για το μήνα: ${"%.2f".format(MANUAL_INPUT_totalMarketingExpensesForMonth)} 
+        - Συνολικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / MANUAL_INPUT_totalMarketingExpensesForMonth)} 
 
         Φιλικά,
         Σάκης
