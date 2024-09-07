@@ -55,7 +55,7 @@
   },
   {
     "name": "Category Order and Taxonomy Terms Order",
-    "version": "1.8.2",
+    "version": "1.8.5",
     "status": "active",
     "description": {
       "rendered": "Order Categories and all custom taxonomies terms (hierarchically) and child terms using a Drag and Drop Sortable javascript capability. <cite>By <a href=\"https://www.nsp-code.com\">Nsp-Code</a>.</cite>"
@@ -91,7 +91,7 @@
   },
   {
     "name": "CTX Feed",
-    "version": "6.5.16",
+    "version": "6.5.18",
     "status": "active",
     "description": {
       "rendered": "Easily generate woocommerce product feed for any marketing channel like Google Shopping(Merchant), Facebook Remarketing, Bing, eBay &amp; more. Support 100+ Merchants. <cite>By <a href=\"https://webappick.com/\">WebAppick</a>.</cite>"
@@ -127,7 +127,7 @@
   },
   {
     "name": "Google Analytics for WooCommerce",
-    "version": "2.1.6",
+    "version": "2.1.7",
     "status": "active",
     "description": {
       "rendered": "Allows Google Analytics tracking code to be inserted into WooCommerce store pages. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
@@ -163,7 +163,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "13.7",
+    "version": "13.8",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -172,7 +172,7 @@
   },
   {
     "name": "Jetpack VideoPress",
-    "version": "1.9",
+    "version": "2.1",
     "status": "active",
     "description": {
       "rendered": "High quality, ad-free video. <cite>By <a href=\"https://jetpack.com/videopress/\">Automattic - Jetpack Video team</a>.</cite>"
