@@ -45,19 +45,21 @@ import writeConsumerSecret
 const val readOnly = true
 
 // Slow
-const val shouldSkipVariationChecks = true
-const val checkMediaLibraryChecks = false
+const val shouldSkipVariationChecks = false
+const val checkMediaLibraryChecks = true
 
 // Require manual input
 const val shouldCheckForLargeImagesOutsideMediaLibrary = false
 
-// Updates
+// Recurring updates
 const val shouldMoveOldOutOfStockProductsToPrivate = false
 const val shouldUpdatePricesToEndIn99 = false
-const val shouldSwapDescriptions = false
-const val shouldRemoveEmptyLinesFromDescriptions = false
 const val shouldUpdateProsforesProductTag = false
 const val shouldUpdateNeesAfikseisProductTag = false
+
+// One-off updates
+const val shouldSwapDescriptions = false
+const val shouldRemoveEmptyLinesFromDescriptions = false
 const val shouldAutomaticallyDeleteUnusedImages = false
 
 val allWooCommerceApiUpdateVariables = listOf(
@@ -160,7 +162,7 @@ fun main() {
 fun checkForGreekCharactersInSlug(product: Product) {
     val greekCharRegex = Regex("[\u0370-\u03FF\u1F00-\u1FFF]")
     if (greekCharRegex.containsMatchIn(product.slug)) {
-        println("WARNING: Product SKU ${product.sku} has a slug containing Greek characters.")
+        println("ERROR: Product SKU ${product.sku} has a slug containing Greek characters.")
 //        println("LINK: ${product.permalink}")
     }
 }
@@ -595,7 +597,7 @@ fun checkForMissingFilesInsideMediaLibraryEntries(allMedia: List<Media>) {
         }
 
         if (isFileMissing) {
-            println("WARNING: File missing for Media ID: ${media.id}, URL: ${media.source_url}")
+            println("ERROR: File missing for Media ID: ${media.id}, URL: ${media.source_url}")
             println("LINK: https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit")
 //            val desktop = Desktop.getDesktop()
 //            desktop.browse(URI("https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit"));
@@ -652,7 +654,7 @@ fun checkForUnusedImagesInsideMediaLibrary(allProducts: List<Product>, wordPress
 
     val unusedImages = findUnusedImages(allMedia, allProductImages)
     if (unusedImages.isNotEmpty()) {
-        println("WARNING: Unused images in media library: ${unusedImages.size}")
+        println("ERROR: Unused images in media library: ${unusedImages.size}")
     }
     unusedImages.forEach {
         println("LINK: https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit")
@@ -779,7 +781,7 @@ fun checkForImagesWithTooHighResolution(product: Product) {
                 cache[image.src] = it
             }
             if (dimensions.first > 1500) {
-                println("WARNING: Product ${product.sku} has an image with too high resolution (width > 1500px).")
+                println("ERROR: Product ${product.sku} has an image with too high resolution (width > 1500px).")
                 println("DEBUG: Image width: ${dimensions.first}px")
                 println("DEBUG: Image URL: ${image.src}")
                 println("LINK: ${product.permalink}")
@@ -793,7 +795,7 @@ fun checkForProductsInParentCategoryOnly(product: Product) {
     val parentCategories = listOf("foremata", "panoforia")
     val productCategorySlugs = product.categories.map { it.slug }.toSet()
     if ((productCategorySlugs - parentCategories).isEmpty()) {
-        println("WARNING: Product SKU ${product.sku} is only in parent categories but should be in a more specific sub-category.")
+        println("ERROR: Product SKU ${product.sku} is only in parent categories but should be in a more specific sub-category.")
         println("LINK: ${product.permalink}")
     }
 }
@@ -810,12 +812,12 @@ fun checkForIncorrectPlusSizeCategorizationAndTagging(product: Product) {
     val hasPlusSizeTag = product.tags.any { it.slug==plusSizeTagSlug }
 
     if ((inPlusSizeCategory || inPlusSizeForemataCategory) && !hasPlusSizeTag) {
-        println("WARNING: Product SKU ${product.sku} is missing a plus size tag.")
+        println("ERROR: Product SKU ${product.sku} is missing a plus size tag.")
         println("LINK: ${product.permalink}")
     }
 
     if (inPlusSizeCategory && !inOlosomesFormesCategory && !inPlusSizeForemataCategory) {
-        println("WARNING: Product SKU ${product.sku} is in the plus category but it's not in olosomes formes or plus size foremata category")
+        println("ERROR: Product SKU ${product.sku} is in the plus category but it's not in olosomes formes or plus size foremata category")
         println("LINK: ${product.permalink}")
     }
 }
@@ -831,7 +833,7 @@ fun checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product: P
 
 
     if ((inSpecialOccasionCategory || inPlusSizeCategory) && !inAnyOtherCategories) {
-        println("WARNING: Product SKU ${product.sku} is only in the 'Special Occasion' or 'Plus size' category and not in any other category.")
+        println("ERROR: Product SKU ${product.sku} is only in the 'Special Occasion' or 'Plus size' category and not in any other category.")
     }
 }
 
@@ -841,21 +843,34 @@ fun checkForDraftProducts(product: Product) {
         val productLastModificationDate = LocalDate.parse(product.date_modified, dateFormatter)
         val oneMonthAgo = LocalDate.now().minus(1, ChronoUnit.MONTHS)
         if (productLastModificationDate.isBefore(oneMonthAgo)) {
-            println("WARNING: Product SKU ${product.sku} has been in draft status for more than 1 month.")
+            println("ERROR: Product SKU ${product.sku} has been in draft status for more than 1 month.")
         }
     }
 }
 
 fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
     // Some wedding dresses - ignore
-    if (product.sku !in listOf("3821", "8Ε0053", "3858", "3885", "5832", "QC368Bt50")) {
+    if (product.sku !in listOf(
+            "7489",
+            "2345",
+            "9101",
+            "5678",
+            "1234",
+            "3821",
+            "8Ε0053",
+            "3858",
+            "3885",
+            "5832",
+            "QC368Bt50"
+        )
+    ) {
         val finalProductRegex = Regex("^\\d{5}-\\d{3}\$")
         if (!product.sku.matches(finalProductRegex)) {
-            println("WARNING: Product SKU ${product.sku} does not match Product SKU regex ")
+            println("ERROR: Product SKU ${product.sku} does not match Product SKU regex ")
         }
         val finalProductVariationRegex = Regex("^\\d{5}-\\d{3}-\\d{1,3}$")
         if (!variation.sku.matches(finalProductVariationRegex)) {
-            println("WARNING: Variation SKU ${variation.sku} does not match Variation SKU regex ")
+            println("ERROR: Variation SKU ${variation.sku} does not match Variation SKU regex ")
         }
     }
 }
@@ -903,10 +918,10 @@ fun checkForMissingSizeGuide(product: Product) {
 private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
     val title = product.name.replace("&amp", "&")
     if (title.isEmpty() || title.length < 20) {
-        println("WARNING: Product ${product.sku} has an empty or too short title: '$title'.")
+        println("ERROR: Product ${product.sku} has an empty or too short title: '$title'.")
         println("LINK: ${product.permalink}")
-    } else if (title.length > 65) {
-        println("WARNING: Product ${product.sku} has a too long title: '$title'.")
+    } else if (title.length > 65) { // Matches meta ads recommendations
+        println("ERROR: Product ${product.sku} has a too long title: '$title'.")
         println("LINK: ${product.permalink}")
     }
 }
@@ -938,7 +953,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
 //        println("DEBUG: ${product.permalink} μεγαλη περιγραφη μηκος: ${product.description.length}")
     }
     if (product.description.contains("&nbsp;")) {
-        println("WARNING: Product ${product.sku} has unnecessary line breaks in description")
+        println("ERROR: Product ${product.sku} has unnecessary line breaks in description")
         if (shouldRemoveEmptyLinesFromDescriptions) {
             updateProductDescriptions(
                 product,
@@ -949,7 +964,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
     }
     if (product.short_description.contains("&nbsp;")) {
-        println("WARNING: Product ${product.sku} has unnecessary line breaks in short description")
+        println("ERROR: Product ${product.sku} has unnecessary line breaks in short description")
         if (shouldRemoveEmptyLinesFromDescriptions) {
             updateProductDescriptions(
                 product,
@@ -963,7 +978,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
 
 private fun checkForStockManagementAtProductLevelOutOfVariations(product: Product) {
     if (product.variations.isNotEmpty() && product.manage_stock) {
-        println("WARNING: Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level")
+        println("ERROR: Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level")
     }
 }
 
@@ -976,10 +991,10 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
     val salePrice = variation.sale_price
 
     if (regularPrice.isEmpty()) {
-        println("WARNING: product SKU ${product.sku} regular price empty")
+        println("ERROR: product SKU ${product.sku} regular price empty")
     }
     if (regularPrice.isNotEmpty() && !priceHasCorrectPennies(regularPrice)) {
-        println("WARNING: product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
+        println("ERROR: product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
         if (shouldUpdatePricesToEndIn99) {
             val updatedRegularPrice = adjustPrice(regularPrice.toDouble())
             if (updatedRegularPrice!=regularPrice) {
@@ -999,10 +1014,10 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
         }
     }
     if (salePrice.isNotEmpty() && !priceHasCorrectPennies(salePrice)) {
-        println("WARNING: product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
+        println("ERROR: product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
         if (shouldUpdatePricesToEndIn99) {
             val updatedSalePrice = adjustPrice(salePrice.toDouble())
-            println("Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
+            println("DEBUG: Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
             if (isSignificantPriceDifference(salePrice.toDouble(), updatedSalePrice.toDouble())) {
                 println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
                 exitProcess(1)
@@ -1123,7 +1138,7 @@ fun checkForNonPortraitImagesWithCache(product: Product) {
         }
 
         if (dimensions.first > dimensions.second) {
-            println("WARNING: Product ${product.sku} has a non-portrait image.")
+            println("ERROR: Product ${product.sku} has a non-portrait image.")
             println(product.permalink)
         }
     }
@@ -1179,7 +1194,7 @@ private fun checkForMissingImages(product: Product) {
     val galleryImagesMissing = images.size < 3
 
     if (mainImageMissing) {
-        println("WARNING: Product ${product.sku} is missing a main image.")
+        println("ERROR: Product ${product.sku} is missing a main image.")
         println(product.permalink)
     }
 
@@ -1385,7 +1400,7 @@ private fun addProsforesTagForDiscountedProductsAndRemoveItForRest(
             removeTagProsfores(product, prosforesTag, url, credentials)
         }
     } else {
-        println("WARNING: Could not determine discount because regular price empty or negative")
+        println("ERROR: Could not determine discount because regular price empty or negative")
     }
 }
 
@@ -1504,7 +1519,7 @@ private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product)
     product.attributes.let { attributes ->
         attributes.forEach { attribute ->
             if (!attribute.name.equals("Μέγεθος", ignoreCase = true) && attribute.variation) {
-                println("WARNING: Product ${product.sku} has the '${attribute.name}' attribute marked as used for variations.")
+                println("ERROR: Product ${product.sku} has the '${attribute.name}' attribute marked as used for variations.")
                 println(product.permalink)
             }
         }
@@ -1521,7 +1536,7 @@ fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
         if (productDate.isBefore(twoYearsAgo)) {
             val allOutOfStock = productVariations.all { it.stock_status=="outofstock" }
             if (allOutOfStock) {
-                println("WARNING: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.")
+                println("ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.")
                 println(product.permalink)
                 if (shouldMoveOldOutOfStockProductsToPrivate) {
                     updateProductStatusToPrivate(product, credentials)
