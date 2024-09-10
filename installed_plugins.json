@@ -55,7 +55,7 @@
   },
   {
     "name": "Category Order and Taxonomy Terms Order",
-    "version": "1.8.5",
+    "version": "1.8.6",
     "status": "active",
     "description": {
       "rendered": "Order Categories and all custom taxonomies terms (hierarchically) and child terms using a Drag and Drop Sortable javascript capability. <cite>By <a href=\"https://www.nsp-code.com\">Nsp-Code</a>.</cite>"
@@ -88,15 +88,6 @@
       "rendered": "Cloudflare speeds up and protects your WordPress site. <cite>By Cloudflare, Inc..</cite>"
     },
     "sakis_description": ""
-  },
-  {
-    "name": "CTX Feed",
-    "version": "6.5.18",
-    "status": "active",
-    "description": {
-      "rendered": "Easily generate woocommerce product feed for any marketing channel like Google Shopping(Merchant), Facebook Remarketing, Bing, eBay &amp; more. Support 100+ Merchants. <cite>By <a href=\"https://webappick.com/\">WebAppick</a>.</cite>"
-    },
-    "sakis_description": "missing"
   },
   {
     "name": "ΕΛΤΑ Courier Voucher for WooCommerce",
@@ -190,19 +181,10 @@
   },
   {
     "name": "Klarna Payments for WooCommerce",
-    "version": "3.6.1",
-    "status": "active",
-    "description": {
-      "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
-    "name": "Linked Variation for WooCommerce",
-    "version": "1.0.5",
+    "version": "3.6.2",
     "status": "inactive",
     "description": {
-      "rendered": "This is a helper plugin of WooCommerce built to link separate products together by attributes. <cite>By <a href=\"https://raazon.com/\">Razon Komar Pal</a>.</cite>"
+      "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
     },
     "sakis_description": "missing"
   },
@@ -217,7 +199,7 @@
   },
   {
     "name": "Media Cleaner (Pro)",
-    "version": "6.7.7",
+    "version": "6.7.8",
     "status": "active",
     "description": {
       "rendered": "Clean your WordPress! Eliminate unused and broken media files. For a faster, and better website. <cite>By <a href=\"https://jordymeow.com\">Jordy Meow</a>.</cite>"
@@ -307,7 +289,7 @@
   },
   {
     "name": "Relevanssi Premium",
-    "version": "2.25.2",
+    "version": "2.26.0",
     "status": "active",
     "description": {
       "rendered": "This premium plugin replaces WordPress search with a relevance-sorting search. <cite>By <a href=\"https://www.mikkosaari.fi/\">Mikko Saari</a>.</cite>"
@@ -451,7 +433,7 @@
   },
   {
     "name": "WooCommerce",
-    "version": "9.1.2",
+    "version": "9.2.3",
     "status": "active",
     "description": {
       "rendered": "Μια e-commerce πλατφόρμα που θα σας βοηθήσει να πουλήσετε τα πάντα. Όμορφα. <cite>By <a href=\"https://woocommerce.com\">Automattic</a>.</cite>"
@@ -478,7 +460,7 @@
   },
   {
     "name": "WooCommerce Advanced Bulk Edit",
-    "version": "5.4.2.3",
+    "version": "5.4.4.3",
     "status": "active",
     "description": {
       "rendered": "Edit your products both individually or in bulk. <cite>By <a href=\"https://wpmelon.com\">George Iron &amp; Yas G.</a>.</cite>"
@@ -577,7 +559,7 @@
   },
   {
     "name": "WP Rocket",
-    "version": "3.16.2.1",
+    "version": "3.16.4",
     "status": "active",
     "description": {
       "rendered": "The best WordPress performance plugin. <cite>By <a href=\"https://wp-media.me\">WP Media</a>.</cite>"

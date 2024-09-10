@@ -52,10 +52,10 @@ const val checkMediaLibraryChecks = true
 const val shouldCheckForLargeImagesOutsideMediaLibrary = false
 
 // Recurring updates
-const val shouldMoveOldOutOfStockProductsToPrivate = false
-const val shouldUpdatePricesToEndIn99 = false
-const val shouldUpdateProsforesProductTag = false
-const val shouldUpdateNeesAfikseisProductTag = false
+const val shouldMoveOldOutOfStockProductsToPrivate = true
+const val shouldUpdatePricesToEndIn99 = true
+const val shouldUpdateProsforesProductTag = true
+const val shouldUpdateNeesAfikseisProductTag = true
 
 // One-off updates
 const val shouldSwapDescriptions = false
@@ -998,7 +998,7 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
         if (shouldUpdatePricesToEndIn99) {
             val updatedRegularPrice = adjustPrice(regularPrice.toDouble())
             if (updatedRegularPrice!=regularPrice) {
-                println("Updating product SKU ${product.sku} variation SKU ${variation.sku} regular price from $regularPrice to $updatedRegularPrice")
+                println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} regular price from $regularPrice to $updatedRegularPrice")
                 if (isSignificantPriceDifference(regularPrice.toDouble(), updatedRegularPrice.toDouble())) {
                     println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
                     exitProcess(1)
@@ -1017,7 +1017,7 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
         println("ERROR: product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
         if (shouldUpdatePricesToEndIn99) {
             val updatedSalePrice = adjustPrice(salePrice.toDouble())
-            println("DEBUG: Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
+            println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
             if (isSignificantPriceDifference(salePrice.toDouble(), updatedSalePrice.toDouble())) {
                 println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
                 exitProcess(1)
@@ -1351,7 +1351,7 @@ fun addNeesAfikseisTag(product: Product, neesAfikseisTag: Tag, credentials: Stri
                 println("Error adding 'nees-afikseis' tag to product ${product.id}: $responseBody")
                 throw IOException("Unexpected code $response")
             } else {
-                println("Tag 'nees-afikseis' added to product ${product.id}")
+                println("ACTION: Tag 'nees-afikseis' added to product ${product.id}")
             }
         }
     }
@@ -1371,7 +1371,7 @@ fun removeNeesAfikseisTag(product: Product, neesAfikseisTag: Tag, credentials: S
                 println("Error removing 'nees-afikseis' tag from product ${product.id}: $responseBody")
                 throw IOException("Unexpected code $response")
             } else {
-                println("Tag 'nees-afikseis' removed from product ${product.id}")
+                println("ACTION: Tag 'nees-afikseis' removed from product ${product.id}")
             }
         }
     }
@@ -1410,7 +1410,7 @@ private fun addTagProsfores(product: Product, prosforesTag: Tag, url: String, cr
         val updatedTags = product.tags.toMutableList()
         updatedTags.add(prosforesTag)
         val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
-        println("Updating product ${product.id} with tags: $data")
+        println("ACTION: Updating product ${product.id} with tags: $data")
         val body = data.toRequestBody("application/json".toMediaTypeOrNull())
         val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
         executeWithRetry {
@@ -1432,7 +1432,7 @@ private fun removeTagProsfores(product: Product, prosforesTag: Tag, url: String,
     if (product.tags.any { it.slug==prosforesTag.slug }) {
         val updatedTags = product.tags.filter { it.slug!=prosforesTag.slug }
         val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
-        println("Updating product ${product.id} with tags: $data")
+        println("ACTION: Updating product ${product.id} with tags: $data")
         val body = data.toRequestBody("application/json".toMediaTypeOrNull())
         val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
         executeWithRetry {
@@ -1566,7 +1566,7 @@ private fun updateProductStatusToPrivate(
         if (!response.isSuccessful) {
             throw IOException("Unexpected code $response, body: $responseBody")
         } else {
-            println("Successfully updated product ${product.sku} status to 'private'.")
+            println("ACTION: Successfully updated product ${product.sku} status to 'private'.")
         }
     }
 }
@@ -1617,6 +1617,11 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     val updatedPlugins = currentPlugins.filter { current ->
         storedPlugins.any { stored -> stored.name==current.name && stored.version!=current.version }
     }
+
+    val disabledPlugins = currentPlugins.filter { current ->
+        storedPlugins.any { stored -> stored.name==current.name && stored.status!=current.status }
+    }
+
     if (newPlugins.isNotEmpty()) {
         println("WARNING: The following plugins have been installed:")
         newPlugins.forEach { println("- ${it.name} v${it.version}") }
@@ -1630,5 +1635,10 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     if (updatedPlugins.isNotEmpty()) {
         println("WARNING: The following plugins have been updated:")
         updatedPlugins.forEach { println("- ${it.name} updated to v${it.version}") }
+    }
+
+    if (disabledPlugins.isNotEmpty()) {
+        println("WARNING: The following plugins have been enabled/disabled:")
+        disabledPlugins.forEach { println("- ${it.name} updated to ${it.status}") }
     }
 }

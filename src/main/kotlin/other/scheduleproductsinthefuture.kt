@@ -15,12 +15,13 @@ import writeConsumerSecret
 
 fun main() {
     val credentials = Credentials.basic(writeConsumerKey, writeConsumerSecret)
+    val tagEtoimoGiaAnevasmaId = 1554
 
     var page = 1
     val draftProducts: MutableList<Product> = mutableListOf()
 
     do {
-        val products = getDraftProductsThatAreReadyToSchedule(page, credentials)
+        val products = getDraftProductsThatAreReadyToSchedule(page, credentials, tagEtoimoGiaAnevasmaId)
         draftProducts.addAll(products)
         page++
     } while (products.isNotEmpty())
@@ -39,9 +40,12 @@ fun main() {
 
     // Schedule each product
     draftProducts.forEach { product ->
+        val updatedTags = product.tags.filter { it.id!=tagEtoimoGiaAnevasmaId }
+
         val updateData = mapOf(
             "date_created" to scheduleDate.format(DateTimeFormatter.ISO_DATE_TIME),
-            "status" to "publish"
+            "status" to "publish",
+            "tags" to updatedTags.map { mapOf("id" to it.id) }
         )
 
         val response = updateProduct(product.id, updateData, credentials)
@@ -54,8 +58,11 @@ fun main() {
     }
 }
 
-private fun getDraftProductsThatAreReadyToSchedule(page: Int, credentials: String): List<Product> {
-    val tagEtoimoGiaAnevasmaId = "1554"
+private fun getDraftProductsThatAreReadyToSchedule(
+    page: Int,
+    credentials: String,
+    tagEtoimoGiaAnevasmaId: Int
+): List<Product> {
     val url =
         "https://foryoufashion.gr/wp-json/wc/v3/products?page=$page&per_page=100&status=draft&tag=$tagEtoimoGiaAnevasmaId"
     val request = Request.Builder().url(url).header("Authorization", credentials).build()
@@ -101,7 +108,7 @@ private fun getLastPublishDate(credentials: String): LocalDateTime? {
             LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
         }
 
-        println("last publishdate was $lastPublishDate")
+        println("Last publish date was $lastPublishDate")
         // If no publish date is found, return null (indicating no products have been published/scheduled)
         return lastPublishDate
     }
