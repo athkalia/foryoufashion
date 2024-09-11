@@ -154,7 +154,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "13.8",
+    "version": "13.8.1",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"

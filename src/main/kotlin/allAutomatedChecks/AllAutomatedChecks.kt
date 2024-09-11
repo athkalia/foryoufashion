@@ -127,6 +127,7 @@ fun main() {
             checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMissingImages(product)
+            checkProductsWithIncorrectPermaLink(product)
             checkForNonPortraitImagesWithCache(product)
             checkForImagesWithTooLowResolution(product)
             checkForImagesWithTooHighResolution(product)
@@ -161,6 +162,13 @@ fun main() {
         checkProductCategories(credentials)
         checkProductAttributes(credentials)
         checkProductTags(credentials)
+    }
+}
+
+fun checkProductsWithIncorrectPermaLink(product: Product) {
+    if (product.permalink.startsWith("https://foryoufashion.gr/?post_type=product&p=")) {
+        println("WARNING: product ${product.sku} seems to not have been created correctly.")
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -387,7 +395,7 @@ fun findUnusedImages(
 ): List<Media> {
     return allMedia.filter { media ->
         media.post==null && media.source_url !in allProductImages && media.media_type=="image"
-    }
+    }.filter { media -> media.id!=36631 } // For You logo
 }
 
 fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
@@ -839,7 +847,7 @@ private fun checkForMissingImages(product: Product) {
 
     if (galleryImagesMissing) {
         println("WARNING: Product ${product.sku} only has ${images.size} images.")
-        println(product.permalink)
+        println("LINK: ${product.permalink}")
     }
 }
 
