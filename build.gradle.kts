@@ -23,6 +23,7 @@ dependencies {
     implementation("org.jfree:jfreechart:1.5.3")
     implementation ("org.apache.commons:commons-lang3:3.12.0")
     implementation ("com.sun.mail:javax.mail:1.6.2")
+    implementation ("commons-net:commons-net:3.8.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 }

@@ -17,6 +17,9 @@ import archive.mapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.twelvemonkeys.imageio.plugins.webp.WebPImageReaderSpi
+import forYouFashionFtpPassword
+import forYouFashionFtpUrl
+import forYouFashionFtpUsername
 import java.time.LocalDate
 import java.time.Month
 import java.time.format.DateTimeFormatter
@@ -26,6 +29,7 @@ import javax.imageio.ImageIO
 import javax.imageio.spi.IIORegistry
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import org.apache.commons.net.ftp.FTPClient
 import kotlin.random.Random
 import kotlin.system.exitProcess
 import okhttp3.Credentials
@@ -61,6 +65,7 @@ const val shouldUpdateNeesAfikseisProductTag = true
 const val shouldSwapDescriptions = false
 const val shouldRemoveEmptyLinesFromDescriptions = false
 const val shouldAutomaticallyDeleteUnusedImages = false
+const val shouldDeleteLargeImagesOutsideMediaLibrary = false
 
 val allWooCommerceApiUpdateVariables = listOf(
     shouldMoveOldOutOfStockProductsToPrivate,
@@ -179,407 +184,58 @@ fun fetchAllProducts(credentials: String): List<Product> {
     return allProducts
 }
 
-
 fun checkForLargeImagesOutsideMediaLibrary(wordPressWriteCredentials: String, credentials: String) {
-    // manually copy from https://foryoufashion.gr/wp-admin/admin.php?page=big-files
-    val largeImages = listOf(
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/57630-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/56982-ΜΠΛΕ-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/57630-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/8C4A0782-copy.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/8C4A0829-copy.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/8C4A0816-copy.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/56982-ΜΠΛΕ-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/57630-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/56982-????-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/57630-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/8C4A0807-copy.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/57630-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/56982-ΜΠΛΕ-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/56982-????-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/8C4A0812-copy.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2022/09/56982-????-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/webexpert-google-merchant-product-data-feed/google_merchant.xml",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/product-catalogs/main-product-catalog.xml.tmpl3JpAC",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/woo-feed/facebook/xml/facebook-feed.xml",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/06/FOR-YOU-FASHION.mp4",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58819-3-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58797-9.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58812-majenta-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58977-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58810-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58819-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58812-majenta-12.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58810-28.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58979-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58819-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58797-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58812-majenta-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58797-5-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58812-majenta-14.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58812-majenta-13.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58819-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58797-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58812-majenta-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58819-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58810-17.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58981-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58810-25.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58810-22.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58819-11.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58797-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/02/58819-4-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58513-τυρκουαζ-13.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58513-τυρκουαζ-14.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-11.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58877-11.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58877-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58858-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59047-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58513-τυρκουαζ-15.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59048-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58858-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58877-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59047-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58515-majenta-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58858-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59047-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58515-majenta-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58877-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-13.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58877-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58877-14.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58513-τυρκουαζ-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-9.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59048-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58877-9.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58858-4-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58877-15.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-12.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59049-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58858-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59047-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58515-majenta-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58858-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59048-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/59048-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58513-τυρκουαζ-9.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/58513-τυρκουαζ-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/05/56065-old-lila-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-13.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58947-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58865-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58865-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58947-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58864-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58886-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59068-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58946-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58864-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59068-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59064-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58886-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58886-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58895-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59066-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59066-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58883-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58874-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58947-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58865-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58865-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58947-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58875-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58864-4-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/56629-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58883-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58875-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59066-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58886-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58863-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58895-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59064-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58863-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58895-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59064-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58946-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59068-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58946-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58864-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59068-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/56629-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58883-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58875-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58875-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/56629-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59066-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58863-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58895-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58952-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58863-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58946-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58864-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58874-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58952-9.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58946-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-4-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58874-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58952-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58874-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-11.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58865-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58947-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/59068-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58952-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58886-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58952-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58863-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58863-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/56629-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58874-3-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58875-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58873-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58874-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58874-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/04/58874-2-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58851-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58941-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58870-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58870-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58504-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58851-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58941-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57503-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-4-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57503-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58853-2-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-navy-blue-16.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58544-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58544-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58853-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-ΗΛΕΚΤΡΙΚ-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-ΗΛΕΚΤΡΙΚ-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58879-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-16.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-navy-blue-18.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58853-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58953-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58848-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56128-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58505-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58940-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56065-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56128-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58505-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58848-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58848-4-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58880-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58844-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-12.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-5-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58880-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58844-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-15.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58846-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56290-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56290-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58882-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58951-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58852-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58852-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-2-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57459-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58951-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-ΗΛΕΚΤΡΙΚ-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58853-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58943-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58853-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-ΗΛΕΚΤΡΙΚ-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58544-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-navy-blue-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-navy-blue-17.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58544-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58870-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58504-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58851-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58504-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-3-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58870-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58852-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58951-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58951-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-12.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58852-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56290-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58882-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58846-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58882-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56290-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58880-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58844-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-4-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58880-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58844-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58853-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58505-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56065-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58953-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58848-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58953-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58848-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56128-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58505-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-2-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56065-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57459-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57459-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58846-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56290-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58880-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58953-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56128-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58940-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56065-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58940-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56065-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58953-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58871-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58943-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58879-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58879-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-navy-blue-14.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58544-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58544-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57503-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58941-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58870-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-2-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58851-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58941-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-2-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58505-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58940-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58848-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58940-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56065-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58953-9.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58844-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-6-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58844-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-11.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56290-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58882-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/56290-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58852-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57459-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58951-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58850-1-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57459-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58798-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58504-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58203-3-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58941-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58941-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57503-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/57503-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58847-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58857-ΗΛΕΚΤΡΙΚ-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58879-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58943-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58853-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58943-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2024/03/58879-5.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/05/58406-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/05/58405-2.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/05/58405-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/05/58406-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/05/58407.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/03/57391-old-pink-4-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/03/57391-old-pink-12.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/03/57391-old-pink-15.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/03/57391-old-pink-6.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/03/57391-old-pink-8.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/03/57391-old-pink-10.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58514-21.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58514-3.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58459-4.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58459-9.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58514-9.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58459-7.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58514-11.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58514-16.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58459-1.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58514-19.jpg",
-        "/home/www/webex29/foryoufashion.gr/www/wp-content/uploads/2023/09/58514-17.jpg"
-    )
+    // Manually copy the list of large image paths from https://foryoufashion.gr/wp-admin/admin.php?page=big-files
+    val largeImages = listOf<String>()
 
     val allMedia = getAllNonRecentMedia(wordPressWriteCredentials)
     val allMediaUrls = allMedia.map { it.source_url }.toSet()
-
     val allProducts = fetchAllProducts(credentials)
     val allProductImages = allProducts.flatMap { it.images }.map { it.src }.toSet()
-
+    val imagePathsToDelete = mutableListOf<String>()
     largeImages.forEach { imagePath ->
         val imageUrl = imagePath.replace("/home/www/webex29/foryoufashion.gr/www", "https://foryoufashion.gr")
         if (imageUrl !in allMediaUrls && imageUrl !in allProductImages) {
-            println("WARNING: Unused image detected: $imagePath")
+            imagePathsToDelete.add(imagePath)
+        }
+    }
+
+    if (imagePathsToDelete.isNotEmpty()) {
+        println("WARNING: ${imagePathsToDelete.size} Large images outside media library detected")
+    }
+    imagePathsToDelete.forEach {
+        println("DEBUG: link $it")
+    }
+
+    if (shouldDeleteLargeImagesOutsideMediaLibrary) {
+        val ftpClient = FTPClient()
+        try {
+            ftpClient.controlEncoding = "UTF-8"
+            ftpClient.connect(forYouFashionFtpUrl)
+            ftpClient.login(forYouFashionFtpUsername, forYouFashionFtpPassword)
+            imagePathsToDelete.forEach {
+                // Removing the root folder to get the relative FTP path
+                val remotePath = it.replace("/home/www/webex29/foryoufashion.gr/www", "")
+                if (ftpClient.deleteFile(remotePath)) {
+                    println("ACTION: Deleted unused image: $remotePath")
+                } else {
+                    println("ERROR: Could not delete image: $remotePath")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            try {
+                if (ftpClient.isConnected) {
+                    ftpClient.logout()
+                    ftpClient.disconnect()
+                }
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
         }
     }
 }
-
 
 fun checkForMissingFilesInsideMediaLibraryEntries(allMedia: List<Media>) {
     val cache = loadMediaCache()
@@ -772,8 +428,7 @@ fun checkForImagesWithTooLowResolution(product: Product) {
 }
 
 fun checkForImagesWithTooHighResolution(product: Product) {
-    if (
-        product.sku!="57642-022" // skipped by EWWWW Image optimizer as resizing did not decrease file size
+    if (product.sku!="57642-022" // skipped by EWWWW Image optimizer as resizing did not decrease file size
     ) {
         val cache = loadImageCache()
         for (image in product.images) {
@@ -851,17 +506,7 @@ fun checkForDraftProducts(product: Product) {
 fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
     // Some wedding dresses - ignore
     if (product.sku !in listOf(
-            "7489",
-            "2345",
-            "9101",
-            "5678",
-            "1234",
-            "3821",
-            "8Ε0053",
-            "3858",
-            "3885",
-            "5832",
-            "QC368Bt50"
+            "7489", "2345", "9101", "5678", "1234", "3821", "8Ε0053", "3858", "3885", "5832", "QC368Bt50"
         )
     ) {
         val finalProductRegex = Regex("^\\d{5}-\\d{3}\$")
@@ -956,10 +601,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         println("ERROR: Product ${product.sku} has unnecessary line breaks in description")
         if (shouldRemoveEmptyLinesFromDescriptions) {
             updateProductDescriptions(
-                product,
-                product.short_description,
-                product.description.replace("&nbsp;", ""),
-                credentials
+                product, product.short_description, product.description.replace("&nbsp;", ""), credentials
             )
         }
     }
@@ -967,10 +609,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         println("ERROR: Product ${product.sku} has unnecessary line breaks in short description")
         if (shouldRemoveEmptyLinesFromDescriptions) {
             updateProductDescriptions(
-                product,
-                product.short_description.replace("&nbsp;", ""),
-                product.description,
-                credentials
+                product, product.short_description.replace("&nbsp;", ""), product.description, credentials
             )
         }
     }
