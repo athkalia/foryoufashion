@@ -181,7 +181,7 @@
   },
   {
     "name": "Klarna Payments for WooCommerce",
-    "version": "3.6.2",
+    "version": "3.7.1",
     "status": "inactive",
     "description": {
       "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
@@ -190,7 +190,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.9.15",
+    "version": "4.9.16",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"

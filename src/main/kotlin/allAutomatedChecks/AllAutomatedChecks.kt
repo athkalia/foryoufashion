@@ -127,6 +127,7 @@ fun main() {
             checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMissingImages(product)
+            checkForDuplicateImages(product)
             checkForNonPortraitImagesWithCache(product)
             checkForImagesWithTooLowResolution(product)
             checkForImagesWithTooHighResolution(product)
@@ -146,7 +147,7 @@ fun main() {
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
-//                        println("DEBUG: variation SKU: ${it.sku}")
+                        println("DEBUG: variation SKU: ${it.sku}")
                         addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 30, credentials)
                     }
                 }
@@ -208,7 +209,9 @@ fun fetchAllProducts(credentials: String): List<Product> {
 
 fun checkForLargeImagesOutsideMediaLibrary(wordPressWriteCredentials: String, credentials: String) {
     // Manually copy the list of large image paths from https://foryoufashion.gr/wp-admin/admin.php?page=big-files
-    val largeImages = listOf<String>()
+    val largeImages = listOf<String>(
+        // TODO
+    )
 
     val allMedia = getAllNonRecentMedia(wordPressWriteCredentials)
     val allMediaUrls = allMedia.map { it.source_url }.toSet()
@@ -223,7 +226,7 @@ fun checkForLargeImagesOutsideMediaLibrary(wordPressWriteCredentials: String, cr
     }
 
     if (imagePathsToDelete.isNotEmpty()) {
-        println("WARNING: ${imagePathsToDelete.size} Large images outside media library detected")
+        println("ERROR: ${imagePathsToDelete.size} Large images outside media library detected")
     }
     imagePathsToDelete.forEach {
         println("DEBUG: link $it")
@@ -421,12 +424,8 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
 
         val ratio = dimensions.second.toDouble() / dimensions.first.toDouble()
         if (ratio > 1.51 || ratio < 1.49) {
-            println("WARNING: Product ${product.sku} has the wrong resolution ratio")
-            println("DEBUG: Image width: ${dimensions.first}px")
-            println("DEBUG: Image height: ${dimensions.second}px")
-            println("DEBUG: Image URL: ${image.src}")
-            println("DEBUG: Image ratio: $ratio")
-            println(product.permalink)
+            println("WARNING: Product ${product.sku} image ${image.src} has the wrong resolution ratio ($ratio). Image width: ${dimensions.first}px, image height: ${dimensions.second}px ")
+            println("LINK: ${product.permalink}")
         }
     }
     saveImageCache(cache)
@@ -558,7 +557,7 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
         if (product.description.contains("μοντελο", ignoreCase = true) ||
             product.description.contains("μοντέλο", ignoreCase = true)
         ) {
-            println("WARNING: Product SKU ${product.sku} has info about the size the model is wearing in the long description.")
+            println("ERROR: Product SKU ${product.sku} has info about the size the model is wearing in the long description.")
         }
         if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)) {
             println("WARNING: Product SKU ${product.sku} does not have info about the size the model is wearing in the short description.")
@@ -602,11 +601,11 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         isValidHtml(product.short_description)
         isValidHtml(product.description)
         if (product.short_description.equals(product.description, ignoreCase = true)) {
-            println("WARNING: same short and long descriptions found for product: ${product.sku}")
+            println("ERROR: same short and long descriptions found for product: ${product.sku}")
             println("LINK: ${product.permalink}")
         }
         if (product.short_description.length > product.description.length) {
-            println("WARNING: short description longer than long description for product: ${product.sku}")
+            println("ERROR: short description longer than long description for product: ${product.sku}")
             println("LINK: ${product.permalink}")
 //        println("DEBUG: long description ${product.description}")
 //        println("DEBUG: short description ${product.short_description}")
@@ -615,11 +614,11 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
             }
         }
         if (product.short_description.length < 120 || product.short_description.length > 250) {
-            println("WARNING: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
+//            println("WARNING: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
 //        println("DEBUG: ${product.permalink} συντομη περιγραφη μηκος: ${product.short_description.length}")
         }
         if (product.description.length < 250 || product.description.length > 550) {
-            println("WARNING: Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
+//            println("WARNING: Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
 //        println("DEBUG: ${product.permalink} μεγαλη περιγραφη μηκος: ${product.description.length}")
         }
         if (product.description.contains("&nbsp;")) {
@@ -872,6 +871,19 @@ private fun checkForMissingImages(product: Product) {
     }
 }
 
+private fun checkForDuplicateImages(product: Product) {
+    val images = product.images
+    if (images.isNotEmpty()) {
+        val imageUrls = images.map { it.src }
+        val uniqueUrls = imageUrls.distinct()
+
+        if (imageUrls.size!=uniqueUrls.size) {
+            println("ERROR: Product ${product.sku} has duplicate images.")
+            println("LINK: ${product.permalink}")
+        }
+    }
+}
+
 private fun getProducts(page: Int, credentials: String): List<Product> {
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products?page=$page&per_page=100"
     return executeWithRetry {
@@ -1053,13 +1065,13 @@ private fun addProsforesTagForDiscountedProductsAndRemoveItForRest(
         val prosforesTag = Tag(id = 1552, slug = "prosfores", name = "Προσφορές")
         val regularPrice = variation.regular_price.toDoubleOrNull()
         val salePrice = variation.sale_price.toDoubleOrNull()
-        println("DEBUG: variation regular price $regularPrice")
-        println("DEBUG: variation sale price $salePrice")
+//        println("DEBUG: variation regular price $regularPrice")
+//        println("DEBUG: variation sale price $salePrice")
         if (regularPrice!=null && regularPrice > 0) {
             val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
             if (salePrice!=null) {
                 val discountPercentage = ((regularPrice - salePrice) / regularPrice * 100).roundToInt()
-                println("discount found $discountPercentage")
+//                println("DEBUG: discount found $discountPercentage%")
                 if (discountPercentage >= addTagAboveThisDiscount) {
                     addTagProsfores(product, prosforesTag, url, credentials)
                 } else {
@@ -1075,7 +1087,6 @@ private fun addProsforesTagForDiscountedProductsAndRemoveItForRest(
 }
 
 private fun addTagProsfores(product: Product, prosforesTag: Tag, url: String, credentials: String) {
-    println("Adding tag 'prosfores'")
     if (!product.tags.any { it.slug==prosforesTag.slug }) {
         val updatedTags = product.tags.toMutableList()
         updatedTags.add(prosforesTag)
@@ -1093,7 +1104,7 @@ private fun addTagProsfores(product: Product, prosforesTag: Tag, url: String, cr
             }
         }
     } else {
-        println("DEBUG: Prosfores tag doesn't exist anyway")
+//        println("DEBUG: Prosfores tag doesn't exist anyway")
     }
 }
 
@@ -1292,22 +1303,22 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     }
 
     if (newPlugins.isNotEmpty()) {
-        println("WARNING: The following plugins have been installed:")
+        println("ERROR: The following plugins have been installed:")
         newPlugins.forEach { println("- ${it.name} v${it.version}") }
     }
 
     if (deletedPlugins.isNotEmpty()) {
-        println("WARNING: The following plugins have been deleted:")
+        println("ERROR: The following plugins have been deleted:")
         deletedPlugins.forEach { println("- ${it.name} v${it.version}") }
     }
 
     if (updatedPlugins.isNotEmpty()) {
-        println("WARNING: The following plugins have been updated:")
+        println("ERROR: The following plugins have been updated:")
         updatedPlugins.forEach { println("- ${it.name} updated to v${it.version}") }
     }
 
     if (disabledPlugins.isNotEmpty()) {
-        println("WARNING: The following plugins have been enabled/disabled:")
+        println("ERROR: The following plugins have been enabled/disabled:")
         disabledPlugins.forEach { println("- ${it.name} updated to ${it.status}") }
     }
 }
