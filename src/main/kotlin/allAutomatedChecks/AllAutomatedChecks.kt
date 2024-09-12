@@ -127,7 +127,6 @@ fun main() {
             checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMissingImages(product)
-            checkProductsWithIncorrectPermaLink(product)
             checkForNonPortraitImagesWithCache(product)
             checkForImagesWithTooLowResolution(product)
             checkForImagesWithTooHighResolution(product)
@@ -162,13 +161,6 @@ fun main() {
         checkProductCategories(credentials)
         checkProductAttributes(credentials)
         checkProductTags(credentials)
-    }
-}
-
-fun checkProductsWithIncorrectPermaLink(product: Product) {
-    if (product.permalink.startsWith("https://foryoufashion.gr/?post_type=product&p=")) {
-        println("WARNING: product ${product.sku} seems to not have been created correctly.")
-        println("LINK: ${product.permalink}")
     }
 }
 
@@ -455,11 +447,13 @@ fun checkForImagesWithTooHighResolution(product: Product) {
 }
 
 fun checkForProductsInParentCategoryOnly(product: Product) {
-    val parentCategories = listOf("foremata", "panoforia")
-    val productCategorySlugs = product.categories.map { it.slug }.toSet()
-    if ((productCategorySlugs - parentCategories).isEmpty()) {
-        println("ERROR: Product SKU ${product.sku} is only in parent categories but should be in a more specific sub-category.")
-        println("LINK: ${product.permalink}")
+    if (product.status!="draft") {
+        val parentCategories = listOf("foremata", "panoforia")
+        val productCategorySlugs = product.categories.map { it.slug }.toSet()
+        if ((productCategorySlugs - parentCategories).isEmpty()) {
+            println("ERROR: Product SKU ${product.sku} is only in parent categories but should be in a more specific sub-category.")
+            println("LINK: ${product.permalink}")
+        }
     }
 }
 
@@ -580,45 +574,47 @@ private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
 }
 
 private fun checkForInvalidDescriptions(product: Product, credentials: String) {
+    if (product.status!="draft") {
 //    println("DEBUG: long description ${product.description}")
 //    println("DEBUG: short description ${product.short_description}")
-    isValidHtml(product.short_description)
-    isValidHtml(product.description)
-    if (product.short_description.equals(product.description, ignoreCase = true)) {
-        println("WARNING: same short and long descriptions found for product: ${product.sku}")
-        println("LINK: ${product.permalink}")
-    }
-    if (product.short_description.length > product.description.length) {
-        println("WARNING: short description longer than long description for product: ${product.sku}")
-        println("LINK: ${product.permalink}")
+        isValidHtml(product.short_description)
+        isValidHtml(product.description)
+        if (product.short_description.equals(product.description, ignoreCase = true)) {
+            println("WARNING: same short and long descriptions found for product: ${product.sku}")
+            println("LINK: ${product.permalink}")
+        }
+        if (product.short_description.length > product.description.length) {
+            println("WARNING: short description longer than long description for product: ${product.sku}")
+            println("LINK: ${product.permalink}")
 //        println("DEBUG: long description ${product.description}")
 //        println("DEBUG: short description ${product.short_description}")
-        if (shouldSwapDescriptions) {
-            swapProductDescriptions(product, credentials)
+            if (shouldSwapDescriptions) {
+                swapProductDescriptions(product, credentials)
+            }
         }
-    }
-    if (product.short_description.length < 120 || product.short_description.length > 250) {
-        println("WARNING: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
+        if (product.short_description.length < 120 || product.short_description.length > 250) {
+            println("WARNING: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
 //        println("DEBUG: ${product.permalink} συντομη περιγραφη μηκος: ${product.short_description.length}")
-    }
-    if (product.description.length < 250 || product.description.length > 550) {
-        println("WARNING: Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
-//        println("DEBUG: ${product.permalink} μεγαλη περιγραφη μηκος: ${product.description.length}")
-    }
-    if (product.description.contains("&nbsp;")) {
-        println("ERROR: Product ${product.sku} has unnecessary line breaks in description")
-        if (shouldRemoveEmptyLinesFromDescriptions) {
-            updateProductDescriptions(
-                product, product.short_description, product.description.replace("&nbsp;", ""), credentials
-            )
         }
-    }
-    if (product.short_description.contains("&nbsp;")) {
-        println("ERROR: Product ${product.sku} has unnecessary line breaks in short description")
-        if (shouldRemoveEmptyLinesFromDescriptions) {
-            updateProductDescriptions(
-                product, product.short_description.replace("&nbsp;", ""), product.description, credentials
-            )
+        if (product.description.length < 250 || product.description.length > 550) {
+            println("WARNING: Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
+//        println("DEBUG: ${product.permalink} μεγαλη περιγραφη μηκος: ${product.description.length}")
+        }
+        if (product.description.contains("&nbsp;")) {
+            println("ERROR: Product ${product.sku} has unnecessary line breaks in description")
+            if (shouldRemoveEmptyLinesFromDescriptions) {
+                updateProductDescriptions(
+                    product, product.short_description, product.description.replace("&nbsp;", ""), credentials
+                )
+            }
+        }
+        if (product.short_description.contains("&nbsp;")) {
+            println("ERROR: Product ${product.sku} has unnecessary line breaks in short description")
+            if (shouldRemoveEmptyLinesFromDescriptions) {
+                updateProductDescriptions(
+                    product, product.short_description.replace("&nbsp;", ""), product.description, credentials
+                )
+            }
         }
     }
 }
@@ -634,43 +630,46 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
     variation: Variation,
     credentials: String
 ) {
-    val regularPrice = variation.regular_price
-    val salePrice = variation.sale_price
+    if (product.status!="draft") {
 
-    if (regularPrice.isEmpty()) {
-        println("ERROR: product SKU ${product.sku} regular price empty")
-    }
-    if (regularPrice.isNotEmpty() && !priceHasCorrectPennies(regularPrice)) {
-        println("ERROR: product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
-        if (shouldUpdatePricesToEndIn99) {
-            val updatedRegularPrice = adjustPrice(regularPrice.toDouble())
-            if (updatedRegularPrice!=regularPrice) {
-                println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} regular price from $regularPrice to $updatedRegularPrice")
-                if (isSignificantPriceDifference(regularPrice.toDouble(), updatedRegularPrice.toDouble())) {
+        val regularPrice = variation.regular_price
+        val salePrice = variation.sale_price
+
+        if (regularPrice.isEmpty()) {
+            println("ERROR: product SKU ${product.sku} regular price empty")
+        }
+        if (regularPrice.isNotEmpty() && !priceHasCorrectPennies(regularPrice)) {
+            println("ERROR: product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
+            if (shouldUpdatePricesToEndIn99) {
+                val updatedRegularPrice = adjustPrice(regularPrice.toDouble())
+                if (updatedRegularPrice!=regularPrice) {
+                    println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} regular price from $regularPrice to $updatedRegularPrice")
+                    if (isSignificantPriceDifference(regularPrice.toDouble(), updatedRegularPrice.toDouble())) {
+                        println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
+                        exitProcess(1)
+                    }
+                    updateProductPrice(
+                        product.id,
+                        variation.id,
+                        updatedPrice = updatedRegularPrice,
+                        PriceType.REGULAR_PRICE, credentials
+                    )
+                    println(product.permalink)
+                }
+            }
+        }
+        if (salePrice.isNotEmpty() && !priceHasCorrectPennies(salePrice)) {
+            println("ERROR: product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
+            if (shouldUpdatePricesToEndIn99) {
+                val updatedSalePrice = adjustPrice(salePrice.toDouble())
+                println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
+                if (isSignificantPriceDifference(salePrice.toDouble(), updatedSalePrice.toDouble())) {
                     println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
                     exitProcess(1)
                 }
-                updateProductPrice(
-                    product.id,
-                    variation.id,
-                    updatedPrice = updatedRegularPrice,
-                    PriceType.REGULAR_PRICE, credentials
-                )
+                updateProductPrice(product.id, variation.id, updatedSalePrice, PriceType.SALE_PRICE, credentials)
                 println(product.permalink)
             }
-        }
-    }
-    if (salePrice.isNotEmpty() && !priceHasCorrectPennies(salePrice)) {
-        println("ERROR: product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
-        if (shouldUpdatePricesToEndIn99) {
-            val updatedSalePrice = adjustPrice(salePrice.toDouble())
-            println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
-            if (isSignificantPriceDifference(salePrice.toDouble(), updatedSalePrice.toDouble())) {
-                println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
-                exitProcess(1)
-            }
-            updateProductPrice(product.id, variation.id, updatedSalePrice, PriceType.SALE_PRICE, credentials)
-            println(product.permalink)
         }
     }
 }
@@ -921,13 +920,14 @@ private fun swapProductDescriptions(
 }
 
 fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
+    val nonDraftProducts = products.filter { it.status!="draft" }
     val today = LocalDate.now()
     val sixWeeksAgo = today.minusWeeks(6)
     val formatter = DateTimeFormatter.ISO_DATE_TIME
     val neesAfikseisTag = Tag(id = 1555, slug = "nees-afikseis", name = "Νέες Αφίξεις")
     val excludedCategorySlug = "papoutsia"
 
-    val newProductsInTheLast8Weeks = products.filter { product ->
+    val newProductsInTheLast8Weeks = nonDraftProducts.filter { product ->
         val productDate = LocalDate.parse(product.date_created, formatter)
         val isInExcludedCategory = product.categories.any { it.slug==excludedCategorySlug }
         productDate.isAfter(sixWeeksAgo) && !isInExcludedCategory
@@ -938,7 +938,7 @@ fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
     val finalNewProductsList = if (newProductsInTheLast8Weeks.size >= 80) {
         newProductsInTheLast8Weeks
     } else {
-        val additionalProducts = products.filter { product ->
+        val additionalProducts = nonDraftProducts.filter { product ->
             val isInExcludedCategory = product.categories.any { it.slug==excludedCategorySlug }
             product !in newProductsInTheLast8Weeks && !isInExcludedCategory
         }.sortedByDescending { product ->
@@ -947,7 +947,7 @@ fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
         newProductsInTheLast8Weeks + additionalProducts.take(80 - newProductsInTheLast8Weeks.size)
     }
 
-    products.forEach { product ->
+    nonDraftProducts.forEach { product ->
         val hasNeesAfikseisTag = product.tags.any { it.slug==neesAfikseisTag.slug }
         val shouldHaveNeesAfikseisTag = finalNewProductsList.contains(product)
 
@@ -1028,26 +1028,28 @@ fun removeNeesAfikseisTag(product: Product, neesAfikseisTag: Tag, credentials: S
 private fun addProsforesTagForDiscountedProductsAndRemoveItForRest(
     product: Product, variation: Variation, addTagAboveThisDiscount: Int, credentials: String
 ) {
-    val prosforesTag = Tag(id = 1552, slug = "prosfores", name = "Προσφορές")
-    val regularPrice = variation.regular_price.toDoubleOrNull()
-    val salePrice = variation.sale_price.toDoubleOrNull()
-    println("DEBUG: variation regular price $regularPrice")
-    println("DEBUG: variation sale price $salePrice")
-    if (regularPrice!=null && regularPrice > 0) {
-        val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
-        if (salePrice!=null) {
-            val discountPercentage = ((regularPrice - salePrice) / regularPrice * 100).roundToInt()
-            println("discount found $discountPercentage")
-            if (discountPercentage >= addTagAboveThisDiscount) {
-                addTagProsfores(product, prosforesTag, url, credentials)
+    if (product.status!="draft") {
+        val prosforesTag = Tag(id = 1552, slug = "prosfores", name = "Προσφορές")
+        val regularPrice = variation.regular_price.toDoubleOrNull()
+        val salePrice = variation.sale_price.toDoubleOrNull()
+        println("DEBUG: variation regular price $regularPrice")
+        println("DEBUG: variation sale price $salePrice")
+        if (regularPrice!=null && regularPrice > 0) {
+            val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+            if (salePrice!=null) {
+                val discountPercentage = ((regularPrice - salePrice) / regularPrice * 100).roundToInt()
+                println("discount found $discountPercentage")
+                if (discountPercentage >= addTagAboveThisDiscount) {
+                    addTagProsfores(product, prosforesTag, url, credentials)
+                } else {
+                    removeTagProsfores(product, prosforesTag, url, credentials)
+                }
             } else {
                 removeTagProsfores(product, prosforesTag, url, credentials)
             }
         } else {
-            removeTagProsfores(product, prosforesTag, url, credentials)
+            println("ERROR: Could not determine discount because regular price empty or negative")
         }
-    } else {
-        println("ERROR: Could not determine discount because regular price empty or negative")
     }
 }
 
@@ -1075,7 +1077,6 @@ private fun addTagProsfores(product: Product, prosforesTag: Tag, url: String, cr
 }
 
 private fun removeTagProsfores(product: Product, prosforesTag: Tag, url: String, credentials: String) {
-    println("Removing tag 'prosfores'")
     if (product.tags.any { it.slug==prosforesTag.slug }) {
         val updatedTags = product.tags.filter { it.slug!=prosforesTag.slug }
         val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
@@ -1092,7 +1093,7 @@ private fun removeTagProsfores(product: Product, prosforesTag: Tag, url: String,
             }
         }
     } else {
-        println("DEBUG: Prosfores tag doesn't exist anyway")
+//        println("DEBUG: Prosfores tag doesn't exist anyway")
     }
 }
 
@@ -1184,7 +1185,7 @@ fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
             val allOutOfStock = productVariations.all { it.stock_status=="outofstock" }
             if (allOutOfStock) {
                 println("ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.")
-                println(product.permalink)
+                println("LINK: ${product.permalink}")
                 if (shouldMoveOldOutOfStockProductsToPrivate) {
                     updateProductStatusToPrivate(product, credentials)
                 }
