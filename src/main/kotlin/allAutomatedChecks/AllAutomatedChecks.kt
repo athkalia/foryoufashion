@@ -151,8 +151,10 @@ fun main() {
                     }
                 }
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
+                checkAllVariationsHaveTheSamePrices(product, productVariations)
                 for (variation in productVariations) {
-//                    println("DEBUG: variation SKU: ${variation.sku}")
+                    checkForNegativeOrMissingPrices(variation)
+                    //                    println("DEBUG: variation SKU: ${variation.sku}")
                     checkForMissingOrWrongPricesAndUpdateEndTo99(product, variation, credentials)
                     checkForInvalidSKUNumbers(product, variation)
                 }
@@ -161,6 +163,26 @@ fun main() {
         checkProductCategories(credentials)
         checkProductAttributes(credentials)
         checkProductTags(credentials)
+    }
+}
+
+private fun checkForNegativeOrMissingPrices(variation: Variation) {
+    val regularPrice = variation.regular_price.toDoubleOrNull()
+    val salePrice = variation.sale_price.toDoubleOrNull()
+    if (regularPrice==null || regularPrice <= 0) {
+        println("ERROR: Regular price for variation ${variation.id} is invalid or empty")
+    }
+    if (salePrice!=null && salePrice <= 0) {
+        println("ERROR: Sale price for variation ${variation.id} is invalid ")
+    }
+}
+
+private fun checkAllVariationsHaveTheSamePrices(product: Product, productVariations: List<Variation>) {
+    val allDistinctRegularPrices = productVariations.map { it.regular_price }.distinct()
+    val allDistinctSalePrices = productVariations.map { it.sale_price }.distinct()
+
+    if (allDistinctRegularPrices.size!=1 || allDistinctSalePrices.size!=1) {
+        println("ERROR: Multiple variation prices for product SKU ${product.sku}.")
     }
 }
 
@@ -1023,7 +1045,6 @@ fun removeNeesAfikseisTag(product: Product, neesAfikseisTag: Tag, credentials: S
         }
     }
 }
-
 
 private fun addProsforesTagForDiscountedProductsAndRemoveItForRest(
     product: Product, variation: Variation, addTagAboveThisDiscount: Int, credentials: String
