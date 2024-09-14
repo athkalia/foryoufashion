@@ -49,7 +49,7 @@ import writeConsumerSecret
 const val readOnly = true
 
 // Slow
-const val shouldSkipVariationChecks = false
+const val shouldPerformVariationChecks = true
 const val checkMediaLibraryChecks = true
 
 // Require manual input
@@ -93,7 +93,7 @@ fun main() {
     if (readOnly && (allWooCommerceApiUpdateVariables.any { it })) {
         throw Exception("Something set for update but readOnly is set to 'false'")
     }
-    if (shouldUpdateProsforesProductTag && shouldSkipVariationChecks) {
+    if (shouldUpdateProsforesProductTag && !shouldPerformVariationChecks) {
         throw Exception("Cannot update prosfores if variation checks is disabled")
     }
 
@@ -118,6 +118,8 @@ fun main() {
         if (shouldUpdateNeesAfikseisProductTag) {
             updateNeesAfikseisProducts(allProducts, credentials)
         }
+        checkForMissingImagesAltText(allProducts)
+        checkForDuplicateImagesAcrossProducts(allProducts)
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
             if (product.id==27948 || product.id==27947) {
@@ -127,7 +129,7 @@ fun main() {
             checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMissingImages(product)
-            checkForDuplicateImages(product)
+            checkForDuplicateImagesInAProduct(product)
             checkForNonPortraitImagesWithCache(product)
             checkForImagesWithTooLowResolution(product)
             checkForImagesWithTooHighResolution(product)
@@ -142,7 +144,7 @@ fun main() {
             checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product)
             checkForProductsInParentCategoryOnly(product)
 
-            if (!shouldSkipVariationChecks) {
+            if (shouldPerformVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
@@ -154,9 +156,8 @@ fun main() {
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
                 for (variation in productVariations) {
-                    checkForNegativeOrMissingPrices(variation)
-                    //                    println("DEBUG: variation SKU: ${variation.sku}")
-                    checkForMissingOrWrongPricesAndUpdateEndTo99(product, variation, credentials)
+                    // println("DEBUG: variation SKU: ${variation.sku}")
+                    checkForWrongPricesAndUpdateEndTo99(product, variation, credentials)
                     checkForInvalidSKUNumbers(product, variation)
                 }
             }
@@ -164,17 +165,6 @@ fun main() {
         checkProductCategories(credentials)
         checkProductAttributes(credentials)
         checkProductTags(credentials)
-    }
-}
-
-private fun checkForNegativeOrMissingPrices(variation: Variation) {
-    val regularPrice = variation.regular_price.toDoubleOrNull()
-    val salePrice = variation.sale_price.toDoubleOrNull()
-    if (regularPrice==null || regularPrice <= 0) {
-        println("ERROR: Regular price for variation ${variation.id} is invalid or empty")
-    }
-    if (salePrice!=null && salePrice <= 0) {
-        println("ERROR: Sale price for variation ${variation.id} is invalid ")
     }
 }
 
@@ -262,6 +252,18 @@ fun checkForLargeImagesOutsideMediaLibrary(wordPressWriteCredentials: String, cr
     }
 }
 
+fun checkForMissingImagesAltText(allProducts: List<Product>) {
+    for (product in allProducts) {
+        for (image in product.images) {
+            if (image.alt.isEmpty()) {
+                println("WARNING: Product SKU ${product.sku} has an image with missing alt text.")
+                println("LINK: ${product.permalink}")
+                println("Image URL: ${image.src}")
+            }
+        }
+    }
+}
+
 fun checkForMissingFilesInsideMediaLibraryEntries(allMedia: List<Media>) {
     val cache = loadMediaCache()
     val today = LocalDate.now()
@@ -334,6 +336,7 @@ fun checkForUnusedImagesInsideMediaLibrary(allProducts: List<Product>, wordPress
     println("DEBUG: Total product images: ${allProductImages.size}")
 
     val unusedImages = findUnusedImages(allMedia, allProductImages)
+        .filter { it.id !in listOf(36692, 29045, 29044, 29043, 29042) } // Ta thelei i Olga
     if (unusedImages.isNotEmpty()) {
         println("ERROR: Unused images in media library: ${unusedImages.size}")
     }
@@ -527,19 +530,25 @@ fun checkForDraftProducts(product: Product) {
 }
 
 fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
-    // Some wedding dresses - ignore
-    if (product.sku !in listOf(
+    if (product.status=="draft") {
+        return
+    }
+    if (product.sku in listOf( // Some wedding dresses - ignore
             "7489", "2345", "9101", "5678", "1234", "3821", "8Ε0053", "3858", "3885", "5832", "QC368Bt50"
         )
     ) {
-        val finalProductRegex = Regex("^\\d{5}-\\d{3}\$")
-        if (!product.sku.matches(finalProductRegex)) {
-            println("ERROR: Product SKU ${product.sku} does not match Product SKU regex ")
-        }
-        val finalProductVariationRegex = Regex("^\\d{5}-\\d{3}-\\d{1,3}$")
-        if (!variation.sku.matches(finalProductVariationRegex)) {
-            println("ERROR: Variation SKU ${variation.sku} does not match Variation SKU regex ")
-        }
+        return
+    }
+    val finalProductRegex = Regex("^\\d{5}-\\d{3}\$")
+    if (!product.sku.matches(finalProductRegex)) {
+        println("ERROR: Product SKU ${product.sku} does not match Product SKU regex ")
+    }
+    val finalProductVariationRegex = Regex("^\\d{5}-\\d{3}-\\d{1,3}$")
+    if (!variation.sku.matches(finalProductVariationRegex)) {
+        println("ERROR: Variation SKU ${variation.sku} does not match Variation SKU regex ")
+    }
+    if (!variation.sku.startsWith(product.sku)) {
+        println("ERROR: Variation SKU ${variation.sku} does not start with the product SKU ${product.sku}")
     }
 }
 
@@ -646,26 +655,32 @@ private fun checkForStockManagementAtProductLevelOutOfVariations(product: Produc
     }
 }
 
-private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
-    product: Product,
-    variation: Variation,
-    credentials: String
-) {
+private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Variation, credentials: String) {
     if (product.status!="draft") {
-
-        val regularPrice = variation.regular_price
-        val salePrice = variation.sale_price
-
-        if (regularPrice.isEmpty()) {
-            println("ERROR: product SKU ${product.sku} regular price empty")
+        val regularPriceString = variation.regular_price
+        val salePriceString = variation.sale_price
+        val regularPrice = regularPriceString.toDoubleOrNull()
+        val salePrice = salePriceString.toDoubleOrNull()
+        if (regularPrice==null || regularPrice <= 0) {
+            println("ERROR: Regular price for variation ${variation.id} is invalid or empty")
+            return
         }
-        if (regularPrice.isNotEmpty() && !priceHasCorrectPennies(regularPrice)) {
-            println("ERROR: product SKU ${product.sku} regular price $regularPrice has incorrect pennies")
+        if (salePrice!=null && salePrice <= 0) {
+            println("ERROR: Sale price for variation ${variation.id} is invalid ")
+            return
+        }
+        if (salePrice!=null && salePrice >= regularPrice) {
+            println("ERROR: Sale price for variation ${variation.id} $salePrice cannot be bigger or equal to regular price $regularPrice")
+            return
+        }
+
+        if (regularPriceString.isNotEmpty() && !priceHasCorrectPennies(regularPriceString)) {
+            println("ERROR: product SKU ${product.sku} regular price $regularPriceString has incorrect pennies")
             if (shouldUpdatePricesToEndIn99) {
-                val updatedRegularPrice = adjustPrice(regularPrice.toDouble())
-                if (updatedRegularPrice!=regularPrice) {
-                    println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} regular price from $regularPrice to $updatedRegularPrice")
-                    if (isSignificantPriceDifference(regularPrice.toDouble(), updatedRegularPrice.toDouble())) {
+                val updatedRegularPrice = adjustPrice(regularPriceString.toDouble())
+                if (updatedRegularPrice!=regularPriceString) {
+                    println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} regular price from $regularPriceString to $updatedRegularPrice")
+                    if (isSignificantPriceDifference(regularPriceString.toDouble(), updatedRegularPrice.toDouble())) {
                         println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
                         exitProcess(1)
                     }
@@ -679,12 +694,12 @@ private fun checkForMissingOrWrongPricesAndUpdateEndTo99(
                 }
             }
         }
-        if (salePrice.isNotEmpty() && !priceHasCorrectPennies(salePrice)) {
-            println("ERROR: product SKU ${product.sku} salePrice price $salePrice has incorrect pennies")
+        if (salePriceString.isNotEmpty() && !priceHasCorrectPennies(salePriceString)) {
+            println("ERROR: product SKU ${product.sku} salePrice price $salePriceString has incorrect pennies")
             if (shouldUpdatePricesToEndIn99) {
-                val updatedSalePrice = adjustPrice(salePrice.toDouble())
-                println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePrice to $updatedSalePrice")
-                if (isSignificantPriceDifference(salePrice.toDouble(), updatedSalePrice.toDouble())) {
+                val updatedSalePrice = adjustPrice(salePriceString.toDouble())
+                println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePriceString to $updatedSalePrice")
+                if (isSignificantPriceDifference(salePriceString.toDouble(), updatedSalePrice.toDouble())) {
                     println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
                     exitProcess(1)
                 }
@@ -871,7 +886,32 @@ private fun checkForMissingImages(product: Product) {
     }
 }
 
-private fun checkForDuplicateImages(product: Product) {
+private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
+    val imageToProductsMap = mutableMapOf<String, MutableList<Product>>()
+    for (product in products) {
+        if (product.sku!="59183-514" && product.sku!="59182-514") { // known to contain duplicate images
+            val images = product.images
+            for (image in images) {
+                val imageUrl = image.src
+                imageToProductsMap.computeIfAbsent(imageUrl) { mutableListOf() }.add(product)
+            }
+        }
+    }
+
+    imageToProductsMap.forEach { (imageUrl, associatedProducts) ->
+        val distinctAssociatedProducts = associatedProducts.distinct()
+        if (distinctAssociatedProducts.size > 1) {
+            println("ERROR: Duplicate image found across products.")
+            println("ERROR: Image URL: $imageUrl")
+            println("ERROR: Products with this image:")
+            distinctAssociatedProducts.forEach { product ->
+                println("ERROR: SKU: ${product.sku}, LINK: ${product.permalink}")
+            }
+        }
+    }
+}
+
+private fun checkForDuplicateImagesInAProduct(product: Product) {
     val images = product.images
     if (images.isNotEmpty()) {
         val imageUrls = images.map { it.src }

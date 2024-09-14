@@ -181,7 +181,7 @@
   },
   {
     "name": "Klarna Payments for WooCommerce",
-    "version": "3.7.1",
+    "version": "3.7.2",
     "status": "inactive",
     "description": {
       "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
