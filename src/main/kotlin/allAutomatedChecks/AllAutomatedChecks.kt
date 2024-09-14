@@ -126,6 +126,7 @@ fun main() {
                 continue
             }
 //            println("DEBUG: product SKU: ${product.sku}")
+            checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMissingImages(product)
@@ -600,6 +601,21 @@ private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
     } else if (title.length > 65) { // Matches meta ads recommendations
         println("ERROR: Product ${product.sku} has a too long title: '$title'.")
         println("LINK: ${product.permalink}")
+    }
+}
+
+fun checkNameModelTag(product: Product) {
+    if (product.status!="draft") {
+        val formatter = DateTimeFormatter.ISO_DATE_TIME
+        val targetDate = LocalDate.of(2024, 9, 20) // When we started implementing this
+        val productCreationDate = LocalDate.parse(product.date_created, formatter)
+        if (productCreationDate.isAfter(targetDate)) {
+            val hasModelTag = product.tags.any { tag -> tag.name.startsWith("ΜΟΝΤΕΛΟ", ignoreCase = true) }
+            if (!hasModelTag) {
+                println("ERROR: Product SKU ${product.sku} does not have a model tag starting with 'ΜΟΝΤΕΛΟ'.")
+                println("LINK: ${product.permalink}")
+            }
+        }
     }
 }
 
