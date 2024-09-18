@@ -1,6 +1,15 @@
 package reports
 
+
+import org.jfree.chart.plot.XYPlot
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
+import org.jfree.chart.ChartUtils
+import org.jfree.data.xy.XYSeries
+import org.jfree.data.xy.XYSeriesCollection
+import java.io.File
+
 import Order
+import Product
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Credentials
@@ -10,43 +19,51 @@ import java.awt.BasicStroke
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.jfree.chart.ChartFactory
-import org.jfree.chart.ChartUtils
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.chart.axis.CategoryAxis
 import org.jfree.chart.axis.CategoryLabelPositions
 import org.jfree.data.category.DefaultCategoryDataset
-import java.io.File
 import java.io.IOException
 import org.apache.commons.text.StringEscapeUtils
 import org.jfree.chart.plot.CategoryPlot
 import org.jfree.chart.renderer.category.LineAndShapeRenderer
 import readOnlyConsumerKey
+
+import java.time.YearMonth
+import org.jfree.chart.axis.NumberAxis
+import org.jfree.chart.axis.SymbolAxis
+import java.awt.geom.Ellipse2D
 import readOnlyConsumerSecret
+import java.time.temporal.ChronoUnit
+import java.util.TreeSet
 
 fun main() {
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
-    val orders = fetchAllOrders(credentials)
-    val groupedOrders = orders.map { it.status }.groupBy { it }
-    println("DEBUG: Grouped orders: $groupedOrders")
+    val orders = fetchAllOrdersSince2024(credentials)
     println("DEBUG: Total orders fetched: ${orders.size}")
+    val orderStatusMap = generateOrderStatusData(orders)
+    plotOrdersStatusesByMonth(orderStatusMap)
 
-    val orderStatusMap = processOrdersByMonth(orders)
-    plotOrders(orderStatusMap)
+    val paymentMethodDistributionMap = generatePaymentMethodsData(orders)
+    plotPaymentMethodsByMonth(paymentMethodDistributionMap)
 
-    val paymentMethodDistributionMap = processPaymentMethods(orders)
-    plotPaymentMethods(paymentMethodDistributionMap)
-    println("ACTION: Order cancellation percentage plot saved as 'order_cancellation_percentage_by_month.png'")
-    println("ACTION: Payment method distribution plot saved as 'payment_method_distribution.png'")
+    val productAges = generateProductAgesAtSaleData(orders, credentials)
+    plotProductAgesWithAverageByMonth(productAges)
 }
 
-fun fetchAllOrders(credentials: String): List<Order> {
+fun fetchAllOrdersSince2024(credentials: String): List<Order> {
     val client = OkHttpClient()
     val orders = mutableListOf<Order>()
     var page = 1
     var hasMoreOrders: Boolean
 
+    // Fetching all orders of 2024 onwards
+    val afterDate = "2024-01-01T00:00:00"
+
     do {
-        val url = "https://foryoufashion.gr/wp-json/wc/v3/orders?page=$page&per_page=100"
+        println("DEBUG: Fetching orders page $page")
+        // Add the `after` parameter to the URL to fetch orders created after the specified date
+        val url = "https://foryoufashion.gr/wp-json/wc/v3/orders?page=$page&per_page=100&after=$afterDate"
         val request = Request.Builder().url(url).header("Authorization", credentials).build()
 
         client.newCall(request).execute().use { response ->
@@ -62,17 +79,14 @@ fun fetchAllOrders(credentials: String): List<Order> {
         page++
     } while (hasMoreOrders)
 
-    return orders.filter { order ->
-        LocalDate.parse(order.date_created, DateTimeFormatter.ISO_DATE_TIME).year >= 2024
-    }
+    return orders
 }
 
-fun processOrdersByMonth(orders: List<Order>): Map<String, Map<String, Double>> {
+fun generateOrderStatusData(orders: List<Order>): Map<String, Map<String, Double>> {
     val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
     val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
     val orderCountMap = mutableMapOf<String, Int>()
     val statusCountMaps = mutableMapOf<String, MutableMap<String, Int>>()
-
     orders.forEach { order ->
         val date = LocalDate.parse(order.date_created, dateFormatter)
         val month = monthFormatter.format(date)
@@ -97,17 +111,28 @@ fun processOrdersByMonth(orders: List<Order>): Map<String, Map<String, Double>> 
             statusPercentageMap[status]!![month] = percentage
         }
     }
-    println("DEBUG: $orderCountMap")
+    println("DEBUG: Orders by month: $orderCountMap")
     return statusPercentageMap
 }
 
-fun plotOrders(statusPercentageMap: Map<String, Map<String, Double>>) {
+fun plotOrdersStatusesByMonth(statusPercentageMap: Map<String, Map<String, Double>>) {
     val dataset = DefaultCategoryDataset()
 
-    statusPercentageMap.forEach { (status, percentageMap) ->
-        val sortedPercentageMap = percentageMap.toSortedMap()
-        sortedPercentageMap.forEach { (month, percentage) ->
-            dataset.addValue(percentage, "$status %", month)
+    val filteredStatusPercentageMap = statusPercentageMap.filter { it.key!="on-hold" && it.key!="processing" }
+
+    val allMonths = TreeSet<YearMonth>()
+
+    filteredStatusPercentageMap.forEach { (_, percentageMap) ->
+        percentageMap.keys.forEach { month ->
+            allMonths.add(YearMonth.parse(month))
+        }
+    }
+
+    filteredStatusPercentageMap.forEach { (status, percentageMap) ->
+        allMonths.forEach { yearMonth ->
+            val monthStr = yearMonth.toString()
+            val percentage = percentageMap[monthStr] ?: 0.0
+            dataset.addValue(percentage, "$status %", monthStr)
         }
     }
 
@@ -122,44 +147,38 @@ fun plotOrders(statusPercentageMap: Map<String, Map<String, Double>>) {
         false
     )
 
-    // Adjust the x-axis labels to show all months
     val categoryPlot = chart.categoryPlot
     val domainAxis = categoryPlot.domainAxis as CategoryAxis
     domainAxis.categoryLabelPositions = CategoryLabelPositions.UP_45
-
     thickenLines(categoryPlot, dataset)
-    val chartFile = File("order_status_percentage_by_month.png")
+
+    val fileName = "order_status_percentage_by_month.png"
+    val chartFile = File(fileName)
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
+    println("ACTION: Order cancellation percentage plot saved as $fileName")
 }
 
-private fun thickenLines(
-    categoryPlot: CategoryPlot,
-    dataset: DefaultCategoryDataset
-) {
-    val renderer = categoryPlot.renderer as LineAndShapeRenderer
-    val seriesCount = dataset.rowCount
-    for (i in 0 until seriesCount) {
-        renderer.setSeriesStroke(i, BasicStroke(3.0f))
-    }
-}
-
-fun processPaymentMethods(orders: List<Order>): Map<String, Map<String, Double>> {
+fun generatePaymentMethodsData(orders: List<Order>): Map<String, Map<String, Double>> {
     val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
     val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
     val paymentMethodCountMap = mutableMapOf<String, MutableMap<String, Int>>()
     val totalOrdersPerMonthMap = mutableMapOf<String, Int>()
 
     val differentPaymentTypes = mutableSetOf<String>()
-    orders.forEach { order ->
+    val completedOrders = orders.filter { it.status=="completed" }
+    completedOrders.forEach { order ->
         val date = LocalDate.parse(order.date_created, dateFormatter)
         val month = monthFormatter.format(date)
 //            println("DEBUG: Order payment method: ${order.payment_method} payment method title: ${order.payment_method_title}")
         val paymentMethod = when (StringEscapeUtils.unescapeJava(order.payment_method)) {
-            "stripe_applepay" -> "Apple Pay (Stripe)"
-            "stripe_googlepay" -> "Google Pay (Stripe)"
+            "stripe_applepay" -> "Apple Pay"
+            "stripe_googlepay" -> "Google Pay"
+            "stripe_klarna" -> "Klarna"
+            "klarna_payments" -> "Klarna"
             else -> when (order.payment_method_title) {
                 "Credit / Debit Card" -> "Κάρτα"
                 "Με κάρτα μέσω Πειραιώς" -> "Κάρτα"
+                "Apple Pay (Stripe)" -> "Apple Pay"
                 else -> order.payment_method_title
             }
         }
@@ -185,12 +204,23 @@ fun processPaymentMethods(orders: List<Order>): Map<String, Map<String, Double>>
     return paymentMethodPercentageMap
 }
 
-fun plotPaymentMethods(paymentMethodPercentageMap: Map<String, Map<String, Double>>) {
+fun plotPaymentMethodsByMonth(paymentMethodPercentageMap: Map<String, Map<String, Double>>) {
     val dataset = DefaultCategoryDataset()
     val sortedPaymentMethodPercentageMap = paymentMethodPercentageMap.toSortedMap()
 
-    sortedPaymentMethodPercentageMap.forEach { (month, paymentMethods) ->
-        paymentMethods.forEach { (paymentMethod, percentage) ->
+    // Find all months that appear in the data
+    val allMonths = sortedPaymentMethodPercentageMap.keys.toSortedSet()
+
+    // Find all payment methods
+    val allPaymentMethods = mutableSetOf<String>()
+    sortedPaymentMethodPercentageMap.values.forEach { paymentMethods ->
+        allPaymentMethods.addAll(paymentMethods.keys)
+    }
+
+    // Ensure each payment method appears in each month, filling in 0 for missing months
+    allPaymentMethods.forEach { paymentMethod ->
+        allMonths.forEach { month ->
+            val percentage = sortedPaymentMethodPercentageMap[month]?.get(paymentMethod) ?: 0.0
             dataset.addValue(percentage, paymentMethod, month)
         }
     }
@@ -212,6 +242,157 @@ fun plotPaymentMethods(paymentMethodPercentageMap: Map<String, Map<String, Doubl
     domainAxis.categoryLabelPositions = CategoryLabelPositions.UP_45
 
     thickenLines(categoryPlot, dataset)
-    val chartFile = File("payment_method_percentage_distribution.png")
+
+    val fileName = "payment_method_percentage_distribution.png"
+    val chartFile = File(fileName)
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
+    println("ACTION: Payment method distribution plot saved as $fileName")
+}
+
+fun generateProductAgesAtSaleData(orders: List<Order>, credentials: String): List<Pair<LocalDate, Long>> {
+    val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
+    val productAges = mutableListOf<Pair<LocalDate, Long>>()  // List of pairs (order date, product age)
+    orders.sortedBy { it.date_created }.forEach { order ->
+        val orderDate = LocalDate.parse(order.date_created, dateFormatter)
+        order.line_items.forEach { item ->
+            if (item.product_id==0) {
+                println("WARNING: Skipping line item with invalid product_id 0 for order ${order.id}")
+                return@forEach
+            }
+            try {
+                // Fetch product creation date
+                val productCreationDate = getProductCreationDate(item.product_id, credentials)
+
+                // Calculate the age of the product at the time of the order (in days)
+                val productAgeAtSale = ChronoUnit.DAYS.between(productCreationDate, orderDate)
+
+                // Add the order date and product age to the list
+                productAges.add(orderDate to productAgeAtSale)
+            } catch (e: IOException) {
+                println("ERROR: Failed to fetch product creation date for product_id ${item.product_id} in order ${order.id}. Error: ${e.message}")
+            }
+        }
+    }
+    return productAges
+}
+
+fun getProductCreationDate(productId: Int, credentials: String): LocalDate {
+    val client = OkHttpClient()
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/$productId"
+    val request = Request.Builder().url(url).header("Authorization", credentials).build()
+
+    client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) throw IOException("Unexpected code $response")
+        val body = response.body?.string()!!
+        val mapper = jacksonObjectMapper()
+        val product: Product = mapper.readValue(body)
+        return LocalDate.parse(product.date_created, DateTimeFormatter.ISO_DATE_TIME)
+    }
+}
+
+fun plotProductAgesWithAverageByMonth(productAges: List<Pair<LocalDate, Long>>) {
+    val dataset = XYSeriesCollection()
+    val scatterSeries = XYSeries("Sold product age")
+    val averageSeries = XYSeries("Average sold product Age for month")
+
+    val monthFormatter = DateTimeFormatter.ofPattern("MM-yyyy")
+    val months = mutableListOf<String>()
+    val monthlyAges = mutableMapOf<String, MutableList<Double>>()  // To store product ages for each month
+
+    // Calculate the X-axis position for each order date
+    productAges.forEach { (orderDate, productAgeInDays) ->
+        val orderMonth = monthFormatter.format(orderDate)
+
+        // Add month to the list if it's not already present
+        if (orderMonth !in months) {
+            months.add(orderMonth)
+        }
+
+        // Get the index of the month (X-axis position)
+        val monthIndex = months.indexOf(orderMonth).toDouble()
+
+        // Calculate the position within the month based on the day of the month
+        val yearMonth = YearMonth.of(orderDate.year, orderDate.month)
+        val daysInMonth = yearMonth.lengthOfMonth()
+        val dayPosition = orderDate.dayOfMonth.toDouble() / daysInMonth
+
+        // Final X-axis position: month index + fractional position within the month
+        val xAxisPosition = monthIndex + dayPosition
+
+        // Convert the product age in days to months
+        val productAgeInMonths = productAgeInDays / 30.0  // Approximate conversion from days to months
+
+        // Add the point to the scatter series
+        scatterSeries.add(xAxisPosition, productAgeInMonths)
+
+        // Add to the list of ages for this month
+        monthlyAges.computeIfAbsent(orderMonth) { mutableListOf() }.add(productAgeInMonths)
+    }
+
+    // Calculate average product age for each month and add it to the average series
+    monthlyAges.forEach { (month, ages) ->
+        val monthIndex = months.indexOf(month).toDouble()
+        val averageAge = ages.average()
+
+        // Add the average age as a point for each month
+        averageSeries.add(monthIndex + 0.5, averageAge)  // Position in the middle of the month
+    }
+
+    // Add both series to the dataset
+    dataset.addSeries(scatterSeries)
+    dataset.addSeries(averageSeries)
+
+    val chart = ChartFactory.createScatterPlot(
+        "Sold product age (with Monthly Averages)",
+        "Order Month",
+        "Product age (Months listed on site)",
+        dataset,
+        PlotOrientation.VERTICAL,
+        true,
+        true,
+        false
+    )
+
+    val plot = chart.xyPlot as XYPlot
+
+    // Renderer for the scatter plot (individual product ages)
+    val scatterRenderer = XYLineAndShapeRenderer(false, true)  // Only show shapes (dots) for the scatter plot
+    plot.setRenderer(0, scatterRenderer)
+
+    // Set the shape to a circle and adjust its size for the scatter plot
+    val circle = Ellipse2D.Double(-2.0, -2.0, 4.0, 4.0)  // Circle of radius 2 (change 4.0 to control size)
+    scatterRenderer.setSeriesShape(0, circle)  // Set the shape for the first (scatter) series
+    scatterRenderer.setSeriesShapesVisible(0, true)  // Make sure shapes are visible for the scatter series
+    scatterRenderer.defaultStroke = BasicStroke(1.0f)
+
+    // Renderer for the average points (monthly averages)
+    val averageRenderer = XYLineAndShapeRenderer(false, true)  // No lines, just points
+    val square = Ellipse2D.Double(-3.0, -3.0, 6.0, 6.0)  // Slightly larger circle for the average points
+    averageRenderer.setSeriesShape(1, square)
+    averageRenderer.setSeriesShapesVisible(1, true)
+    averageRenderer.defaultStroke = BasicStroke(2.0f)  // Thicker stroke for average points
+    plot.setRenderer(1, averageRenderer)  // Set the renderer for the average series
+
+    // X-axis: use the months as labels
+    val monthAxis = SymbolAxis("Order Month", months.toTypedArray())
+    plot.domainAxis = monthAxis
+
+    // Y-axis: label in months
+    val yAxis = NumberAxis("Product age (Months listed on site)")
+    plot.rangeAxis = yAxis
+
+    val fileName = "sold-products-age.png"
+    val chartFile = File(fileName)
+    ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
+    println("Scatter plot with order product age saved as $fileName")
+}
+
+private fun thickenLines(
+    categoryPlot: CategoryPlot, dataset: DefaultCategoryDataset
+) {
+    val renderer = categoryPlot.renderer as LineAndShapeRenderer
+    val seriesCount = dataset.rowCount
+    for (i in 0 until seriesCount) {
+        renderer.setSeriesStroke(i, BasicStroke(3.0f))
+    }
 }

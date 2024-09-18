@@ -25,19 +25,17 @@ fun main(args: Array<String>) {
     val previousMonthDate = getPreviousMonthDate()
     val currentMonthOrders = fetchOrders(previousMonthDate, credentials)
     val totalRevenue = calculateTotalRevenue(currentMonthOrders)
-    val cancelledOrdersPercentage = calculateCancelledOrdersPercentage(currentMonthOrders)
-    val refundedOrdersPercentage = calculateRefundedOrdersPercentage(currentMonthOrders)
+    val nonCompletedOrdersPercentage = calculateNonCompletedOrdersPercentage(currentMonthOrders)
     val completedRevenue = calculateCompletedRevenue(currentMonthOrders)
 
     val monthAndYear = previousMonthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val emailContent = generateEmailContent(
         totalRevenue,
-        cancelledOrdersPercentage,
-        refundedOrdersPercentage,
+        nonCompletedOrdersPercentage,
         completedRevenue,
         monthAndYear,
     )
-    sendEmail(toEmail, emailContent)
+    sendEmail(toEmail, emailContent, monthAndYear)
     println("ACTION: Email sent to $toEmail")
 }
 
@@ -76,10 +74,10 @@ fun calculateTotalRevenue(orders: List<Order>): Double {
     return orders.sumOf { it.total.toDouble() }
 }
 
-fun calculateCancelledOrdersPercentage(orders: List<Order>): Double {
+fun calculateNonCompletedOrdersPercentage(orders: List<Order>): Double {
     val totalOrders = orders.size
-    val cancelledOrders = orders.count { it.status=="cancelled" }
-    return if (totalOrders > 0) (cancelledOrders.toDouble() / totalOrders.toDouble()) * 100 else 0.0
+    val nonCompletedOrders = orders.count { it.status!="completed" }
+    return if (totalOrders > 0) (nonCompletedOrders.toDouble() / totalOrders.toDouble()) * 100 else 0.0
 }
 
 fun calculateRefundedOrdersPercentage(orders: List<Order>): Double {
@@ -94,8 +92,7 @@ fun calculateCompletedRevenue(orders: List<Order>): Double {
 
 fun generateEmailContent(
     allOrdersRevenue: Double,
-    cancelledOrdersPercentage: Double,
-    returnedOrdersPercentage: Double,
+    nonCompletedOrdersPercentage: Double,
     completedOrdersRevenue: Double,
     monthAndYear: String,
 ): String {
@@ -103,12 +100,10 @@ fun generateEmailContent(
         Καλησπέρα,
 
         Σας επισυνάπτω τις πωλήσεις απο το site για το μήνα $monthAndYear
-        - Συνολικά Έσοδα: €${"%.2f".format(allOrdersRevenue)}
-        - Ακυρώσεις %: ${"%.2f".format(cancelledOrdersPercentage)}%
-        - Επιστροφές %: ${"%.2f".format(returnedOrdersPercentage)}%
-        - Επιστροφές + Ακυρώσεις %: ${"%.2f".format(cancelledOrdersPercentage + returnedOrdersPercentage)}%
+        - Συνολικές Πωλήσεις: €${"%.2f".format(allOrdersRevenue)}
         - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue)}
-        - Συνολικό Έξοδα marketing για το μήνα: ${"%.2f".format(MANUAL_INPUT_totalMarketingExpensesForMonth)} 
+        - Μη ολοκληρωμένες παραγγελίες %: ${"%.2f".format(nonCompletedOrdersPercentage)}%
+        - Συνολικά έξοδα marketing για το μήνα: €${"%.2f".format(MANUAL_INPUT_totalMarketingExpensesForMonth)} 
         - Συνολικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / MANUAL_INPUT_totalMarketingExpensesForMonth)} 
 
         Φιλικά,
@@ -116,7 +111,7 @@ fun generateEmailContent(
     """.trimIndent()
 }
 
-fun sendEmail(recipientEmail: String, content: String) {
+fun sendEmail(recipientEmail: String, content: String, monthAndYear: String) {
     val username = "sakis@foryoufashion.gr"
     val props = Properties()
     props["mail.smtp.auth"] = "true"
@@ -137,7 +132,7 @@ fun sendEmail(recipientEmail: String, content: String) {
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail))
         message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("k.kaliakouda@foryoufashion.gr"))
         message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
-        message.subject = "For You Fashion - Έσοδα μήνα"
+        message.subject = "For You Fashion - Έσοδα μήνα $monthAndYear"
         message.setText(content)
         Transport.send(message)
     } catch (e: MessagingException) {

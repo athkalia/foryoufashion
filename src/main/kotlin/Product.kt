@@ -8,7 +8,16 @@ data class Order(
     val status: String,
     val payment_method_title: String,
     val payment_method: String,
-    val total:String
+    val total: String,
+    val line_items: List<LineItem>  // Adding line items here
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class LineItem(
+    val id: Int,
+    val product_id: Int,
+    val name: String,
+    val quantity: Int
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
