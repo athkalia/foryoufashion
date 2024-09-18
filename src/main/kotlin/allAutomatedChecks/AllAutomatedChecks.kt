@@ -8,6 +8,7 @@ import AttributeTerm
 import Category
 import Media
 import MediaCacheEntry
+import Order
 import Plugin
 import Product
 import Tag
@@ -37,6 +38,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.apache.commons.text.StringEscapeUtils
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
 import readOnlyConsumerKey
@@ -120,6 +122,8 @@ fun main() {
         }
         checkForMissingImagesAltText(allProducts)
         checkForDuplicateImagesAcrossProducts(allProducts)
+        val ordersFromLastTwoMonths = fetchAllOrdersFromLastTwoMonths(credentials)
+        checkPaymentMethodsInLastTwoMonths(ordersFromLastTwoMonths)
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
             if (product.id==27948 || product.id==27947) {
@@ -144,7 +148,6 @@ fun main() {
             checkForIncorrectPlusSizeCategorizationAndTagging(product)
             checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product)
             checkForProductsInParentCategoryOnly(product)
-
             if (shouldPerformVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 if (shouldUpdateProsforesProductTag) {
@@ -1376,5 +1379,77 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     if (disabledPlugins.isNotEmpty()) {
         println("ERROR: The following plugins have been enabled/disabled:")
         disabledPlugins.forEach { println("- ${it.name} updated to ${it.status}") }
+    }
+}
+
+fun fetchAllOrdersFromLastTwoMonths(credentials: String): List<Order> {
+    val client = OkHttpClient()
+    val orders = mutableListOf<Order>()
+    var page = 1
+    var hasMoreOrders: Boolean
+
+    val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+    val twoMonthsAgo = LocalDate.now().minusMonths(2).atStartOfDay().format(formatter)
+
+    do {
+        println("DEBUG: Fetching orders page $page")
+        // Add the `after` parameter to the URL to fetch orders created after the calculated date
+        val url = "https://foryoufashion.gr/wp-json/wc/v3/orders?page=$page&per_page=100&after=$twoMonthsAgo"
+        val request = Request.Builder().url(url).header("Authorization", credentials).build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+            val body = response.body?.string()!!
+            val mapper = jacksonObjectMapper()
+            val fetchedOrders: List<Order> = mapper.readValue(body)
+            orders.addAll(fetchedOrders)
+            hasMoreOrders = fetchedOrders.isNotEmpty()
+        }
+        page++
+    } while (hasMoreOrders)
+
+    return orders
+}
+
+fun checkPaymentMethodsInLastTwoMonths(orders: List<Order>) {
+    val allPaymentMethods = listOf(
+        "Αντικαταβολή",
+        "Κάρτα",
+        "Klarna",
+        "Google Pay",
+        "PayPal",
+        "Άμεση Τραπεζική Μεταφορά",
+        "Apple Pay",
+        "Google Pay (Stripe)"
+    )
+
+    val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
+    val twoMonthsAgo = LocalDate.now().minusMonths(2)
+
+    val usedPaymentMethods = mutableSetOf<String>()
+
+    orders.forEach { order ->
+        val orderDate = LocalDate.parse(order.date_created, dateFormatter)
+        val paymentMethod = when (StringEscapeUtils.unescapeJava(order.payment_method)) {
+            "stripe_applepay" -> "Apple Pay"
+            "stripe_googlepay" -> "Google Pay"
+            "stripe_klarna" -> "Klarna"
+            "klarna_payments" -> "Klarna"
+            else -> when (order.payment_method_title) {
+                "Credit / Debit Card" -> "Κάρτα"
+                "Με κάρτα μέσω Πειραιώς" -> "Κάρτα"
+                "Apple Pay (Stripe)" -> "Apple Pay"
+                else -> order.payment_method_title
+            }
+        }
+
+        if (orderDate.isAfter(twoMonthsAgo)) {
+            usedPaymentMethods.add(paymentMethod)
+        }
+    }
+
+    allPaymentMethods.forEach { method ->
+        if (!usedPaymentMethods.contains(method)) {
+            println("ERROR: The payment method '$method' has not been used in the last two months.")
+        }
     }
 }
