@@ -109,6 +109,7 @@ data class Attribute(
     val name: String,
     val variation: Boolean,
     val option: String?,
+    val options: List<String>? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

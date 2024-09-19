@@ -133,6 +133,7 @@ fun main() {
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
+            checkForMikosAttributeInForemataCategory(product)
             checkForMissingImages(product)
             checkForDuplicateImagesInAProduct(product)
             checkForNonPortraitImagesWithCache(product)
@@ -169,6 +170,21 @@ fun main() {
         checkProductCategories(credentials)
         checkProductAttributes(credentials)
         checkProductTags(credentials)
+    }
+}
+
+fun checkForMikosAttributeInForemataCategory(product: Product) {
+    val forematoCategorySlug = "foremata" // Category slug for 'Φορέματα'
+    val mikosAttributeName = "Μήκος"
+
+    val isInForemataCategory = product.categories.any { it.slug==forematoCategorySlug }
+
+    if (isInForemataCategory) {
+        val mikosAttribute = product.attributes.find { it.name.equals(mikosAttributeName, ignoreCase = true) }
+        if (mikosAttribute==null) {
+            println("ERROR: Product SKU ${product.sku} is missing the 'Μήκος' attribute.")
+            println("LINK: ${product.permalink}")
+        }
     }
 }
 
