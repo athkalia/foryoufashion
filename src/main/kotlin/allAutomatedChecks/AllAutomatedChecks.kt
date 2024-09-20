@@ -26,6 +26,7 @@ import java.time.Month
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Base64
+import java.util.Locale
 import javax.imageio.ImageIO
 import javax.imageio.spi.IIORegistry
 import kotlin.math.pow
@@ -111,7 +112,6 @@ fun main() {
         val allProducts = fetchAllProducts(credentials)
 
         println("DEBUG: Total products fetched: ${allProducts.size}")
-
         checkPluginsList(wordPressWriteCredentials)
         if (checkMediaLibraryChecks) {
             val allMedia = checkForUnusedImagesInsideMediaLibrary(allProducts, wordPressWriteCredentials)
@@ -124,6 +124,7 @@ fun main() {
         checkForDuplicateImagesAcrossProducts(allProducts)
         val ordersFromLastTwoMonths = fetchAllOrdersFromLastTwoMonths(credentials)
         checkPaymentMethodsInLastTwoMonths(ordersFromLastTwoMonths)
+        val allAttributes = getAllAttributes(credentials)
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
             if (product.id==27948 || product.id==27947) {
@@ -134,6 +135,7 @@ fun main() {
             checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMikosAttributeInForemataCategory(product)
+            checkForMissingAttributesInProduct(product, allAttributes)
             checkForMissingImages(product)
             checkForDuplicateImagesInAProduct(product)
             checkForNonPortraitImagesWithCache(product)
@@ -168,7 +170,7 @@ fun main() {
             }
         }
         checkProductCategories(credentials)
-        checkProductAttributes(credentials)
+        checkProductAttributes(allAttributes, credentials)
         checkProductTags(credentials)
     }
 }
@@ -187,6 +189,28 @@ fun checkForMikosAttributeInForemataCategory(product: Product) {
         }
     }
 }
+
+fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Attribute>) {
+    val productAttributeNames = product.attributes.map { it.name.lowercase(Locale.getDefault()) }
+    allAttributes.forEach { requiredAttribute ->
+        if (!productAttributeNames.contains(requiredAttribute.name.lowercase(Locale.getDefault()))) {
+            println("WARNING: Product SKU ${product.sku} is missing the required requiredAttribute '${requiredAttribute.name}'.")
+//            println("LINK: ${product.permalink}")
+        }
+    }
+}
+
+fun getAllAttributes(credentials: String): List<Attribute> {
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/attributes"
+    return executeWithRetry {
+        val request = Request.Builder().url(url).header("Authorization", credentials).build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+            mapper.readValue<List<Attribute>>(response.body?.string() ?: "")
+        }
+    }
+}
+
 
 private fun checkAllVariationsHaveTheSamePrices(product: Product, productVariations: List<Variation>) {
     val allDistinctRegularPrices = productVariations.map { it.regular_price }.distinct()
@@ -1223,17 +1247,8 @@ private fun checkProductCategories(credentials: String) {
 }
 
 
-private fun checkProductAttributes(credentials: String) {
-    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/attributes"
-    val attributes = executeWithRetry {
-        val request = Request.Builder().url(url).header("Authorization", credentials).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
-            mapper.readValue<List<Attribute>>(response.body?.string() ?: "")
-        }
-    }
-
-    for (attribute in attributes) {
+private fun checkProductAttributes(allAttributes: List<Attribute>, credentials: String) {
+    for (attribute in allAttributes) {
         val termsUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/attributes/${attribute.id}/terms"
         val terms = executeWithRetry {
             val request = Request.Builder().url(termsUrl).header("Authorization", credentials).build()
