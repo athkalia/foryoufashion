@@ -28,32 +28,34 @@ fun main() {
 
     println("Total draft products: ${draftProducts.size}")
 
-    // Get the last publish date (if any) or start from today
-    var lastPublishDate = getLastPublishDate(credentials) ?: LocalDateTime.now()
+    if (draftProducts.isNotEmpty()) {
+        // Get the last publish date (if any) or start from today
+        var lastPublishDate = getLastPublishDate(credentials) ?: LocalDateTime.now()
 
-    // If the last publish date is in the past, reset it to today
-    if (lastPublishDate==null || lastPublishDate.isBefore(LocalDateTime.now())) {
-        lastPublishDate = LocalDateTime.now()
-    }
+        // If the last publish date is in the past, reset it to today
+        if (lastPublishDate==null || lastPublishDate.isBefore(LocalDateTime.now())) {
+            lastPublishDate = LocalDateTime.now()
+        }
 
-    var scheduleDate = lastPublishDate.plusDays(1)
+        var scheduleDate = lastPublishDate.plusDays(1)
 
-    // Schedule each product
-    draftProducts.forEach { product ->
-        val updatedTags = product.tags.filter { it.id!=tagEtoimoGiaAnevasmaId }
+        // Schedule each product
+        draftProducts.forEach { product ->
+            val updatedTags = product.tags.filter { it.id!=tagEtoimoGiaAnevasmaId }
 
-        val updateData = mapOf(
-            "date_created" to scheduleDate.format(DateTimeFormatter.ISO_DATE_TIME),
-            "status" to "publish",
-            "tags" to updatedTags.map { mapOf("id" to it.id) }
-        )
+            val updateData = mapOf(
+                "date_created" to scheduleDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                "status" to "publish",
+                "tags" to updatedTags.map { mapOf("id" to it.id) }
+            )
 
-        val response = updateProduct(product.id, updateData, credentials)
-        if (response) {
-            println("Scheduled product '${product.name}' to go live on $scheduleDate")
-            scheduleDate = scheduleDate.plusDays(1)
-        } else {
-            println("Failed to schedule product '${product.name}'")
+            val response = updateProduct(product.id, updateData, credentials)
+            if (response) {
+                println("Scheduled product '${product.name}' to go live on $scheduleDate")
+                scheduleDate = scheduleDate.plusDays(1)
+            } else {
+                println("Failed to schedule product '${product.name}'")
+            }
         }
     }
 }

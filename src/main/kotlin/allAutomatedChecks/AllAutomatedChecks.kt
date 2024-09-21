@@ -1299,17 +1299,22 @@ private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product)
 fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
     product: Product, productVariations: List<Variation>, credentials: String
 ) {
-    if (product.status!="private" && product.status!="draft") {
+    if (product.status!="draft") {
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val productDate = LocalDate.parse(product.date_created, dateFormatter)
         val twoYearsAgo = LocalDate.now().minus(2, ChronoUnit.YEARS)
         if (productDate.isBefore(twoYearsAgo)) {
             val allOutOfStock = productVariations.all { it.stock_status=="outofstock" }
             if (allOutOfStock) {
-                println("ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.")
-                println("LINK: ${product.permalink}")
-                if (shouldMoveOldOutOfStockProductsToPrivate) {
-                    updateProductStatusToPrivate(product, credentials)
+                if (product.status=="private") {
+                    println("ERROR: Product ${product.sku} is out of stock on all sizes and private and was added more than 2 years ago.")
+                    println("LINK: ${product.permalink}")
+                } else {
+                    println("ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.")
+                    println("LINK: ${product.permalink}")
+                    if (shouldMoveOldOutOfStockProductsToPrivate) {
+                        updateProductStatusToPrivate(product, credentials)
+                    }
                 }
             }
         }
