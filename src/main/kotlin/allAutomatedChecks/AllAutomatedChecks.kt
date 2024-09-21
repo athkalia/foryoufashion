@@ -110,7 +110,6 @@ fun main() {
         checkForLargeImagesOutsideMediaLibrary(wordPressApplicationPassword, credentials)
     } else {
         val allProducts = fetchAllProducts(credentials)
-
         println("DEBUG: Total products fetched: ${allProducts.size}")
         checkPluginsList(wordPressWriteCredentials)
         if (checkMediaLibraryChecks) {
@@ -122,15 +121,15 @@ fun main() {
         }
         checkForMissingImagesAltText(allProducts)
         checkForDuplicateImagesAcrossProducts(allProducts)
-        val ordersFromLastTwoMonths = fetchAllOrdersFromLastTwoMonths(credentials)
-        checkPaymentMethodsInLastTwoMonths(ordersFromLastTwoMonths)
+        val allOrders = fetchAllOrders(credentials)
+        checkPaymentMethodsInLastTwoMonths(allOrders)
         val allAttributes = getAllAttributes(credentials)
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
             if (product.id==27948 || product.id==27947) {
                 continue
             }
-//            println("DEBUG: product SKU: ${product.sku}")
+            println("DEBUG: product SKU: ${product.sku}")
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
             checkForGreekCharactersInSlug(product)
@@ -161,6 +160,11 @@ fun main() {
                     }
                 }
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
+                checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
+                    allOrders,
+                    product,
+                    productVariations,
+                )
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
                 for (variation in productVariations) {
                     // println("DEBUG: variation SKU: ${variation.sku}")
@@ -239,6 +243,68 @@ fun fetchAllProducts(credentials: String): List<Product> {
         page++
     } while (products.isNotEmpty())
     return allProducts
+}
+
+fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
+    orders: List<Order>,
+    product: Product,
+    productVariations: List<Variation>,
+) {
+    if (product.status!="draft") {
+        val productOutOfStock = product.stock_status=="outofstock"
+        val allVariationsOutOfStock = productVariations.all { it.stock_status=="outofstock" }
+
+        val sixMonthsAgo = LocalDate.now().minus(6, ChronoUnit.MONTHS)
+
+        if (productOutOfStock || allVariationsOutOfStock) {
+            val lastProductSaleDate = findLastSaleDateForOutOfStockProduct(orders, product.id, null)
+            println("DEBUG: Last Product sale date $lastProductSaleDate")
+            val lastVariationSaleDate = productVariations
+                .mapNotNull { variation -> findLastSaleDateForOutOfStockProduct(orders, product.id, variation.id) }
+                .maxOrNull() // Get the most recent sale date among variations, if any
+
+            println("DEBUG: Last variation sale date $lastVariationSaleDate")
+
+            val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+            val lastModifiedDate = product.date_modified?.let { LocalDate.parse(it, dateFormatter) }
+
+            println("DEBUG: Last modification date $lastModifiedDate")
+
+            val lastRelevantDate =
+                listOfNotNull(lastProductSaleDate, lastVariationSaleDate, lastModifiedDate).maxOrNull()
+            println("DEBUG: Last relevant date $lastRelevantDate")
+            if (lastRelevantDate!=null) {
+                if (lastRelevantDate.isBefore(sixMonthsAgo)) {
+                    println("ERROR: SKU ${product.sku} has been out of stock for more than 3 months since its last activity on $lastRelevantDate.")
+                }
+            } else {
+                println("ERROR: SKU ${product.sku} has no sales or modification records.")
+            }
+        }
+    }
+}
+
+fun findLastSaleDateForOutOfStockProduct(
+    orders: List<Order>,
+    productId: Int,
+    variationId: Int?,
+): LocalDate? {
+    val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+    var lastSaleDate: LocalDate? = null
+
+    for (order in orders) {
+        for (lineItem in order.line_items) {
+            val itemMatchesProduct = lineItem.product_id==productId
+            val itemMatchesVariation = variationId?.let { lineItem.variation_id==it } ?: true
+            if (itemMatchesProduct && itemMatchesVariation) {
+                val orderDate = LocalDate.parse(order.date_created, dateFormatter)
+                if (lastSaleDate==null || orderDate.isAfter(lastSaleDate)) {
+                    lastSaleDate = orderDate
+                }
+            }
+        }
+    }
+    return lastSaleDate
 }
 
 fun checkForLargeImagesOutsideMediaLibrary(wordPressWriteCredentials: String, credentials: String) {
@@ -1418,19 +1484,16 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     }
 }
 
-fun fetchAllOrdersFromLastTwoMonths(credentials: String): List<Order> {
+fun fetchAllOrders(credentials: String): List<Order> {
     val client = OkHttpClient()
     val orders = mutableListOf<Order>()
     var page = 1
     var hasMoreOrders: Boolean
 
-    val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-    val twoMonthsAgo = LocalDate.now().minusMonths(2).atStartOfDay().format(formatter)
-
     do {
         println("DEBUG: Fetching orders page $page")
         // Add the `after` parameter to the URL to fetch orders created after the calculated date
-        val url = "https://foryoufashion.gr/wp-json/wc/v3/orders?page=$page&per_page=100&after=$twoMonthsAgo"
+        val url = "https://foryoufashion.gr/wp-json/wc/v3/orders?page=$page&per_page=100"
         val request = Request.Builder().url(url).header("Authorization", credentials).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected code $response")
@@ -1442,7 +1505,6 @@ fun fetchAllOrdersFromLastTwoMonths(credentials: String): List<Order> {
         }
         page++
     } while (hasMoreOrders)
-
     return orders
 }
 

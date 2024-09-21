@@ -16,8 +16,10 @@ data class Order(
 data class LineItem(
     val id: Int,
     val product_id: Int,
+    val variation_id: Int?,
+    val total: String,
     val name: String,
-    val quantity: Int
+    val quantity: Int,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,6 +43,7 @@ data class Product(
     val variations: List<Int>,
     val sku: String,
     val status: String,
+    val stock_status: String,
     val permalink: String,
     val short_description: String,
     val description: String,
