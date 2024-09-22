@@ -91,7 +91,7 @@
   },
   {
     "name": "ΕΛΤΑ Courier Voucher for WooCommerce",
-    "version": "1.0.39",
+    "version": "1.0.40",
     "status": "active",
     "description": {
       "rendered": "Το ΕΛΤΑ Voucher for WooCommerce σας επιτρέπει να δημιουργείτε/εκδίδετε και ελέγχετε τα voucher αποστολής για την ΕΛΤΑ <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -109,7 +109,7 @@
   },
   {
     "name": "First Order Discount Woocommerce",
-    "version": "1.22",
+    "version": "1.23",
     "status": "inactive",
     "description": {
       "rendered": "&#8220;First Order Discount Woocommerce&#8221; allows administrator to offer customers tempting promotions on their first purchase. Admin can offer either flat discount in terms of money or offer some products for free. <cite>By <a href=\"https://quanticedge.co.in/?utm-source=free-plugin&#038;utm-medium=wooextend\">QuanticEdge</a>.</cite>"
@@ -190,7 +190,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.9.16",
+    "version": "4.9.17",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -289,7 +289,7 @@
   },
   {
     "name": "Relevanssi Premium",
-    "version": "2.26.0",
+    "version": "2.26.1",
     "status": "active",
     "description": {
       "rendered": "This premium plugin replaces WordPress search with a relevance-sorting search. <cite>By <a href=\"https://www.mikkosaari.fi/\">Mikko Saari</a>.</cite>"
@@ -298,7 +298,7 @@
   },
   {
     "name": "Smash Balloon Instagram Feed",
-    "version": "6.5.0",
+    "version": "6.5.1",
     "status": "active",
     "description": {
       "rendered": "Display beautifully clean, customizable, and responsive Instagram feeds. <cite>By <a href=\"https://smashballoon.com/\">Smash Balloon</a>.</cite>"
@@ -307,7 +307,7 @@
   },
   {
     "name": "Timologio for WooCommerce",
-    "version": "2.1.29",
+    "version": "2.1.30",
     "status": "active",
     "description": {
       "rendered": "Το πρόσθετο Web Expert Timologio for WooCommerce προσθέτει δυνατότητα επιλογής απόδειξης/τιμολογίου κατά την ολοκλήρωση παραγγελίας. Προαιρετικά ενσωματώνει δυνατότητα απαλλαγής λόγω VIES ή ΠΟΛ.1150/2017. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -370,7 +370,7 @@
   },
   {
     "name": "Web Expert Piraeus Bank WooCommerce Payment Gateway",
-    "version": "1.0.52",
+    "version": "2.0.0",
     "status": "active",
     "description": {
       "rendered": "Web Expert Piraeus Bank WooCommerce Payment Gateway allows you to accept payments through various credit cards such as Maestro, Mastercard, and Visa on your Woocommerce Site. <cite>By <a href=\"http://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -433,7 +433,7 @@
   },
   {
     "name": "WooCommerce",
-    "version": "9.2.3",
+    "version": "9.3.2",
     "status": "active",
     "description": {
       "rendered": "Μια e-commerce πλατφόρμα που θα σας βοηθήσει να πουλήσετε τα πάντα. Όμορφα. <cite>By <a href=\"https://woocommerce.com\">Automattic</a>.</cite>"
@@ -460,7 +460,7 @@
   },
   {
     "name": "WooCommerce Advanced Bulk Edit",
-    "version": "5.4.4.3",
+    "version": "5.4.4.3.1",
     "status": "active",
     "description": {
       "rendered": "Edit your products both individually or in bulk. <cite>By <a href=\"https://wpmelon.com\">George Iron &amp; Yas G.</a>.</cite>"
@@ -469,7 +469,7 @@
   },
   {
     "name": "WooCommerce Advanced Shipping",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "status": "active",
     "description": {
       "rendered": "With Advanced Shipping for WooCommerce setting up conditional shipping rates is easier and more flexible than ever! <cite>By <a href=\"https://jeroensormani.com/\">Jeroen Sormani</a>.</cite>"
@@ -532,7 +532,7 @@
   },
   {
     "name": "WooCommerce Stripe Gateway",
-    "version": "8.6.1",
+    "version": "8.7.0",
     "status": "inactive",
     "description": {
       "rendered": "Take credit card payments on your store using Stripe. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -559,7 +559,7 @@
   },
   {
     "name": "WP Rocket",
-    "version": "3.16.4",
+    "version": "3.17.0.1",
     "status": "active",
     "description": {
       "rendered": "The best WordPress performance plugin. <cite>By <a href=\"https://wp-media.me\">WP Media</a>.</cite>"

@@ -57,18 +57,18 @@ const val checkMediaLibraryChecks = true
 
 // Require manual input
 const val shouldCheckForLargeImagesOutsideMediaLibrary = false
+const val shouldDeleteLargeImagesOutsideMediaLibrary = false
 
 // Recurring updates
 const val shouldMoveOldOutOfStockProductsToPrivate = true
 const val shouldUpdatePricesToEndIn99 = true
 const val shouldUpdateProsforesProductTag = true
 const val shouldUpdateNeesAfikseisProductTag = true
+const val shouldRemoveEmptyLinesFromDescriptions = true
 
 // One-off updates
 const val shouldSwapDescriptions = false
-const val shouldRemoveEmptyLinesFromDescriptions = false
 const val shouldAutomaticallyDeleteUnusedImages = false
-const val shouldDeleteLargeImagesOutsideMediaLibrary = false
 
 val allWooCommerceApiUpdateVariables = listOf(
     shouldMoveOldOutOfStockProductsToPrivate,
@@ -167,7 +167,7 @@ fun main() {
                 )
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
                 for (variation in productVariations) {
-                    // println("DEBUG: variation SKU: ${variation.sku}")
+//                    println("DEBUG: variation SKU: ${variation.sku}")
                     checkForWrongPricesAndUpdateEndTo99(product, variation, credentials)
                     checkForInvalidSKUNumbers(product, variation)
                 }
@@ -262,12 +262,10 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
             val lastVariationSaleDate = productVariations
                 .mapNotNull { variation -> findLastSaleDateForOutOfStockProduct(orders, product.id, variation.id) }
                 .maxOrNull() // Get the most recent sale date among variations, if any
-
             println("DEBUG: Last variation sale date $lastVariationSaleDate")
 
             val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
             val lastModifiedDate = product.date_modified?.let { LocalDate.parse(it, dateFormatter) }
-
             println("DEBUG: Last modification date $lastModifiedDate")
 
             val lastRelevantDate =
@@ -659,6 +657,7 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
     }
     if (!variation.sku.startsWith(product.sku)) {
         println("ERROR: Variation SKU ${variation.sku} does not start with the product SKU ${product.sku}")
+        println(product.permalink)
     }
 }
 
@@ -757,6 +756,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
         if (product.description.contains("&nbsp;")) {
             println("ERROR: Product ${product.sku} has unnecessary line breaks in description")
+            println(product.permalink)
             if (shouldRemoveEmptyLinesFromDescriptions) {
                 updateProductDescriptions(
                     product, product.short_description, product.description.replace("&nbsp;", ""), credentials
@@ -765,6 +765,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
         if (product.short_description.contains("&nbsp;")) {
             println("ERROR: Product ${product.sku} has unnecessary line breaks in short description")
+            println(product.permalink)
             if (shouldRemoveEmptyLinesFromDescriptions) {
                 updateProductDescriptions(
                     product, product.short_description.replace("&nbsp;", ""), product.description, credentials
@@ -1256,7 +1257,8 @@ private fun addTagProsfores(product: Product, prosforesTag: Tag, url: String, cr
         val updatedTags = product.tags.toMutableList()
         updatedTags.add(prosforesTag)
         val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
-        println("ACTION: Updating product ${product.id} with tags: $data")
+        println("ACTION: Adding Tag prosfores for product ${product.sku}")
+        println("DEBUG: Updating product ${product.id} with tags: $data")
         val body = data.toRequestBody("application/json".toMediaTypeOrNull())
         val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
         executeWithRetry {
@@ -1277,7 +1279,8 @@ private fun removeTagProsfores(product: Product, prosforesTag: Tag, url: String,
     if (product.tags.any { it.slug==prosforesTag.slug }) {
         val updatedTags = product.tags.filter { it.slug!=prosforesTag.slug }
         val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
-        println("ACTION: Updating product ${product.id} with tags: $data")
+        println("ACTION: Removing Tag prosfores for product ${product.sku}")
+        println("DEBUG: Updating product ${product.id} with tags: $data")
         val body = data.toRequestBody("application/json".toMediaTypeOrNull())
         val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
         executeWithRetry {
@@ -1447,6 +1450,11 @@ fun loadPluginsFromFile(file: File): List<Plugin> {
 }
 
 fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plugin>, pluginsFile: File) {
+    val objectMapper = jacksonObjectMapper()
+
+    // Load the stored plugins as a list of maps to preserve unknown fields like "sakis_description"
+    val storedPluginsJson = objectMapper.readValue(pluginsFile, List::class.java) as List<Map<String, Any>>
+
     val newPlugins = currentPlugins.filterNot { plugin ->
         storedPlugins.any { stored -> stored.name==plugin.name }
     }
@@ -1476,6 +1484,32 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     if (updatedPlugins.isNotEmpty()) {
         println("ERROR: The following plugins have been updated:")
         updatedPlugins.forEach { println("- ${it.name} updated to v${it.version}") }
+
+        // Update the versions in storedPlugins
+        val updatedStoredPlugins = storedPluginsJson.map { storedJson ->
+            val storedName = storedJson["name"] as String
+            val matchingCurrent = currentPlugins.find { it.name==storedName }
+
+            if (matchingCurrent!=null && matchingCurrent.version!=storedJson["version"]) {
+                // Preserve the sakis_description field if it exists
+                val sakisDescription = storedJson["sakis_description"]
+
+                // Create an updated plugin object, keeping the sakis_description
+                mapOf(
+                    "name" to storedName,
+                    "version" to matchingCurrent.version,
+                    "status" to storedJson["status"],
+                    "description" to storedJson["description"],
+                    "sakis_description" to sakisDescription
+                )
+            } else {
+                storedJson
+            }
+        }
+
+        // Save the updated plugins to the file
+        objectMapper.writeValue(pluginsFile, updatedStoredPlugins)
+        println("ACTION: Plugin versions updated in the plugins file, preserving sakis_description.")
     }
 
     if (disabledPlugins.isNotEmpty()) {
