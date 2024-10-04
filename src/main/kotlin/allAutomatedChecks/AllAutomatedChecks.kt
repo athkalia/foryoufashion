@@ -258,22 +258,22 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
 
         if (productOutOfStock || allVariationsOutOfStock) {
             val lastProductSaleDate = findLastSaleDateForOutOfStockProduct(orders, product.id, null)
-            println("DEBUG: Last Product sale date $lastProductSaleDate")
+//            println("DEBUG: Last Product sale date $lastProductSaleDate")
             val lastVariationSaleDate = productVariations
                 .mapNotNull { variation -> findLastSaleDateForOutOfStockProduct(orders, product.id, variation.id) }
                 .maxOrNull() // Get the most recent sale date among variations, if any
-            println("DEBUG: Last variation sale date $lastVariationSaleDate")
+//            println("DEBUG: Last variation sale date $lastVariationSaleDate")
 
             val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
             val lastModifiedDate = product.date_modified?.let { LocalDate.parse(it, dateFormatter) }
-            println("DEBUG: Last modification date $lastModifiedDate")
+//            println("DEBUG: Last modification date $lastModifiedDate")
 
             val lastRelevantDate =
                 listOfNotNull(lastProductSaleDate, lastVariationSaleDate, lastModifiedDate).maxOrNull()
-            println("DEBUG: Last relevant date $lastRelevantDate")
+//            println("DEBUG: Last relevant date $lastRelevantDate")
             if (lastRelevantDate!=null) {
                 if (lastRelevantDate.isBefore(sixMonthsAgo)) {
-                    println("ERROR: SKU ${product.sku} has been out of stock for more than 3 months since its last activity on $lastRelevantDate.")
+                    println("ERROR: SKU ${product.sku} has been out of stock for more than 6 months since its last activity on $lastRelevantDate.")
                 }
             } else {
                 println("ERROR: SKU ${product.sku} has no sales or modification records.")
@@ -647,13 +647,15 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
     ) {
         return
     }
-    val finalProductRegex = Regex("^\\d{5}-\\d{3}\$")
+    val finalProductRegex = Regex("^\\d{5}-\\d{3,4}$")
     if (!product.sku.matches(finalProductRegex)) {
         println("ERROR: Product SKU ${product.sku} does not match Product SKU regex ")
+        println("LINK: ${product.permalink}")
     }
-    val finalProductVariationRegex = Regex("^\\d{5}-\\d{3}-\\d{1,3}$")
+    val finalProductVariationRegex = Regex("^\\d{5}-\\d{3,4}-\\d{1,3}$")
     if (!variation.sku.matches(finalProductVariationRegex)) {
         println("ERROR: Variation SKU ${variation.sku} does not match Variation SKU regex ")
+        println("LINK: ${product.permalink}")
     }
     if (!variation.sku.startsWith(product.sku)) {
         println("ERROR: Variation SKU ${variation.sku} does not start with the product SKU ${product.sku}")
@@ -1356,10 +1358,14 @@ private fun checkProductTags(credentials: String) {
 
 private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product) {
     product.attributes.let { attributes ->
+        if (attributes.none { it.variation }) {
+            println("ERROR: Product ${product.sku} has no attributes used for variations.")
+            println("LINK: ${product.permalink}")
+        }
         attributes.forEach { attribute ->
             if (!attribute.name.equals("Μέγεθος", ignoreCase = true) && attribute.variation) {
                 println("ERROR: Product ${product.sku} has the '${attribute.name}' attribute marked as used for variations.")
-                println(product.permalink)
+                println("LINK: ${product.permalink}")
             }
         }
     }
@@ -1551,7 +1557,6 @@ fun checkPaymentMethodsInLastTwoMonths(orders: List<Order>) {
         "PayPal",
         "Άμεση Τραπεζική Μεταφορά",
         "Apple Pay",
-        "Google Pay (Stripe)"
     )
 
     val dateFormatter = DateTimeFormatter.ISO_DATE_TIME

@@ -64,7 +64,7 @@
   },
   {
     "name": "Classic Editor",
-    "version": "1.6.4",
+    "version": "1.6.5",
     "status": "active",
     "description": {
       "rendered": "Ενεργοποιεί τον κλασικό κειμενογράφο του WordPress και την δική του (TinyMCE, μετα κουτιά, κλπ.) διάταξη της οθόνης επεξεργασίας κειμένων. Υποστηρίζει τα παλαιότερα πρόσθετα που επεκτείνουν τις δυνατότητες επεξεργασίας. <cite>By <a href=\"https://github.com/WordPress/classic-editor/\">Συντελεστές WordPress</a>.</cite>"
@@ -154,7 +154,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "13.8.1",
+    "version": "13.9",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -199,7 +199,7 @@
   },
   {
     "name": "Media Cleaner (Pro)",
-    "version": "6.7.8",
+    "version": "6.7.9",
     "status": "active",
     "description": {
       "rendered": "Clean your WordPress! Eliminate unused and broken media files. For a faster, and better website. <cite>By <a href=\"https://jordymeow.com\">Jordy Meow</a>.</cite>"
@@ -370,7 +370,7 @@
   },
   {
     "name": "Web Expert Piraeus Bank WooCommerce Payment Gateway",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "status": "active",
     "description": {
       "rendered": "Web Expert Piraeus Bank WooCommerce Payment Gateway allows you to accept payments through various credit cards such as Maestro, Mastercard, and Visa on your Woocommerce Site. <cite>By <a href=\"http://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -379,7 +379,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.68",
+    "version": "1.0.69",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -424,7 +424,7 @@
   },
   {
     "name": "Woo Back In Stock Notifications",
-    "version": "1.7.1",
+    "version": "2.0.3",
     "status": "active",
     "description": {
       "rendered": "Ειδοποιήστε τους πελάτες σας όταν τα αγαπημένα τους προϊόντα είναι ξανά διαθέσιμα. <cite>By <a href=\"https://woocommerce.com/\">Woo</a>.</cite>"
@@ -505,7 +505,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "2.9.0",
+    "version": "2.9.2",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -514,7 +514,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.6.1",
+    "version": "4.6.2",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -577,7 +577,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "23.4",
+    "version": "23.5",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
