@@ -11,6 +11,7 @@ import MediaCacheEntry
 import Order
 import Plugin
 import Product
+import ProductImage
 import Tag
 import Variation
 import archive.client
@@ -65,6 +66,7 @@ const val shouldUpdatePricesToEndIn99 = true
 const val shouldUpdateProsforesProductTag = true
 const val shouldUpdateNeesAfikseisProductTag = true
 const val shouldRemoveEmptyLinesFromDescriptions = true
+const val shouldPopulateMissingImageAltText = true
 
 // One-off updates
 const val shouldSwapDescriptions = false
@@ -73,10 +75,11 @@ const val shouldAutomaticallyDeleteUnusedImages = false
 val allWooCommerceApiUpdateVariables = listOf(
     shouldMoveOldOutOfStockProductsToPrivate,
     shouldUpdatePricesToEndIn99,
-    shouldSwapDescriptions,
-    shouldRemoveEmptyLinesFromDescriptions,
     shouldUpdateProsforesProductTag,
     shouldUpdateNeesAfikseisProductTag,
+    shouldRemoveEmptyLinesFromDescriptions,
+    shouldPopulateMissingImageAltText,
+    shouldSwapDescriptions,
 )
 
 private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
@@ -119,7 +122,6 @@ fun main() {
         if (shouldUpdateNeesAfikseisProductTag) {
             updateNeesAfikseisProducts(allProducts, credentials)
         }
-        checkForMissingImagesAltText(allProducts)
         checkForDuplicateImagesAcrossProducts(allProducts)
         val allOrders = fetchAllOrders(credentials)
         checkPaymentMethodsInLastTwoMonths(allOrders)
@@ -132,6 +134,7 @@ fun main() {
             println("DEBUG: product SKU: ${product.sku}")
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
+            checkForMissingImagesAltText(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes)
@@ -230,6 +233,45 @@ fun checkForGreekCharactersInSlug(product: Product) {
     if (greekCharRegex.containsMatchIn(product.slug)) {
         println("ERROR: Product SKU ${product.sku} has a slug containing Greek characters.")
 //        println("LINK: ${product.permalink}")
+    }
+}
+
+fun populateMissingImageAltText(product: Product, credentials: String) {
+    if (product.status!="draft") {
+        val updatedImages = product.images.map { image ->
+            if (image.alt.isEmpty()) {
+                println("ACTION: Setting alt text for image ${image.id} of product SKU ${product.sku} to '${product.name}'")
+                image.copy(alt = product.name)
+            } else {
+                image
+            }
+        }
+        updateProductImages(product.id, updatedImages, credentials)
+    }
+}
+
+fun updateProductImages(productId: Int, images: List<ProductImage>, credentials: String) {
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/$productId"
+    val data = mapper.writeValueAsString(mapOf("images" to images))
+    val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+
+    val request = Request.Builder()
+        .url(url)
+        .put(body)
+        .header("Authorization", credentials)
+        .header("Content-Type", "application/json")
+        .build()
+
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string() ?: ""
+            if (!response.isSuccessful) {
+                println("Error updating images for product $productId: $responseBody")
+                throw IOException("Unexpected code $response")
+            } else {
+                println("ACTION: Successfully updated images for product $productId")
+            }
+        }
     }
 }
 
@@ -360,15 +402,18 @@ fun checkForLargeImagesOutsideMediaLibrary(wordPressWriteCredentials: String, cr
     }
 }
 
-fun checkForMissingImagesAltText(allProducts: List<Product>) {
-    for (product in allProducts) {
-        for (image in product.images) {
-            if (image.alt.isEmpty()) {
-                println("WARNING: Product SKU ${product.sku} has an image with missing alt text.")
-                println("LINK: ${product.permalink}")
-                println("Image URL: ${image.src}")
-            }
+fun checkForMissingImagesAltText(product: Product, credentials: String) {
+    var hasMissingAltText = false
+    for (image in product.images) {
+        if (image.alt.isEmpty()) {
+            hasMissingAltText = true
+            println("WARNING: Product SKU ${product.sku} has an image with missing alt text.")
+            println("LINK: (product) ${product.permalink}")
+            println("LINK: (image in media gallery) https://foryoufashion.gr/wp-admin/post.php?post=${image.id}&action=edit")
         }
+    }
+    if (shouldPopulateMissingImageAltText && hasMissingAltText) {
+        populateMissingImageAltText(product, credentials)
     }
 }
 
@@ -590,24 +635,26 @@ fun checkForProductsInParentCategoryOnly(product: Product) {
 }
 
 fun checkForIncorrectPlusSizeCategorizationAndTagging(product: Product) {
-    val plusSizeCategorySlug = "plus-size"
-    val plusSizeForemataCategorySlug = "plus-size-foremata"
-    val olosomesFormesCategorySlug = "olosomes-formes"
-    val plusSizeTagSlug = "plus-size"
+    if (product.status!="draft") {
+        val plusSizeCategorySlug = "plus-size"
+        val plusSizeForemataCategorySlug = "plus-size-foremata"
+        val olosomesFormesCategorySlug = "olosomes-formes"
+        val plusSizeTagSlug = "plus-size"
 
-    val inPlusSizeCategory = product.categories.any { it.slug==plusSizeCategorySlug }
-    val inPlusSizeForemataCategory = product.categories.any { it.slug==plusSizeForemataCategorySlug }
-    val inOlosomesFormesCategory = product.categories.any { it.slug==olosomesFormesCategorySlug }
-    val hasPlusSizeTag = product.tags.any { it.slug==plusSizeTagSlug }
+        val inPlusSizeCategory = product.categories.any { it.slug==plusSizeCategorySlug }
+        val inPlusSizeForemataCategory = product.categories.any { it.slug==plusSizeForemataCategorySlug }
+        val inOlosomesFormesCategory = product.categories.any { it.slug==olosomesFormesCategorySlug }
+        val hasPlusSizeTag = product.tags.any { it.slug==plusSizeTagSlug }
 
-    if ((inPlusSizeCategory || inPlusSizeForemataCategory) && !hasPlusSizeTag) {
-        println("ERROR: Product SKU ${product.sku} is missing a plus size tag.")
-        println("LINK: ${product.permalink}")
-    }
+        if ((inPlusSizeCategory || inPlusSizeForemataCategory) && !hasPlusSizeTag) {
+            println("ERROR: Product SKU ${product.sku} is missing a plus size tag.")
+            println("LINK: ${product.permalink}")
+        }
 
-    if (inPlusSizeCategory && !inOlosomesFormesCategory && !inPlusSizeForemataCategory) {
-        println("ERROR: Product SKU ${product.sku} is in the plus category but it's not in olosomes formes or plus size foremata category")
-        println("LINK: ${product.permalink}")
+        if (inPlusSizeCategory && !inOlosomesFormesCategory && !inPlusSizeForemataCategory) {
+            println("ERROR: Product SKU ${product.sku} is in the plus category but it's not in olosomes formes or plus size foremata category")
+            println("LINK: ${product.permalink}")
+        }
     }
 }
 
@@ -1479,7 +1526,7 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
 
     if (newPlugins.isNotEmpty()) {
         println("ERROR: The following plugins have been installed:")
-        newPlugins.forEach { println("- ${it.name} v${it.version}") }
+        newPlugins.forEach { println("- ${it.name} v${it.version}, ${it.description.rendered}") }
     }
 
     if (deletedPlugins.isNotEmpty()) {
