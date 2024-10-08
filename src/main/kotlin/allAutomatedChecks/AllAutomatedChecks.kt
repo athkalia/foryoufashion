@@ -488,8 +488,30 @@ fun checkForUnusedImagesInsideMediaLibrary(allProducts: List<Product>, wordPress
     val allProductImages: Set<String> = allProducts.flatMap { it.images }.map { it.src }.toSet()
     println("DEBUG: Total product images: ${allProductImages.size}")
 
+    val dateThreshold = LocalDate.now().minusMonths(3).withDayOfMonth(1)
+
     val unusedImages = findUnusedImages(allMedia, allProductImages)
         .filter { it.id !in listOf(36692, 29045, 29044, 29043, 29042) } // Ta thelei i Olga
+        // filter out images from the last few months
+        .filterNot { media ->
+            val url = media.source_url
+            val regex = """.*/(\d{4})/(\d{2})/.*""".toRegex()
+            val matchResult = regex.matchEntire(url)
+            if (matchResult!=null) {
+                val (yearStr, monthStr) = matchResult.destructured
+                val year = yearStr.toIntOrNull()
+                val month = monthStr.toIntOrNull()
+                if (year!=null && month!=null) {
+                    val mediaDate = LocalDate.of(year, month, 1)
+                    mediaDate >= dateThreshold // Exclude media within the last 9 months
+                } else {
+                    true // If parsing fails, exclude the media item to be safe
+                }
+            } else {
+                println("ERROR: ${media.source_url} should always match regex")
+                true // If URL doesn't match pattern, exclude the media item to be safe
+            }
+        }
     if (unusedImages.isNotEmpty()) {
         println("ERROR: Unused images in media library: ${unusedImages.size}")
     }
@@ -913,7 +935,6 @@ fun adjustPrice(price: Double): String {
 
 private fun adjustPriceBelow70(price: Double): String {
     val majorDigits = price.toInt()
-
     return when {
         majorDigits % 10==9 -> {
             // If the major digits end in 9, add .99
@@ -934,7 +955,6 @@ private fun adjustPriceBelow70(price: Double): String {
 
 private fun adjustPriceAbove70(price: Double): String {
     val majorDigits = price.toInt()
-
     return if (price % 1!=0.0) {
         if (majorDigits % 10==9) {
             // If the major digits end in 9, strip the pennies

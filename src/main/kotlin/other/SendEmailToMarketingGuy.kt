@@ -80,12 +80,6 @@ fun calculateNonCompletedOrdersPercentage(orders: List<Order>): Double {
     return if (totalOrders > 0) (nonCompletedOrders.toDouble() / totalOrders.toDouble()) * 100 else 0.0
 }
 
-fun calculateRefundedOrdersPercentage(orders: List<Order>): Double {
-    val totalOrders = orders.size
-    val returnedOrders = orders.count { it.status=="refunded" }
-    return if (totalOrders > 0) (returnedOrders.toDouble() / totalOrders.toDouble()) * 100 else 0.0
-}
-
 fun calculateCompletedRevenue(orders: List<Order>): Double {
     return orders.filter { it.status=="completed" }.sumOf { it.total.toDouble() }
 }
