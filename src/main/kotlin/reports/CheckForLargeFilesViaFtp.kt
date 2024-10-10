@@ -5,6 +5,9 @@ import forYouFashionFtpUrl
 import forYouFashionFtpUsername
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPFile
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 fun main(args: Array<String>) {
     listLargeFiles(forYouFashionFtpUsername, forYouFashionFtpPassword, "/")
@@ -32,8 +35,8 @@ fun listLargeFiles(
         println("Total number of all results: ${allResults.size}")
         println("Total number of filtered results: ${filteredResults.size}")
         filteredResults.forEach { (filePath, size) ->
-            println("File: $filePath, Size: ${size / 1_048_576.0} MB")
-//            println(filePath)
+//            println("File: $filePath, Size: ${size / 1_048_576.0} MB")
+            println(filePath)
         }
         val allResultsTotalSize = allResults.sumOf { it.second }
         val filteredResultsTotalSize = filteredResults.sumOf { it.second }
@@ -61,18 +64,21 @@ fun listFilesRecursively(
 ) {
     ftpClient.changeWorkingDirectory(directory)
     val files: Array<FTPFile> = ftpClient.listFiles()
+    val threeMonthsAgo = LocalDate.now().minus(3, ChronoUnit.MONTHS)
     for (file in files) {
         val filePath = "$directory/${file.name}" // Construct the full file path
         if (file.isFile) {
             allResults.add(filePath to file.size)
-            if (file.size > 100_000
-                && !file.name.endsWith(".js")
-                && !file.name.endsWith(".ttf")
-                && !file.name.endsWith(".css")
-                && !file.name.endsWith(".php")
-                && !file.name.contains("-scaled")
-                && (file.name.endsWith(".jpg") || file.name.endsWith(".jpeg"))
-                && file.name.contains("wp-content/uploads")
+            val fileDate = file.timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+            if (
+            // file.size > 100_000
+                fileDate.isBefore(threeMonthsAgo) &&
+                !file.name.endsWith(".js") &&
+                !file.name.endsWith(".ttf") &&
+                !file.name.endsWith(".css") &&
+                !file.name.endsWith(".php") &&
+                !file.name.contains("-scaled") &&
+                (file.name.endsWith(".jpg") || file.name.endsWith(".jpeg"))
             ) {
                 filteredResults.add(filePath to file.size)
             }
