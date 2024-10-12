@@ -81,11 +81,35 @@ data class ProductImage(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Media(
     val id: Int,
+    val guid: Guid,
+    val media_details: MediaDetails,
     val post: Int?, // This indicates if the media is attached to a post or not
     val media_type: String, // Should be "image" for images
     val mime_type: String, // MIME type to ensure you're working with images
     val source_url: String, // The URL of the image file
     val date: String // Date when the media was uploaded (ISO 8601 format)
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Guid(
+    val rendered: String
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MediaDetails(
+    val width: Int?,
+    val height: Int?,
+    val file: String?,
+    val sizes: Map<String, MediaSize>?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MediaSize(
+    val file: String?,
+    val width: Int?,
+    val height: Int?,
+    val mime_type: String?,
+    val source_url: String?
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
