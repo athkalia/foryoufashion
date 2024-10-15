@@ -40,6 +40,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.apache.commons.net.ftp.FTPFile
 import org.apache.commons.text.StringEscapeUtils
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
@@ -106,14 +107,15 @@ fun main() {
     } else {
         Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     }
-    val allNonRecentMedia = getAllMedia(wordPressWriteCredentials, nonRecent = true)
+    val allMedia = getAllMedia(wordPressWriteCredentials, nonRecent = false)
+    val allProducts = fetchAllProducts(credentials)
     if (shouldCheckForLargeImagesOutsideMediaLibraryFromFTP) {
-        checkForImagesOutsideMediaLibraryFromFTP(allNonRecentMedia, credentials)
+        checkForImagesOutsideMediaLibraryFromFTP(allMedia, allProducts)
     } else {
-        val allProducts = fetchAllProducts(credentials)
         println("DEBUG: Total products fetched: ${allProducts.size}")
         checkPluginsList(wordPressWriteCredentials)
         if (checkMediaLibraryChecks) {
+            val allNonRecentMedia = getAllMedia(wordPressWriteCredentials, nonRecent = true)
             checkForUnusedImagesInsideMediaLibrary(allNonRecentMedia, allProducts, wordPressWriteCredentials)
             checkForMissingFilesInsideMediaLibraryEntries(allNonRecentMedia)
         }
@@ -124,7 +126,6 @@ fun main() {
         val allOrders = fetchAllOrders(credentials)
         checkPaymentMethodsInLastTwoMonths(allOrders)
         val allAttributes = getAllAttributes(credentials)
-        val allMedia = getAllMedia(wordPressWriteCredentials, nonRecent = false)
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
             if (product.id==27948 || product.id==27947) {
@@ -347,7 +348,7 @@ fun findLastSaleDateForOutOfStockProduct(
     return lastSaleDate
 }
 
-fun checkForImagesOutsideMediaLibraryFromFTP(allNonRecentMedia: List<Media>, credentials: String) {
+fun checkForImagesOutsideMediaLibraryFromFTP(allNonRecentMedia: List<Media>, allProducts: List<Product>) {
     val allImagesFromFTP = listNonRecentFTPFiles(forYouFashionFtpUsername, forYouFashionFtpPassword, "/")
     val allMainMediaUrls = allNonRecentMedia.map { it.source_url }.toSet()
     val allDifferentResolutionMediaUrls =
@@ -355,7 +356,6 @@ fun checkForImagesOutsideMediaLibraryFromFTP(allNonRecentMedia: List<Media>, cre
     val allMediaUrls = allMainMediaUrls + allDifferentResolutionMediaUrls
     println("DEBUG: Total main media files: ${allMainMediaUrls.size}")
     println("DEBUG: Total all media files: ${allMediaUrls.size}")
-    val allProducts = fetchAllProducts(credentials)
     val allProductImages = allProducts.flatMap { it.images }.map { it.src }.toSet()
     // println("DEBUG: All products images: $allProductImages")
     val imagePathsToDelete = mutableListOf<String>()
@@ -372,13 +372,13 @@ fun checkForImagesOutsideMediaLibraryFromFTP(allNonRecentMedia: List<Media>, cre
     if (imagePathsToDelete.isNotEmpty()) {
         println("ERROR: ${imagePathsToDelete.size} images outside media library detected")
     }
-//        imagePathsToDelete.forEach {
-//            println("DEBUG: link $it")
-//        }
-
+    imagePathsToDelete.forEach {
+        println("DEBUG: Image to delete $it")
+    }
     if (shouldDeleteLargeImagesOutsideMediaLibraryFromFTP) {
         val ftpClient = FTPClient()
         try {
+
             ftpClient.controlEncoding = "UTF-8"
             ftpClient.connect(forYouFashionFtpUrl)
             ftpClient.login(forYouFashionFtpUsername, forYouFashionFtpPassword)
@@ -424,10 +424,11 @@ fun listNonRecentFTPFiles(
 
         println("DEBUG: Total number of all results: ${allResults.size}")
         println("DEBUG: Total number of filtered results: ${filteredResults.size}")
-        filteredResults.forEach { (filePath, size) ->
-            // println("File: $filePath, Size: ${size / 1_048_576.0} MB")
-            // println(filePath)
-        }
+        // println("Diff between the two: ${allResults - filteredResults}")
+        // filteredResults.forEach { (filePath, size) ->
+        // println("File: $filePath, Size: ${size / 1_048_576.0} MB")
+        // println(filePath)
+        // }
         val allResultsTotalSize = allResults.sumOf { it.second }
         val filteredResultsTotalSize = filteredResults.sumOf { it.second }
         println("DEBUG: All results size: ${allResultsTotalSize / 1_048_576.0} MB")
@@ -456,19 +457,22 @@ fun listFilesRecursively(
 ) {
     ftpClient.changeWorkingDirectory(directory)
     val files: Array<FTPFile> = ftpClient.listFiles()
-    val threeMonthsAgo = LocalDate.now().minus(3, ChronoUnit.MONTHS)
     println(directory)
     if (directory!="/"
         && directory!="//wp-content"
         && directory!="//wp-content/uploads"
-//        && !directory.startsWith("//wp-content/uploads/2015")
+        && !directory.startsWith("//wp-content/uploads/2015")
         && !directory.startsWith("//wp-content/uploads/2016")
-//        && !directory.startsWith("//wp-content/uploads/2017")
-//        && !directory.startsWith("//wp-content/uploads/2018")
-//        && !directory.startsWith("//wp-content/uploads/2019")
-//        && !directory.startsWith("//wp-content/uploads/2020")
-//        && !directory.startsWith("//wp-content/uploads/2021")
-//        && !directory.startsWith("//wp-content/uploads/2022")
+        && !directory.startsWith("//wp-content/uploads/2017")
+        && !directory.startsWith("//wp-content/uploads/2018")
+        && !directory.startsWith("//wp-content/uploads/2019")
+        && !directory.startsWith("//wp-content/uploads/2020")
+        && !directory.startsWith("//wp-content/uploads/2021")
+        && !directory.startsWith("//wp-content/uploads/2022")
+        && !directory.startsWith("//wp-content/uploads/2023")
+    // && !directory.startsWith("//wp-content/uploads/2024")
+    // && !directory.startsWith("//wp-content/uploads/2025")
+    // && !directory.startsWith("//wp-content/uploads/2026")
     // SKIP 2023 AND 2024
     ) {
         return
@@ -478,10 +482,8 @@ fun listFilesRecursively(
         val filePath = "$directory/${file.name}" // Construct the full file path
         if (file.isFile) {
             allResults.add(filePath to file.size)
-            val fileDate = file.timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
             if (
             // file.size > 100_000
-                fileDate.isBefore(threeMonthsAgo) &&
                 !file.name.endsWith(".js") &&
                 !file.name.endsWith(".ttf") &&
                 !file.name.endsWith(".css") &&
@@ -677,7 +679,7 @@ fun getAllMedia(wordPressWriteCredentials: String, nonRecent: Boolean): List<Med
         } else media
 
         allMedia.addAll(filteredMedia)
-        // println("DEBUG: $media")
+//        println("DEBUG: $media")
         page++
     } while (media.isNotEmpty())
     return allMedia
@@ -1189,6 +1191,7 @@ private fun checkForMissingImages(product: Product) {
         println("WARNING: Product ${product.sku} only has ${images.size} images.")
         println("LINK: ${product.permalink}")
     }
+
     // A product might have an image that is not part of the media library, and that might return a 404.
     val cache = loadMediaCache()
     val today = LocalDate.now()
@@ -1282,7 +1285,7 @@ private fun isValidHtml(html: String): Boolean {
 private fun updateProductDescriptions(
     product: Product, updatedShortDescription: String, updatedDescription: String, credentials: String
 ) {
-    println("Updating descriptions for product ${product.sku}")
+    println("ACTION: Updating descriptions for product ${product.sku}")
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
     val json = mapper.writeValueAsString(
         mapOf(
