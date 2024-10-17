@@ -98,10 +98,6 @@ fun main() {
     if (readOnly && (allWooCommerceApiUpdateVariables.any { it })) {
         throw Exception("Something set for update but readOnly is set to 'false'")
     }
-    if (shouldUpdateProsforesProductTag && !shouldPerformVariationChecks) {
-        throw Exception("Cannot update prosfores if variation checks is disabled")
-    }
-
     val credentials = if (allWooCommerceApiUpdateVariables.any { it }) {
         Credentials.basic(writeConsumerKey, writeConsumerSecret)
     } else {
@@ -126,6 +122,9 @@ fun main() {
         val allOrders = fetchAllOrders(credentials)
         checkPaymentMethodsInLastTwoMonths(allOrders)
         val allAttributes = getAllAttributes(credentials)
+        checkProductCategories(credentials)
+        checkProductAttributes(allAttributes, credentials)
+        checkProductTags(credentials)
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
             if (product.id==27948 || product.id==27947) {
@@ -154,9 +153,6 @@ fun main() {
             checkForIncorrectPlusSizeCategorizationAndTagging(product)
             checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product)
             checkForProductsInParentCategoryOnly(product)
-            checkProductCategories(credentials)
-            checkProductAttributes(allAttributes, credentials)
-            checkProductTags(credentials)
             if (shouldPerformVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 if (shouldUpdateProsforesProductTag) {
@@ -166,6 +162,7 @@ fun main() {
                         addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 30, credentials)
                     }
                 }
+                checkForMissingSizeVariations(product, productVariations, credentials)
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
                     allOrders,
@@ -200,9 +197,9 @@ fun checkForMikosAttributeInForemataCategory(product: Product) {
 
 fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Attribute>) {
     val productAttributeNames = product.attributes.map { it.name.lowercase(Locale.getDefault()) }
-    allAttributes.forEach { requiredAttribute ->
-        if (!productAttributeNames.contains(requiredAttribute.name.lowercase(Locale.getDefault()))) {
-            println("WARNING: Product SKU ${product.sku} is missing the required requiredAttribute '${requiredAttribute.name}'.")
+    allAttributes.forEach { attribute ->
+        if (!productAttributeNames.contains(attribute.name.lowercase(Locale.getDefault()))) {
+            println("WARNING: Product SKU ${product.sku} is missing the required attribute '${attribute.name}'.")
 //            println("LINK: ${product.permalink}")
         }
     }
@@ -515,10 +512,10 @@ fun checkForMissingImagesAltText(product: Product, credentials: String) {
     }
 }
 
-fun checkForMissingFilesInsideMediaLibraryEntries(allMedia: List<Media>) {
+fun checkForMissingFilesInsideMediaLibraryEntries(allNonRecentMedia: List<Media>) {
     val cache = loadMediaCache()
     val today = LocalDate.now()
-    allMedia.forEach { media ->
+    allNonRecentMedia.forEach { media ->
         val cachedEntry = cache[media.source_url]
         val isFileMissing = if (cachedEntry!=null && !isCacheExpired(cachedEntry.lastChecked, today)) {
             // Cache hit and still valid
@@ -571,7 +568,7 @@ private fun isCacheExpired(lastChecked: LocalDate, today: LocalDate): Boolean {
 }
 
 private fun checkIfImageExists(url: String): Boolean {
-    println("DEBUG: downloading image: $url")
+    println("DEBUG: downloading image to check if image exists: $url")
     val client = OkHttpClient()
     val request = Request.Builder().url(url).build()
     return client.newCall(request).execute().use { response ->
@@ -1153,7 +1150,7 @@ private fun saveImageCache(cache: Map<String, Pair<Int, Int>>) {
 
 private fun getImageDimensions(imageUrl: String): Pair<Int, Int> {
     registerWebPReader()  // Register WebP support
-    println("DEBUG: downloading image: $imageUrl")
+    println("DEBUG: downloading image for dimensions: $imageUrl")
     val request = Request.Builder().url(imageUrl).build()
     client.newCall(request).execute().use { response ->
         if (!response.isSuccessful) throw IOException("Unexpected code $response")
@@ -1208,6 +1205,7 @@ private fun checkForMissingImages(product: Product) {
             println("ERROR: Product ${product.sku} has an image with URL ${image.src} that does not exist")
         }
     }
+    saveMediaCache(cache)
 }
 
 private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
@@ -1351,7 +1349,9 @@ fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
 
         when {
             !hasNeesAfikseisTag && shouldHaveNeesAfikseisTag -> {
-                addNeesAfikseisTag(product, neesAfikseisTag, credentials)
+                if (product.sku!="59129-082") { // Product not in correct order - skip
+                    addNeesAfikseisTag(product, neesAfikseisTag, credentials)
+                }
             }
 
             hasNeesAfikseisTag && !shouldHaveNeesAfikseisTag -> {
@@ -1552,6 +1552,7 @@ private fun checkProductTags(credentials: String) {
     }
 }
 
+
 private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product) {
     product.attributes.let { attributes ->
         if (attributes.none { it.variation }) {
@@ -1563,6 +1564,25 @@ private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product)
                 println("ERROR: Product ${product.sku} has the '${attribute.name}' attribute marked as used for variations.")
                 println("LINK: ${product.permalink}")
             }
+        }
+    }
+}
+
+fun checkForMissingSizeVariations(product: Product, productVariations: List<Variation>, credentials: String) {
+    val sizeAttributeName = "Μέγεθος"
+    val sizeAttribute = product.attributes.find { it.name.equals(sizeAttributeName, ignoreCase = true) }
+    val availableSizes = sizeAttribute?.options ?: emptyList()
+
+    availableSizes.forEach { size ->
+        val variationExists = productVariations.any { variation ->
+            variation.attributes.any { attr ->
+                attr.name.equals(sizeAttributeName, ignoreCase = true) && attr.option.equals(size, ignoreCase = true)
+            }
+        }
+
+        if (!variationExists) {
+            println("ERROR: Product SKU ${product.sku} is missing a variation for size $size.")
+            println("LINK: ${product.permalink}")
         }
     }
 }

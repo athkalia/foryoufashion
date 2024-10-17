@@ -262,7 +262,7 @@
   },
   {
     "name": "Redis Object Cache",
-    "version": "2.5.3",
+    "version": "2.5.4",
     "status": "active",
     "description": {
       "rendered": "A persistent object cache backend powered by Redis. Supports Predis, PhpRedis, Relay, replication, sentinels, clustering and WP-CLI. <cite>By <a href=\"https://objectcache.pro/?ref=oss&#038;utm_source=wp-plugin&#038;utm_medium=author\">Till Krüss</a>.</cite>"
@@ -478,7 +478,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "2.9.2",
+    "version": "2.9.3",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
