@@ -318,17 +318,15 @@ fun checkForGreekCharactersInSlug(product: Product) {
 }
 
 fun populateMissingImageAltText(product: Product, credentials: String) {
-    if (product.status!="draft") {
-        val updatedImages = product.images.map { image ->
-            if (image.alt.isEmpty()) {
-                println("ACTION: Setting alt text for image ${image.id} of product SKU ${product.sku} to '${product.name}'")
-                image.copy(alt = product.name)
-            } else {
-                image
-            }
+    val updatedImages = product.images.map { image ->
+        if (image.alt.isEmpty()) {
+            println("ACTION: Setting alt text for image ${image.id} of product SKU ${product.sku} to '${product.name}'")
+            image.copy(alt = product.name)
+        } else {
+            image
         }
-        updateProductImages(product.id, updatedImages, credentials)
     }
+    updateProductImages(product.id, updatedImages, credentials)
 }
 
 fun updateProductImages(productId: Int, images: List<ProductImage>, credentials: String) {
@@ -385,7 +383,7 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
                     println("ERROR: SKU ${product.sku} has been out of stock for more than 6 months since its last sale on $lastProductSaleDate.")
                 }
             } else {
-                println("ERROR: SKU ${product.sku} has no sales or modification records.")
+                // println("DEBUG: SKU ${product.sku} has no sales records.")
             }
         }
     }
@@ -574,17 +572,19 @@ fun listFilesRecursively(
 }
 
 fun checkForMissingImagesAltText(product: Product, credentials: String) {
-    var hasMissingAltText = false
-    for (image in product.images) {
-        if (image.alt.isEmpty()) {
-            hasMissingAltText = true
-            println("WARNING: Product SKU ${product.sku} has an image with missing alt text.")
-            println("LINK: (product) ${product.permalink}")
-            println("LINK: (image in media gallery) https://foryoufashion.gr/wp-admin/post.php?post=${image.id}&action=edit")
+    if (product.status!="draft") {
+        var hasMissingAltText = false
+        for (image in product.images) {
+            if (image.alt.isEmpty()) {
+                hasMissingAltText = true
+                println("ERROR: Product SKU ${product.sku} has an image with missing alt text.")
+                println("LINK: (product) ${product.permalink}")
+                println("LINK: (image in media gallery) https://foryoufashion.gr/wp-admin/post.php?post=${image.id}&action=edit")
+            }
         }
-    }
-    if (shouldPopulateMissingImageAltText && hasMissingAltText) {
-        populateMissingImageAltText(product, credentials)
+        if (shouldPopulateMissingImageAltText && hasMissingAltText) {
+            populateMissingImageAltText(product, credentials)
+        }
     }
 }
 
