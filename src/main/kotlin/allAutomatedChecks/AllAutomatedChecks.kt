@@ -52,7 +52,7 @@ import wordPressUsername
 import writeConsumerKey
 import writeConsumerSecret
 
-const val readOnly = false
+const val readOnly = true
 
 // Slow
 const val shouldPerformVariationChecks = true
@@ -376,22 +376,13 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
     if (product.status!="draft") {
         val productOutOfStock = product.stock_status=="outofstock"
         val allVariationsOutOfStock = productVariations.all { it.stock_status=="outofstock" }
-
         val sixMonthsAgo = LocalDate.now().minus(6, ChronoUnit.MONTHS)
-
         if (productOutOfStock || allVariationsOutOfStock) {
             val lastProductSaleDate = findLastSaleDateForProductOrVariations(orders, product.id, productVariations)
 //            println("DEBUG: Last Product sale date $lastProductSaleDate")
-            val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-            val lastModifiedDate = product.date_modified?.let { LocalDate.parse(it, dateFormatter) }
-//            println("DEBUG: Last modification date $lastModifiedDate")
-
-            val lastRelevantDate =
-                listOfNotNull(lastProductSaleDate, lastModifiedDate).maxOrNull()
-//            println("DEBUG: Last relevant date $lastRelevantDate")
-            if (lastRelevantDate!=null) {
-                if (lastRelevantDate.isBefore(sixMonthsAgo)) {
-                    println("ERROR: SKU ${product.sku} has been out of stock for more than 6 months since its last activity on $lastRelevantDate.")
+            if (lastProductSaleDate!=null) {
+                if (lastProductSaleDate.isBefore(sixMonthsAgo)) {
+                    println("ERROR: SKU ${product.sku} has been out of stock for more than 6 months since its last sale on $lastProductSaleDate.")
                 }
             } else {
                 println("ERROR: SKU ${product.sku} has no sales or modification records.")
