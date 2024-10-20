@@ -28,7 +28,7 @@
   },
   {
     "name": "Advanced Custom Fields PRO",
-    "version": "6.3.8",
+    "version": "6.3.9",
     "status": "active",
     "description": {
       "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
@@ -316,7 +316,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.0.60",
+    "version": "1.0.62",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"

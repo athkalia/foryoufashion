@@ -24,6 +24,7 @@ import forYouFashionFtpUrl
 import forYouFashionFtpUsername
 import java.time.LocalDate
 import java.time.Month
+import java.time.Period
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Base64
@@ -51,7 +52,7 @@ import wordPressUsername
 import writeConsumerKey
 import writeConsumerSecret
 
-const val readOnly = true
+const val readOnly = false
 
 // Slow
 const val shouldPerformVariationChecks = true
@@ -64,6 +65,7 @@ const val shouldUpdateProsforesProductTag = true
 const val shouldUpdateNeesAfikseisProductTag = true
 const val shouldRemoveEmptyLinesFromDescriptions = true
 const val shouldPopulateMissingImageAltText = true
+const val shouldDiscountProductsBasedOnLastSale = true
 
 // One-off updates
 const val shouldSwapDescriptions = false
@@ -71,14 +73,16 @@ const val shouldAutomaticallyDeleteUnusedImages = false
 const val shouldCheckForLargeImagesOutsideMediaLibraryFromFTP = false
 const val shouldDeleteLargeImagesOutsideMediaLibraryFromFTP = false
 
-val allWooCommerceApiUpdateVariables = listOf(
+val allApiUpdateVariables = listOf(
     shouldMoveOldOutOfStockProductsToPrivate,
     shouldUpdatePricesToEndIn99,
     shouldUpdateProsforesProductTag,
     shouldUpdateNeesAfikseisProductTag,
     shouldRemoveEmptyLinesFromDescriptions,
     shouldPopulateMissingImageAltText,
+    shouldDiscountProductsBasedOnLastSale,
     shouldSwapDescriptions,
+    shouldDeleteLargeImagesOutsideMediaLibraryFromFTP,
 )
 
 private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
@@ -95,10 +99,10 @@ fun main() {
     val wordPressWriteCredentials =
         Base64.getEncoder().encodeToString("$wordPressUsername:$wordPressApplicationPassword".toByteArray())
 
-    if (readOnly && (allWooCommerceApiUpdateVariables.any { it })) {
+    if (readOnly && (allApiUpdateVariables.any { it })) {
         throw Exception("Something set for update but readOnly is set to 'false'")
     }
-    val credentials = if (allWooCommerceApiUpdateVariables.any { it }) {
+    val credentials = if (allApiUpdateVariables.any { it }) {
         Credentials.basic(writeConsumerKey, writeConsumerSecret)
     } else {
         Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
@@ -170,6 +174,9 @@ fun main() {
                     productVariations,
                 )
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
+                if (shouldDiscountProductsBasedOnLastSale) {
+                    discountProductBasedOnLastSale(product, productVariations, allOrders, credentials)
+                }
                 for (variation in productVariations) {
 //                    println("DEBUG: variation SKU: ${variation.sku}")
                     checkForWrongPricesAndUpdateEndTo99(product, variation, credentials)
@@ -193,6 +200,81 @@ fun checkForMikosAttributeInForemataCategory(product: Product) {
             println("LINK: ${product.permalink}")
         }
     }
+}
+
+fun discountProductBasedOnLastSale(
+    product: Product,
+    productVariations: List<Variation>,
+    orders: List<Order>,
+    credentials: String
+) {
+    if (product.status!="private") {
+        val lastSaleDate = findLastSaleDateForProductOrVariations(orders, product.id, productVariations)
+        val today = LocalDate.now()
+        val monthsSinceLastSale = if (lastSaleDate!=null) {
+            Period.between(lastSaleDate, today).toTotalMonths().toInt()
+        } else {
+            // If never sold, consider the product's creation date
+            val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+            val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
+            Period.between(productCreationDate, today).toTotalMonths().toInt()
+        }
+        if (monthsSinceLastSale <= 12) {
+            // No discount for products sold within the last year
+            return
+        }
+        var discountPercentage = monthsSinceLastSale - 12 // 1% per month after the first year
+
+        if (discountPercentage < 5) {
+            // Start discounting from 5% only
+            return
+        }
+
+        if (discountPercentage > 84) {
+            // Cap the discount at 84%
+            discountPercentage = 84
+        }
+        for (variation in productVariations) {
+            applyDiscountToVariationIfNecessary(
+                product,
+                variation,
+                discountPercentage,
+                monthsSinceLastSale,
+                credentials
+            )
+        }
+    }
+}
+
+fun applyDiscountToVariationIfNecessary(
+    product: Product,
+    variation: Variation,
+    discountPercentage: Int,
+    monthsSinceLastSale: Int,
+    credentials: String
+) {
+    val regularPrice = variation.regular_price.toDoubleOrNull()
+    if (regularPrice==null || regularPrice <= 0) {
+        println("ERROR: Invalid regular price for variation ${variation.id} of product ${product.sku}")
+        return
+    }
+
+    val existingSalePrice = variation.sale_price.toDoubleOrNull()
+    val calculatedSalePrice = regularPrice * (1 - discountPercentage / 100.0)
+    val adjustedSalePrice = adjustPrice(calculatedSalePrice)
+
+    val adjustedSalePriceValue = adjustedSalePrice.toDoubleOrNull()
+    if (adjustedSalePriceValue==null || adjustedSalePriceValue <= 0) {
+        println("ERROR: Calculated sale price is invalid for variation ${variation.id} of product ${product.sku}")
+        return
+    }
+
+    if (existingSalePrice!=null && existingSalePrice <= adjustedSalePriceValue) {
+        return
+    }
+
+    println("ACTION: Updating variation ${variation.sku} of product ${product.sku} with new sale price $adjustedSalePrice euros (${discountPercentage}% discount). Previous sale price was $existingSalePrice. Months since last sale: $monthsSinceLastSale")
+    updateProductPrice(product.id, variationId = variation.id, adjustedSalePrice, PriceType.SALE_PRICE, credentials)
 }
 
 fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Attribute>) {
@@ -223,6 +305,7 @@ private fun checkAllVariationsHaveTheSamePrices(product: Product, productVariati
 
     if (allDistinctRegularPrices.size!=1 || allDistinctSalePrices.size!=1) {
         println("ERROR: Multiple variation prices for product SKU ${product.sku}.")
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -230,7 +313,7 @@ fun checkForGreekCharactersInSlug(product: Product) {
     val greekCharRegex = Regex("[\u0370-\u03FF\u1F00-\u1FFF]")
     if (greekCharRegex.containsMatchIn(product.slug)) {
         println("ERROR: Product SKU ${product.sku} has a slug containing Greek characters.")
-//        println("LINK: ${product.permalink}")
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -297,19 +380,14 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
         val sixMonthsAgo = LocalDate.now().minus(6, ChronoUnit.MONTHS)
 
         if (productOutOfStock || allVariationsOutOfStock) {
-            val lastProductSaleDate = findLastSaleDateForOutOfStockProduct(orders, product.id, null)
+            val lastProductSaleDate = findLastSaleDateForProductOrVariations(orders, product.id, productVariations)
 //            println("DEBUG: Last Product sale date $lastProductSaleDate")
-            val lastVariationSaleDate = productVariations
-                .mapNotNull { variation -> findLastSaleDateForOutOfStockProduct(orders, product.id, variation.id) }
-                .maxOrNull() // Get the most recent sale date among variations, if any
-//            println("DEBUG: Last variation sale date $lastVariationSaleDate")
-
             val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
             val lastModifiedDate = product.date_modified?.let { LocalDate.parse(it, dateFormatter) }
 //            println("DEBUG: Last modification date $lastModifiedDate")
 
             val lastRelevantDate =
-                listOfNotNull(lastProductSaleDate, lastVariationSaleDate, lastModifiedDate).maxOrNull()
+                listOfNotNull(lastProductSaleDate, lastModifiedDate).maxOrNull()
 //            println("DEBUG: Last relevant date $lastRelevantDate")
             if (lastRelevantDate!=null) {
                 if (lastRelevantDate.isBefore(sixMonthsAgo)) {
@@ -322,18 +400,18 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
     }
 }
 
-fun findLastSaleDateForOutOfStockProduct(
+fun findLastSaleDateForProductOrVariations(
     orders: List<Order>,
     productId: Int,
-    variationId: Int?,
+    productVariations: List<Variation>
 ): LocalDate? {
     val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
     var lastSaleDate: LocalDate? = null
-
+    val variationIds = productVariations.map { it.id }.toSet()
     for (order in orders) {
         for (lineItem in order.line_items) {
             val itemMatchesProduct = lineItem.product_id==productId
-            val itemMatchesVariation = variationId?.let { lineItem.variation_id==it } ?: true
+            val itemMatchesVariation = lineItem.variation_id in variationIds
             if (itemMatchesProduct && itemMatchesVariation) {
                 val orderDate = LocalDate.parse(order.date_created, dateFormatter)
                 if (lastSaleDate==null || orderDate.isAfter(lastSaleDate)) {
@@ -366,8 +444,10 @@ fun checkForImagesOutsideMediaLibraryFromFTP(allNonRecentMedia: List<Media>, all
         }
     }
 
-    if (imagePathsToDelete.isNotEmpty()) {
-        println("ERROR: ${imagePathsToDelete.size} images outside media library detected")
+    if (imagePathsToDelete.isEmpty()) {
+        println("No unused images outside media library detected ")
+    } else {
+        println("ERROR: ${imagePathsToDelete.size} unused images outside media library detected")
     }
     imagePathsToDelete.forEach {
         println("DEBUG: Image to delete $it")
@@ -467,7 +547,12 @@ fun listFilesRecursively(
         && !directory.startsWith("//wp-content/uploads/2021")
         && !directory.startsWith("//wp-content/uploads/2022")
         && !directory.startsWith("//wp-content/uploads/2023")
-    // && !directory.startsWith("//wp-content/uploads/2024")
+        && !directory.startsWith("//wp-content/uploads/2024")
+        && !directory.startsWith("//wp-content/uploads/2024/01")
+        && !directory.startsWith("//wp-content/uploads/2024/02")
+        && !directory.startsWith("//wp-content/uploads/2024/03")
+        && !directory.startsWith("//wp-content/uploads/2024/04")
+//        && !directory.startsWith("//wp-content/uploads/2024")
     // && !directory.startsWith("//wp-content/uploads/2025")
     // && !directory.startsWith("//wp-content/uploads/2026")
     // SKIP 2023 AND 2024
@@ -1141,6 +1226,7 @@ private fun loadImageCache(): MutableMap<String, Pair<Int, Int>> {
 
 private fun saveImageCache(cache: Map<String, Pair<Int, Int>>) {
     val file = File(CACHE_FILE_PATH)
+    Thread.sleep(200)
     file.printWriter().use { writer ->
         cache.forEach { (url, dimensions) ->
             writer.println("${url},${dimensions.first},${dimensions.second}")
@@ -1166,7 +1252,7 @@ private fun getImageDimensions(imageUrl: String): Pair<Int, Int> {
 fun checkForProductsWithImagesNotInMediaLibrary(product: Product, allMedia: List<Media>) {
     val allMediaUrls = allMedia.map { it.source_url }
     for (image in product.images) {
-        println("DEBUG: Processing ${image.src}")
+        // println("DEBUG: Processing ${image.src}")
         if (image.src !in allMediaUrls) {
             println("ERROR: Product SKU ${product.sku} is using an image that is not in the media library: ${image.src}")
             println("LINK: ${product.permalink}")
