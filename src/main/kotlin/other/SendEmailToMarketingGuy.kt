@@ -18,9 +18,10 @@ import readOnlyConsumerSecret
 import sakisForYouFashionEmailPassword
 
 const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 0.0
+const val test = false
 
 fun main(args: Array<String>) {
-    val toEmail = "ads@conversion.gr"
+    val toEmail = if (test) "sakis@foryoufashion.gr" else "ads@conversion.gr"
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val previousMonthDate = getPreviousMonthDate()
     val currentMonthOrders = fetchOrders(previousMonthDate, credentials)
@@ -124,7 +125,9 @@ fun sendEmail(recipientEmail: String, content: String, monthAndYear: String) {
         val message = MimeMessage(session)
         message.setFrom(InternetAddress(username))
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail))
-        message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("k.kaliakouda@foryoufashion.gr"))
+        if (!test) {
+            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("k.kaliakouda@foryoufashion.gr"))
+        }
         message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
         message.subject = "For You Fashion - Έσοδα μήνα $monthAndYear"
         message.setText(content)
