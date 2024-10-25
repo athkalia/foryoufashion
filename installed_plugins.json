@@ -100,7 +100,7 @@
   },
   {
     "name": "ΕΛΤΑ Courier Voucher for WooCommerce",
-    "version": "1.0.41",
+    "version": "1.0.44",
     "status": "active",
     "description": {
       "rendered": "Το ΕΛΤΑ Voucher for WooCommerce σας επιτρέπει να δημιουργείτε/εκδίδετε και ελέγχετε τα voucher αποστολής για την ΕΛΤΑ <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -190,7 +190,7 @@
   },
   {
     "name": "Klarna Payments for WooCommerce",
-    "version": "3.7.3",
+    "version": "3.7.4",
     "status": "inactive",
     "description": {
       "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
@@ -199,7 +199,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.9.17",
+    "version": "4.9.18",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -217,7 +217,7 @@
   },
   {
     "name": "Payment Gateway Based Fees and Discounts for WooCommerce",
-    "version": "2.13.0",
+    "version": "2.14.0",
     "status": "inactive",
     "description": {
       "rendered": "Set payment gateways fees and discounts in WooCommerce. <cite>By <a href=\"https://www.tychesoftwares.com/\">Tyche Softwares</a>.</cite>"
@@ -298,7 +298,7 @@
   },
   {
     "name": "Timologio for WooCommerce",
-    "version": "2.1.32",
+    "version": "2.1.33",
     "status": "active",
     "description": {
       "rendered": "Το πρόσθετο Web Expert Timologio for WooCommerce προσθέτει δυνατότητα επιλογής απόδειξης/τιμολογίου κατά την ολοκλήρωση παραγγελίας. Προαιρετικά ενσωματώνει δυνατότητα απαλλαγής λόγω VIES ή ΠΟΛ.1150/2017. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -307,7 +307,7 @@
   },
   {
     "name": "TI WooCommerce Wishlist",
-    "version": "2.9.0",
+    "version": "2.9.1",
     "status": "active",
     "description": {
       "rendered": "Λειτουργικότητα λίστας επιθυμιών για το κατάστημα WooCommerce. <cite>By <a href=\"https://templateinvaders.com/\">TemplateInvaders</a>.</cite>"
@@ -379,7 +379,7 @@
   },
   {
     "name": "Web Expert WooCommerce Blacklist",
-    "version": "1.0.5",
+    "version": "1.0.7",
     "status": "active",
     "description": {
       "rendered": "Το πρόσθετο σας επιτρέπει να αποκρύψετε ορισμένες πύλες πληρωμής από χρήστες με συγκεκριμένα κριτήρια. Για παράδειγμα, μπορείτε να απενεργοποιήσετε την Αντικαταβολή για συγκεκριμένους χρήστες ή αριθμούς τηλεφώνου. <cite>By <a href=\"https://webexpert.gr\">Web Expert</a>.</cite>"
@@ -442,7 +442,7 @@
   },
   {
     "name": "WooCommerce Advanced Shipping",
-    "version": "1.1.3",
+    "version": "1.1.4",
     "status": "active",
     "description": {
       "rendered": "With Advanced Shipping for WooCommerce setting up conditional shipping rates is easier and more flexible than ever! <cite>By <a href=\"https://jeroensormani.com/\">Jeroen Sormani</a>.</cite>"
@@ -487,7 +487,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.6.2",
+    "version": "4.7.0",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -532,7 +532,7 @@
   },
   {
     "name": "WP Rocket",
-    "version": "3.17.0.2",
+    "version": "3.17.1",
     "status": "active",
     "description": {
       "rendered": "The best WordPress performance plugin. <cite>By <a href=\"https://wp-media.me\">WP Media</a>.</cite>"
@@ -550,7 +550,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "23.6",
+    "version": "23.7",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"

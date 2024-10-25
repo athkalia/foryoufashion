@@ -65,7 +65,7 @@ const val shouldUpdateProsforesProductTag = true
 const val shouldUpdateNeesAfikseisProductTag = true
 const val shouldRemoveEmptyLinesFromDescriptions = true
 const val shouldPopulateMissingImageAltText = true
-const val shouldDiscountProductsBasedOnLastSale = true
+const val shouldDiscountProductPriceBasedOnLastSale = true
 
 // One-off updates
 const val shouldSwapDescriptions = false
@@ -80,7 +80,7 @@ val allApiUpdateVariables = listOf(
     shouldUpdateNeesAfikseisProductTag,
     shouldRemoveEmptyLinesFromDescriptions,
     shouldPopulateMissingImageAltText,
-    shouldDiscountProductsBasedOnLastSale,
+    shouldDiscountProductPriceBasedOnLastSale,
     shouldSwapDescriptions,
     shouldDeleteLargeImagesOutsideMediaLibraryFromFTP,
 )
@@ -174,7 +174,7 @@ fun main() {
                     productVariations,
                 )
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
-                if (shouldDiscountProductsBasedOnLastSale) {
+                if (shouldDiscountProductPriceBasedOnLastSale) {
                     discountProductBasedOnLastSale(product, productVariations, allOrders, credentials)
                 }
                 for (variation in productVariations) {
@@ -348,7 +348,7 @@ fun updateProductImages(productId: Int, images: List<ProductImage>, credentials:
                 println("Error updating images for product $productId: $responseBody")
                 throw IOException("Unexpected code $response")
             } else {
-                println("ACTION: Successfully updated images for product $productId")
+                println("ACTION: Successfully updated alt image descriptions for product $productId")
             }
         }
     }
@@ -951,14 +951,19 @@ private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
     if (title.isEmpty() || title.length < 20) {
         println("ERROR: Product ${product.sku} has an empty or too short title: '$title'.")
         println("LINK: ${product.permalink}")
-    } else if (title.length > 65) { // Matches meta ads recommendations
+    } else if (title.length > 70) { // 65 is the meta ads recommendation
         println("ERROR: Product ${product.sku} has a too long title: '$title'.")
         println("LINK: ${product.permalink}")
     }
 }
 
 fun checkNameModelTag(product: Product) {
-    if (product.status!="draft" || product.sku=="57140-003") {
+    if (product.status!="draft"
+        && product.sku!="57140-003"
+        && product.sku!="59468-281"
+        && product.sku!="59469-281"
+        && product.sku!="57630-556"
+    ) {
         val formatter = DateTimeFormatter.ISO_DATE_TIME
         val targetDate = LocalDate.of(2024, 9, 20) // When we started implementing this
         val productCreationDate = LocalDate.parse(product.date_created, formatter)
