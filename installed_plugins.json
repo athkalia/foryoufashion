@@ -6,7 +6,7 @@
     "description": {
       "rendered": "Display product featured video on product and shop page.Add videos in product gallery and videos bar. <cite>By FME ADDONS.</cite>"
     },
-    "sakis_description": "Added by me to add videos in products"
+    "sakis_description": ""
   },
   {
     "name": "Advanced Custom Fields: Table Field",
@@ -100,7 +100,7 @@
   },
   {
     "name": "ΕΛΤΑ Courier Voucher for WooCommerce",
-    "version": "1.0.44",
+    "version": "1.0.45",
     "status": "active",
     "description": {
       "rendered": "Το ΕΛΤΑ Voucher for WooCommerce σας επιτρέπει να δημιουργείτε/εκδίδετε και ελέγχετε τα voucher αποστολής για την ΕΛΤΑ <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -190,7 +190,7 @@
   },
   {
     "name": "Klarna Payments for WooCommerce",
-    "version": "3.7.4",
+    "version": "3.8.0",
     "status": "inactive",
     "description": {
       "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
@@ -325,7 +325,7 @@
   },
   {
     "name": "Web Expert - Αξιολόγηση καταστήματος",
-    "version": "2.0.4",
+    "version": "2.0.5",
     "status": "active",
     "description": {
       "rendered": "Το πρόσθετο Web Expert Customer Review plugin στέλνει ένα email αξιολόγησης καταστήματος στον πελάτη, έπειτα από ένα επιλεγμένο αριθμό ημερών, εφόσον η παραγγελία του έχει ολοκληρωθεί. Το email που αποστέλλεται περιέχει συνδέσμους όπως Skroutz, BestPrice, Facebook και Google. <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -361,7 +361,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.70",
+    "version": "1.0.71",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -450,6 +450,15 @@
     "sakis_description": "missing"
   },
   {
+    "name": "WooCommerce Advanced Shipping - Advanced Pricing",
+    "version": "2.3.1",
+    "status": "active",
+    "description": {
+      "rendered": "WooCommerce Advanced Shipping &#8211; Advanced Pricing is a extension for <strong>WooCommerce Advanced Shipping</strong> to allow more advanced pricing"
+    },
+    "sakis_description": "missing - was randomly added 28/10/2024"
+  },
+  {
     "name": "WooCommerce AJAX Products Filter",
     "version": "3.1.4.6",
     "status": "active",
@@ -487,7 +496,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.0",
+    "version": "4.7.1",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"

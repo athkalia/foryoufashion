@@ -279,10 +279,25 @@ fun applyDiscountToVariationIfNecessary(
 
 fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Attribute>) {
     val productAttributeNames = product.attributes.map { it.name.lowercase(Locale.getDefault()) }
+    val forematoCategorySlug = "foremata"
+    val mikosAttributeName = "Μήκος"
+    val brandAttributeName = "Brand"
+    val isInForemataCategory = product.categories.any { it.slug==forematoCategorySlug }
     allAttributes.forEach { attribute ->
-        if (!productAttributeNames.contains(attribute.name.lowercase(Locale.getDefault()))) {
-            println("WARNING: Product SKU ${product.sku} is missing the required attribute '${attribute.name}'.")
+        val attributeName = attribute.name.lowercase(Locale.getDefault())
+        if (attributeName==mikosAttributeName.lowercase(Locale.getDefault())) {
+            if (isInForemataCategory && !productAttributeNames.contains(attributeName)) {
+                println("ERROR: Product SKU ${product.sku} is missing the required 'Μήκος' attribute.")
+                println("LINK: ${product.permalink}")
+            }
+        } else if (attributeName==brandAttributeName.lowercase(Locale.getDefault())) {
+            if (!productAttributeNames.contains(attributeName)) {
+                println("ERROR: Product SKU ${product.sku} is missing the required 'Brand' attribute.")
+                println("LINK: ${product.permalink}")
+            } else if (!productAttributeNames.contains(attributeName)) {
+                println("WARNING: Product SKU ${product.sku} is missing the required attribute '${attribute.name}'.")
 //            println("LINK: ${product.permalink}")
+            }
         }
     }
 }
@@ -416,7 +431,8 @@ fun checkForImagesOutsideMediaLibraryFromFTP(allNonRecentMedia: List<Media>, all
     val allImagesFromFTP = listNonRecentFTPFiles(forYouFashionFtpUsername, forYouFashionFtpPassword, "/")
     val allMainMediaUrls = allNonRecentMedia.map { it.source_url }.toSet()
     val allDifferentResolutionMediaUrls =
-        allNonRecentMedia.flatMap { mediaItem -> mediaItem.media_details.sizes!!.values.map { it.source_url } }.toSet()
+        allNonRecentMedia.flatMap { mediaItem -> mediaItem.media_details.sizes!!.values.map { it.source_url } }
+            .toSet()
     val allMediaUrls = allMainMediaUrls + allDifferentResolutionMediaUrls
     println("DEBUG: Total main media files: ${allMainMediaUrls.size}")
     println("DEBUG: Total all media files: ${allMediaUrls.size}")
@@ -1056,7 +1072,11 @@ private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Var
                 val updatedRegularPrice = adjustPrice(regularPriceString.toDouble())
                 if (updatedRegularPrice!=regularPriceString) {
                     println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} regular price from $regularPriceString to $updatedRegularPrice")
-                    if (isSignificantPriceDifference(regularPriceString.toDouble(), updatedRegularPrice.toDouble())) {
+                    if (isSignificantPriceDifference(
+                            regularPriceString.toDouble(),
+                            updatedRegularPrice.toDouble()
+                        )
+                    ) {
                         println("ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.")
                         exitProcess(1)
                     }
@@ -1222,7 +1242,7 @@ private fun loadImageCache(): MutableMap<String, Pair<Int, Int>> {
 
 private fun saveImageCache(cache: Map<String, Pair<Int, Int>>) {
     val file = File(CACHE_FILE_PATH)
-    Thread.sleep(200)
+    Thread.sleep(100)
     file.printWriter().use { writer ->
         cache.forEach { (url, dimensions) ->
             writer.println("${url},${dimensions.first},${dimensions.second}")
@@ -1658,7 +1678,10 @@ fun checkForMissingSizeVariations(product: Product, productVariations: List<Vari
     availableSizes.forEach { size ->
         val variationExists = productVariations.any { variation ->
             variation.attributes.any { attr ->
-                attr.name.equals(sizeAttributeName, ignoreCase = true) && attr.option.equals(size, ignoreCase = true)
+                attr.name.equals(sizeAttributeName, ignoreCase = true) && attr.option.equals(
+                    size,
+                    ignoreCase = true
+                )
             }
         }
 
