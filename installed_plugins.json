@@ -28,7 +28,7 @@
   },
   {
     "name": "Advanced Custom Fields PRO",
-    "version": "6.3.9",
+    "version": "6.3.10",
     "status": "active",
     "description": {
       "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
@@ -109,7 +109,7 @@
   },
   {
     "name": "EWWW Image Optimizer",
-    "version": "7.9.0",
+    "version": "7.9.1",
     "status": "active",
     "description": {
       "rendered": "Smaller Images, Faster Sites, Happier Visitors. Comprehensive image optimization that doesn&#8217;t require a degree in rocket science. <cite>By <a href=\"https://ewww.io/\">Exactly WWW</a>.</cite>"
@@ -190,7 +190,7 @@
   },
   {
     "name": "Klarna Payments for WooCommerce",
-    "version": "3.8.0",
+    "version": "3.8.1",
     "status": "inactive",
     "description": {
       "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
@@ -289,7 +289,7 @@
   },
   {
     "name": "Smash Balloon Instagram Feed",
-    "version": "6.5.1",
+    "version": "6.6.0",
     "status": "active",
     "description": {
       "rendered": "Display beautifully clean, customizable, and responsive Instagram feeds. <cite>By <a href=\"https://smashballoon.com/\">Smash Balloon</a>.</cite>"

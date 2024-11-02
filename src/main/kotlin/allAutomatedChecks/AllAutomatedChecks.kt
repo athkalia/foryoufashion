@@ -142,6 +142,7 @@ fun main() {
             checkForGreekCharactersInSlug(product)
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes)
+            checkCasualProductsInCasualForemataCategory(product)
             checkForMissingImages(product)
             checkForDuplicateImagesInAProduct(product)
             checkForNonPortraitImagesWithCache(product)
@@ -187,6 +188,19 @@ fun main() {
     }
 }
 
+fun checkCasualProductsInCasualForemataCategory(product: Product) {
+    val casualCategorySlug = "casual-foremata"
+    val excludedCategories = setOf("foremata", "plus-size") // Use lowercase for comparison
+    val isInCasualCategory = product.categories.any { it.slug.equals(casualCategorySlug, ignoreCase = true) }
+    val hasOtherCategories = product.categories.size > 1
+    val isInExcludedCategory =
+        product.categories.any { excludedCategories.contains(it.slug.lowercase(Locale.getDefault())) }
+
+    if (isInCasualCategory && hasOtherCategories && !isInExcludedCategory) {
+        println("ERROR: Product SKU ${product.sku} is in 'casual' category and also in another category: ${product.permalink}")
+    }
+}
+
 fun checkForMikosAttributeInForemataCategory(product: Product) {
     val forematoCategorySlug = "foremata" // Category slug for 'Φορέματα'
     val mikosAttributeName = "Μήκος"
@@ -208,7 +222,7 @@ fun discountProductBasedOnLastSale(
     orders: List<Order>,
     credentials: String
 ) {
-    if (product.status!="private") {
+    if (product.status!="private" && product.status!="draft") {
         val lastSaleDate = findLastSaleDateForProductOrVariations(orders, product.id, productVariations)
         val today = LocalDate.now()
         val monthsSinceLastSale = if (lastSaleDate!=null) {
