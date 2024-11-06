@@ -139,6 +139,7 @@ fun main() {
             checkForInvalidDescriptions(product, credentials)
             checkForMissingImagesAltText(product, credentials)
             checkForProductsWithImagesNotInMediaLibrary(product, allMedia)
+            checkCasualForemataHasCasualStyleAttribute(product)
             checkForGreekCharactersInSlug(product)
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes)
@@ -185,6 +186,26 @@ fun main() {
                 }
             }
         }
+    }
+}
+
+fun checkCasualForemataHasCasualStyleAttribute(product: Product) {
+    val casualCategorySlug = "casual-foremata"
+    val styleAttributeName = "Στυλ"
+    val casualAttributeValue = "Casual"
+
+    // Check if the product is in the casual-foremata category
+    val isInCasualCategory = product.categories.any { it.slug.equals(casualCategorySlug, ignoreCase = true) }
+
+    // Check for the "Style" attribute and its value
+    val hasCasualStyleAttribute = product.attributes.any {
+        it.name.equals(styleAttributeName, ignoreCase = true) &&
+                it.options!!.contains(casualAttributeValue)
+    }
+
+    if (isInCasualCategory && !hasCasualStyleAttribute) {
+        println("ERROR: Product SKU ${product.sku} in 'casual-foremata' category but is missing the 'Casual' style attribute.")
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -1688,6 +1709,7 @@ private fun checkProductTags(credentials: String) {
     }
 
     for (tag in tags) {
+        if (tag.name=="ΕΤΟΙΜΟ ΓΙΑ ΑΝΕΒΑΣΜΑ") continue
         val productCount = tag.count
         if (productCount!! < 10) {
             println("WARNING: Tag '${tag.name}' contains $productCount products.")

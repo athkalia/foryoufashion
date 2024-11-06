@@ -226,7 +226,7 @@
   },
   {
     "name": "Payment Plugins for Stripe WooCommerce",
-    "version": "3.3.76",
+    "version": "3.3.77",
     "status": "active",
     "description": {
       "rendered": "Accept Credit Cards, Google Pay, Apple Pay, ACH, Klarna and more using Stripe. <cite>By Payment Plugins, support@paymentplugins.com.</cite>"
@@ -559,7 +559,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "23.7",
+    "version": "23.8",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
