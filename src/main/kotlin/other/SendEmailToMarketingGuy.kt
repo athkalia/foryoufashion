@@ -18,7 +18,7 @@ import readOnlyConsumerSecret
 import sakisForYouFashionEmailPassword
 
 const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 0.0
-const val test = false
+const val test = true
 
 fun main(args: Array<String>) {
     val toEmail = if (test) "sakis@foryoufashion.gr" else "ads@conversion.gr"
