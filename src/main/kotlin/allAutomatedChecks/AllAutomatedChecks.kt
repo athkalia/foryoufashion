@@ -152,6 +152,7 @@ fun main() {
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
             checkForMissingImagesAltText(product, credentials)
+            checkForMissingGalleryVideo(product)
             checkForProductsWithImagesNotInMediaLibrary(product, allMedia)
             checkCasualForemataHasCasualStyleAttribute(product)
             checkForGreekCharactersInSlug(product)
@@ -686,6 +687,22 @@ fun listFilesRecursively(
             // Recursive call to process subdirectories
             println("Recursing into $filePath, so far size: ${filteredResults.size}")
             listFilesRecursively(ftpClient, filePath, filteredResults, allResults)
+        }
+    }
+}
+
+fun checkForMissingGalleryVideo(product: Product) {
+    val targetDate = LocalDate.of(2024, 3, 1)
+    val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    if (productCreationDate.isAfter(targetDate)) {
+        val galleryVideoMetaData = product.meta_data.find { it.key=="gallery_video" }
+        val isGalleryVideoMissing = galleryVideoMetaData==null || (galleryVideoMetaData.value as String).isBlank()
+        if (isGalleryVideoMissing) {
+            logError(
+                "checkForMissingGalleryVideo",
+                "ERROR: Product SKU ${product.sku} created after 1st March 2024 is missing the 'gallery_video' custom field."
+            )
+            println("LINK: ${product.permalink}")
         }
     }
 }

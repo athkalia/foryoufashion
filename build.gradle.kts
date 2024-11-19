@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "1.8.0"
     application
+    kotlin("plugin.serialization") version "1.9.0" // Adjust version as necessary
 }
 
 repositories {
@@ -24,6 +25,8 @@ dependencies {
     implementation ("org.apache.commons:commons-lang3:3.12.0")
     implementation ("com.sun.mail:javax.mail:1.6.2")
     implementation ("commons-net:commons-net:3.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 }

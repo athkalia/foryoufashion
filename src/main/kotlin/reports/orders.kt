@@ -10,6 +10,7 @@ import java.io.File
 
 import Order
 import Product
+import allAutomatedChecks.fetchAllProducts
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Credentials
@@ -49,6 +50,9 @@ fun main() {
 
     val productAges = generateProductAgesAtSaleData(orders, credentials)
     plotProductAgesWithAverageByMonth(productAges)
+
+    val adjustedModelSalesMap = generateModelSalesData(orders, credentials)
+    plotModelSalesDistribution(adjustedModelSalesMap)
 }
 
 fun fetchAllOrdersSince2024(credentials: String): List<Order> {
@@ -92,7 +96,6 @@ fun generateOrderStatusData(orders: List<Order>): Map<String, Map<String, Double
         val month = monthFormatter.format(date)
         val status = order.status
 
-        // Count total orders
         orderCountMap.merge(month, 1) { oldValue, newValue -> oldValue + newValue }
 
         if (status !in statusCountMaps) {
@@ -119,7 +122,6 @@ fun plotOrdersStatusesByMonth(statusPercentageMap: Map<String, Map<String, Doubl
     val dataset = DefaultCategoryDataset()
 
     val filteredStatusPercentageMap = statusPercentageMap.filter { it.key!="on-hold" && it.key!="processing" }
-
     val allMonths = TreeSet<YearMonth>()
 
     filteredStatusPercentageMap.forEach { (_, percentageMap) ->
@@ -152,7 +154,7 @@ fun plotOrdersStatusesByMonth(statusPercentageMap: Map<String, Map<String, Doubl
     domainAxis.categoryLabelPositions = CategoryLabelPositions.UP_45
     thickenLines(categoryPlot, dataset)
 
-    val fileName = "order_status_percentage_by_month.png"
+    val fileName = "report_report_order_status_percentage_by_month.png"
     val chartFile = File(fileName)
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
     println("ACTION: Order cancellation percentage plot saved as $fileName")
@@ -243,7 +245,7 @@ fun plotPaymentMethodsByMonth(paymentMethodPercentageMap: Map<String, Map<String
 
     thickenLines(categoryPlot, dataset)
 
-    val fileName = "payment_method_percentage_distribution.png"
+    val fileName = "report_payment_method_percentage_distribution.png"
     val chartFile = File(fileName)
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
     println("ACTION: Payment method distribution plot saved as $fileName")
@@ -381,7 +383,7 @@ fun plotProductAgesWithAverageByMonth(productAges: List<Pair<LocalDate, Long>>) 
     val yAxis = NumberAxis("Product age (Months listed on site)")
     plot.rangeAxis = yAxis
 
-    val fileName = "sold-products-age.png"
+    val fileName = "report_sold-products-age.png"
     val chartFile = File(fileName)
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
     println("Scatter plot with order product age saved as $fileName")
@@ -392,7 +394,112 @@ private fun thickenLines(
 ) {
     val renderer = categoryPlot.renderer as LineAndShapeRenderer
     val seriesCount = dataset.rowCount
-    for (i in 0 until seriesCount) {
+    for (i in 0..<seriesCount) {
         renderer.setSeriesStroke(i, BasicStroke(3.0f))
     }
+}
+
+fun generateModelSalesData(orders: List<Order>, credentials: String): Map<String, Map<String, Double>> {
+    val modelSalesMap = mutableMapOf<String, MutableMap<String, Int>>()
+    val modelProductCountMap = mutableMapOf<String, Int>()  // Track total number of products for each model
+    val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
+    val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+
+    val allProducts = fetchAllProducts(credentials)
+
+    // Count the number of products for each model
+    allProducts.forEach { product ->
+        product.tags.forEach { tag ->
+            if (tag.name.startsWith("ΜΟΝΤΕΛΟ ")) {
+                val modelName = tag.name.removePrefix("ΜΟΝΤΕΛΟ ").trim()
+                modelProductCountMap.merge(modelName, 1) { old, new -> old + new }
+            }
+        }
+    }
+
+    orders.forEach { order ->
+        val orderDate = LocalDate.parse(order.date_created, dateFormatter)
+        val orderMonth = monthFormatter.format(orderDate)
+
+        order.line_items.forEach { item ->
+            if (item.product_id==0) {
+                println("WARNING: Skipping line item with invalid product_id 0 for order ${order.id}")
+                return@forEach
+            }
+            val product = allProducts.find { it.id==item.product_id }
+            // There are some products (e.g. deleted ones), that are not part of all the products when fetched in bulk.
+            val productTags = product?.tags?.map { it.name } ?: getProductTags(item.product_id, credentials)
+            productTags.forEach { tag ->
+                if (tag.startsWith("ΜΟΝΤΕΛΟ ")) {
+                    val modelName = tag.removePrefix("ΜΟΝΤΕΛΟ ").trim()
+                    modelSalesMap.getOrPut(orderMonth) { mutableMapOf() }
+                        .merge(modelName, 1) { old, new -> old + new }
+                }
+            }
+        }
+    }
+
+    // Now, calculate the adjusted sales (Sales per Product Photographed)
+    val adjustedSalesMap = mutableMapOf<String, MutableMap<String, Double>>()
+
+    modelSalesMap.forEach { (month, models) ->
+        models.forEach { (model, sales) ->
+            // Get the total number of products associated with the model
+            val productCount = modelProductCountMap[model]!!
+
+            // Calculate the sales per product photographed for the model
+            val adjustedSales = sales.toDouble() / productCount
+
+            // Store the adjusted sales in the map
+            adjustedSalesMap.getOrPut(month) { mutableMapOf() }[model] = adjustedSales
+        }
+    }
+    return adjustedSalesMap.toSortedMap()
+}
+
+fun getProductTags(productId: Int, credentials: String): List<String> {
+    println("DEBUG: Fetching product tag for product $productId")
+    val client = OkHttpClient()
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/$productId"
+    val request = Request.Builder().url(url).header("Authorization", credentials).build()
+
+    client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) throw IOException("Unexpected code $response")
+        val body = response.body?.string()!!
+        val mapper = jacksonObjectMapper()
+        val product: Product = mapper.readValue(body)
+        return product.tags.map { it.name }
+    }
+}
+
+fun plotModelSalesDistribution(modelSalesMap: Map<String, Map<String, Double>>) {
+    val dataset = DefaultCategoryDataset()
+    modelSalesMap.forEach { (month, models) ->
+        models.forEach { (model, adjustedSales) ->
+            dataset.addValue(adjustedSales, model, month)
+        }
+    }
+
+    val chart = ChartFactory.createLineChart(
+        "Adjusted Best-Selling Models Over Time",
+        "Month",
+        "Adjusted Sales (Sales per Product)",
+        dataset,
+        PlotOrientation.VERTICAL,
+        true,
+        true,
+        false
+    )
+
+    // Customize chart appearance
+    val categoryPlot = chart.categoryPlot
+    val domainAxis = categoryPlot.domainAxis as CategoryAxis
+    domainAxis.categoryLabelPositions = CategoryLabelPositions.UP_45
+    thickenLines(categoryPlot, dataset)
+
+    // Save the chart
+    val fileName = "report_best_selling_models.png"
+    val chartFile = File(fileName)
+    ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
+    println("ACTION: Adjusted best-selling models plot saved as $fileName")
 }
