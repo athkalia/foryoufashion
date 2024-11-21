@@ -31,6 +31,7 @@ import java.util.Base64
 import java.util.Locale
 import javax.imageio.ImageIO
 import javax.imageio.spi.IIORegistry
+import kotlin.math.floor
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import org.apache.commons.net.ftp.FTPClient
@@ -1340,11 +1341,10 @@ fun adjustPrice(price: Double): String {
 }
 
 private fun adjustPriceBelow70(price: Double): String {
-    val majorDigits = price.toInt()
     return when {
-        majorDigits % 10==9 -> {
-            // If the major digits end in 9, add .99
-            String.format("%.2f", Math.floor(price) + 0.99)
+        // if the price ends in .99, just return it
+        price % 1==0.9899999999999949 -> {
+            String.format("%.2f", price)
         }
 
         price % 1==0.0 -> {
@@ -1353,26 +1353,15 @@ private fun adjustPriceBelow70(price: Double): String {
         }
 
         else -> {
-            // Otherwise, make the price end in .99
-            String.format("%.2f", Math.floor(price) + 0.99)
+            // If the price ends in any random decimal, e.g. 18,42 go to 17.99
+            String.format("%.2f", floor(price - 1) + 0.99)
         }
     }
 }
 
 private fun adjustPriceAbove70(price: Double): String {
-    val majorDigits = price.toInt()
-    return if (price % 1!=0.0) {
-        if (majorDigits % 10==9) {
-            // If the major digits end in 9, strip the pennies
-            String.format("%.0f", Math.floor(price))
-        } else {
-            // Otherwise, round up to the next major digit
-            String.format("%.0f", Math.ceil(price))
-        }
-    } else {
-        // If there are no pennies, return the price as is
-        String.format("%.0f", price)
-    }
+    // Above 70 just strip the decimals
+    return String.format("%.0f", floor(price))
 }
 
 private fun updateProductPrice(
@@ -1449,7 +1438,7 @@ private fun loadImageCache(): MutableMap<String, Pair<Int, Int>> {
 
 private fun saveImageCache(cache: Map<String, Pair<Int, Int>>) {
     val file = File(CACHE_FILE_PATH)
-    Thread.sleep(100)
+    Thread.sleep(200)
     file.printWriter().use { writer ->
         cache.forEach { (url, dimensions) ->
             writer.println("${url},${dimensions.first},${dimensions.second}")
