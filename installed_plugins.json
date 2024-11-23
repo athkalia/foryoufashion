@@ -405,8 +405,8 @@
     "sakis_description": "missing"
   },
   {
-    "name": "Woo Back In Stock Notifications",
-    "version": "2.0.3",
+    "name": "WooCommerce Επιστροφή σε ειδοποιήσεις αποθεμάτων",
+    "version": "2.0.4",
     "status": "active",
     "description": {
       "rendered": "Ειδοποιήστε τους πελάτες σας όταν τα αγαπημένα τους προϊόντα είναι ξανά διαθέσιμα. <cite>By <a href=\"https://woocommerce.com/\">Woo</a>.</cite>"
@@ -522,7 +522,7 @@
     "sakis_description": "mailchimp integration to get stats about orders, products and customers"
   },
   {
-    "name": "Διαχείριση αρχείων WP",
+    "name": "WP File Manager",
     "version": "8.0",
     "status": "active",
     "description": {

@@ -144,6 +144,9 @@ fun main() {
         checkProductAttributes(allAttributes, credentials)
         checkProductTags(credentials)
 
+        if (shouldDiscountProductPriceBasedOnProductCreationDate) {
+            discountProductsBasedOnCreationDate(allProducts, credentials)
+        }
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
             if (product.id==27948 || product.id==27947) {
@@ -156,6 +159,7 @@ fun main() {
             checkForMissingGalleryVideo(product)
             checkForProductsWithImagesNotInMediaLibrary(product, allMedia)
             checkCasualForemataHasCasualStyleAttribute(product)
+            checkFwtografisiStudioEkswterikiTag(product)
             checkForGreekCharactersInSlug(product)
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes)
@@ -191,10 +195,6 @@ fun main() {
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(allOrders, product, productVariations)
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
-                if (shouldDiscountProductPriceBasedOnProductCreationDate) {
-                    discountProductBasedOnProductCreationDate(product, productVariations, credentials)
-                }
-
                 for (variation in productVariations) {
 //                    println("DEBUG: variation SKU: ${variation.sku}")
                     checkForWrongPricesAndUpdateEndTo99(product, variation, credentials)
@@ -266,39 +266,49 @@ fun checkForMikosAttributeInForemataCategory(product: Product) {
     }
 }
 
-fun discountProductBasedOnProductCreationDate(
-    product: Product,
-    productVariations: List<Variation>,
-    credentials: String
-) {
-    if (product.status!="private" && product.status!="draft") {
+fun discountProductsBasedOnCreationDate(allProducts: List<Product>, credentials: String) {
+    val baseSkuMap = allProducts.groupBy { it.sku.substringBefore('-') }
+    baseSkuMap.forEach { (baseSku, products) ->
+        // Step 3: Find the product with the latest creation date in the group
+        val latestProduct = products.minByOrNull { product ->
+            val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            productCreationDate
+        } ?: return@forEach
+
+        // Calculate the discount based on the latest product's creation date
         val today = LocalDate.now()
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-        val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
+        val productCreationDate = LocalDate.parse(latestProduct.date_created, dateFormatter)
         val monthsSinceProductCreation = Period.between(productCreationDate, today).toTotalMonths().toInt()
+
         if (monthsSinceProductCreation <= 12) {
             // No discount for products sold within the last year
-            return
+            return@forEach
         }
         var discountPercentage = monthsSinceProductCreation - 12 // 1% per month after the first year
-
         if (discountPercentage < 5) {
             // Start discounting from 5% only
-            return
+            return@forEach
         }
-
         if (discountPercentage > 84) {
             // Cap the discount at 84%
             discountPercentage = 84
         }
-        for (variation in productVariations) {
-            applyDiscountToVariationIfNecessary(
-                product,
-                variation,
-                discountPercentage,
-                monthsSinceProductCreation,
-                credentials
-            )
+
+        // Step 4: Apply the discount to all variations in the group
+        products.forEach { product ->
+            if (product.status!="draft") {
+                val productVariations = getVariations(productId = product.id, credentials)
+                productVariations.forEach { variation ->
+                    applyDiscountToVariationIfNecessary(
+                        product,
+                        variation,
+                        discountPercentage,
+                        monthsSinceProductCreation,
+                        credentials
+                    )
+                }
+            }
         }
     }
 }
@@ -1161,6 +1171,19 @@ fun checkNameModelTag(product: Product) {
                 )
                 println("LINK: ${product.permalink}")
             }
+        }
+    }
+}
+
+fun checkFwtografisiStudioEkswterikiTag(product: Product) {
+    if (product.status!="draft") {
+        val hasFwtografisiTag = product.tags.any { tag -> tag.name.startsWith("ΦΩΤΟΓΡΑΦΙΣΗ", ignoreCase = true) }
+        if (!hasFwtografisiTag) {
+            logError(
+                "checkFwtografisiStudioEkswterikiTag",
+                "ERROR: Product SKU ${product.sku} does not have a fwtografisi tag starting with 'ΦΩΤΟΓΡΑΦΙΣΗ'."
+            )
+            println("LINK: ${product.permalink}")
         }
     }
 }
