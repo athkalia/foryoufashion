@@ -53,7 +53,7 @@ import wordPressUsername
 import writeConsumerKey
 import writeConsumerSecret
 
-const val readOnly = true
+const val readOnly = false
 
 // Slow
 const val shouldPerformVariationChecks = true
@@ -66,7 +66,7 @@ const val shouldUpdateProsforesProductTag = true
 const val shouldUpdateNeesAfikseisProductTag = true
 const val shouldRemoveEmptyLinesFromDescriptions = true
 const val shouldPopulateMissingImageAltText = true
-const val shouldDiscountProductPriceBasedOnProductCreationDate = true
+const val shouldDiscountProductPriceBasedOnLastSaleDate = true
 
 // One-off updates
 const val shouldSwapDescriptions = false
@@ -81,7 +81,7 @@ val allApiUpdateVariables = listOf(
     shouldUpdateNeesAfikseisProductTag,
     shouldRemoveEmptyLinesFromDescriptions,
     shouldPopulateMissingImageAltText,
-    shouldDiscountProductPriceBasedOnProductCreationDate,
+    shouldDiscountProductPriceBasedOnLastSaleDate,
     shouldSwapDescriptions,
     shouldDeleteLargeImagesOutsideMediaLibraryFromFTP,
 )
@@ -143,9 +143,8 @@ fun main() {
         checkProductCategories(credentials)
         checkProductAttributes(allAttributes, credentials)
         checkProductTags(credentials)
-
-        if (shouldDiscountProductPriceBasedOnProductCreationDate) {
-            discountProductsBasedOnCreationDate(allProducts, credentials)
+        if (shouldDiscountProductPriceBasedOnLastSaleDate) {
+            discountProductBasedOnLastSale(allProducts, allOrders, credentials)
         }
         for (product in allProducts) {
             // offer and discount empty products, not sure what these are.
@@ -179,10 +178,8 @@ fun main() {
             checkForIncorrectPlusSizeCategorizationAndTagging(product)
             checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product)
             checkForProductsInParentCategoryOnly(product)
-
             if (shouldPerformVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
-
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
@@ -190,7 +187,6 @@ fun main() {
                         addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 10, credentials)
                     }
                 }
-
                 checkForMissingSizeVariations(product, productVariations, credentials)
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(allOrders, product, productVariations)
@@ -266,26 +262,32 @@ fun checkForMikosAttributeInForemataCategory(product: Product) {
     }
 }
 
-fun discountProductsBasedOnCreationDate(allProducts: List<Product>, credentials: String) {
+fun discountProductBasedOnLastSale(allProducts: List<Product>, orders: List<Order>, credentials: String) {
     val baseSkuMap = allProducts.groupBy { it.sku.substringBefore('-') }
     baseSkuMap.forEach { (baseSku, products) ->
+        println("DEBUG: Processing baseSku :$baseSku")
         // Step 3: Find the product with the latest creation date in the group
-        val latestProduct = products.minByOrNull { product ->
-            val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            productCreationDate
-        } ?: return@forEach
-
-        // Calculate the discount based on the latest product's creation date
-        val today = LocalDate.now()
-        val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-        val productCreationDate = LocalDate.parse(latestProduct.date_created, dateFormatter)
-        val monthsSinceProductCreation = Period.between(productCreationDate, today).toTotalMonths().toInt()
-
-        if (monthsSinceProductCreation <= 12) {
+        val monthsSinceLastSale = products.minOf { product ->
+            val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+            val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
+            val today = LocalDate.now()
+            val periodSinceCreationDate = Period.between(productCreationDate, today).toTotalMonths().toInt()
+            val productVariations = getVariations(productId = product.id, credentials)
+            val lastSaleDate = findLastSaleDateForProductOrVariations(orders, product.id, productVariations)
+            val monthsSinceLastSale = if (lastSaleDate!=null) {
+                Period.between(lastSaleDate, today).toTotalMonths().toInt()
+            } else {
+                // If never sold, consider the product's creation date
+                periodSinceCreationDate
+            }
+            monthsSinceLastSale
+        }
+        println("DEBUG: monthsSinceLastSale for group: $monthsSinceLastSale")
+        if (monthsSinceLastSale <= 12) {
             // No discount for products sold within the last year
             return@forEach
         }
-        var discountPercentage = monthsSinceProductCreation - 12 // 1% per month after the first year
+        var discountPercentage = monthsSinceLastSale - 12 // 1% per month after the first year
         if (discountPercentage < 5) {
             // Start discounting from 5% only
             return@forEach
@@ -304,7 +306,7 @@ fun discountProductsBasedOnCreationDate(allProducts: List<Product>, credentials:
                         product,
                         variation,
                         discountPercentage,
-                        monthsSinceProductCreation,
+                        monthsSinceLastSale,
                         credentials
                     )
                 }
@@ -317,15 +319,12 @@ fun applyDiscountToVariationIfNecessary(
     product: Product,
     variation: Variation,
     discountPercentage: Int,
-    monthsSinceProductCreation: Int,
+    monthsSinceLastSale: Int,
     credentials: String
 ) {
     val regularPrice = variation.regular_price.toDoubleOrNull()
     if (regularPrice==null || regularPrice <= 0) {
-        logError(
-            "Invalid regular price",
-            "ERROR: Invalid regular price for variation ${variation.id} of product ${product.sku}"
-        )
+        println("ERROR: Invalid regular price for variation ${variation.id} of product ${product.sku}")
         return
     }
 
@@ -335,10 +334,7 @@ fun applyDiscountToVariationIfNecessary(
 
     val adjustedSalePriceValue = adjustedSalePrice.toDoubleOrNull()
     if (adjustedSalePriceValue==null || adjustedSalePriceValue <= 0) {
-        logError(
-            "Invalid sale price",
-            "ERROR: Calculated sale price is invalid for variation ${variation.id} of product ${product.sku}"
-        )
+        println("ERROR: Calculated sale price is invalid for variation ${variation.id} of product ${product.sku}")
         return
     }
 
@@ -346,7 +342,7 @@ fun applyDiscountToVariationIfNecessary(
         return
     }
 
-    println("ACTION: Updating variation ${variation.sku} of product ${product.sku} with new sale price $adjustedSalePrice euros (${discountPercentage}% discount). Previous sale price was $existingSalePrice. Months since last sale: $monthsSinceProductCreation")
+    println("ACTION: Updating variation ${variation.sku} of product ${product.sku} with new sale price $adjustedSalePrice euros (${discountPercentage}% discount). Previous sale price was $existingSalePrice. Months since last sale: $monthsSinceLastSale")
     updateProductPrice(product.id, variationId = variation.id, adjustedSalePrice, PriceType.SALE_PRICE, credentials)
 }
 
