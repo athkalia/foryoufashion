@@ -1,44 +1,44 @@
 package reports
 
 
-import org.jfree.chart.plot.XYPlot
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
-import org.jfree.chart.ChartUtils
-import org.jfree.data.xy.XYSeries
-import org.jfree.data.xy.XYSeriesCollection
-import java.io.File
-
 import Order
 import Product
 import allAutomatedChecks.fetchAllProducts
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Credentials
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.awt.BasicStroke
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import org.jfree.chart.ChartFactory
-import org.jfree.chart.plot.PlotOrientation
-import org.jfree.chart.axis.CategoryAxis
-import org.jfree.chart.axis.CategoryLabelPositions
-import org.jfree.data.category.DefaultCategoryDataset
-import java.io.IOException
-import org.apache.commons.text.StringEscapeUtils
-import org.jfree.chart.plot.CategoryPlot
-import org.jfree.chart.renderer.category.LineAndShapeRenderer
-import readOnlyConsumerKey
-
-import java.time.YearMonth
-import org.jfree.chart.axis.NumberAxis
-import org.jfree.chart.axis.SymbolAxis
 import java.awt.geom.Ellipse2D
-import readOnlyConsumerSecret
+import java.io.File
+import java.io.IOException
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.TreeSet
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.apache.commons.text.StringEscapeUtils
+import org.jfree.chart.ChartFactory
+import org.jfree.chart.ChartUtils
+import org.jfree.chart.axis.CategoryAxis
+import org.jfree.chart.axis.CategoryLabelPositions
+import org.jfree.chart.axis.NumberAxis
+import org.jfree.chart.axis.SymbolAxis
+import org.jfree.chart.plot.CategoryPlot
+import org.jfree.chart.plot.PlotOrientation
+import org.jfree.chart.plot.XYPlot
+import org.jfree.chart.renderer.category.LineAndShapeRenderer
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
+import org.jfree.data.category.DefaultCategoryDataset
+import org.jfree.data.xy.XYSeries
+import org.jfree.data.xy.XYSeriesCollection
+import readOnlyConsumerKey
+import readOnlyConsumerSecret
 
 fun main() {
+    println("Start time: ${LocalTime.now()}")
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val orders = fetchAllOrdersSince2024(credentials)
     println("DEBUG: Total orders fetched: ${orders.size}")
@@ -53,29 +53,32 @@ fun main() {
 
     val modeloTagToFilterBy = "ΜΟΝΤΕΛΟ"
     val modelProductSalesMap = generateProductSalesData(orders, modeloTagToFilterBy, credentials)
-    plotProductSalesData(modelProductSalesMap,modeloTagToFilterBy)
+    plotProductSalesData(modelProductSalesMap, modeloTagToFilterBy)
 
     val modeloAdjustedProductSalesMap = generateAdjustedProductSalesData(orders, modeloTagToFilterBy, credentials)
     plotAdjustedProductSalesData(modeloAdjustedProductSalesMap, modeloTagToFilterBy)
 
     val modeloMonetarySalesMap = generateMonetarySalesData(orders, modeloTagToFilterBy, credentials)
-    plotMonetarySalesData(modeloMonetarySalesMap,modeloTagToFilterBy)
+    plotMonetarySalesData(modeloMonetarySalesMap, modeloTagToFilterBy)
 
     val modeloAdjustedMonetarySalesMap = generateAdjustedMonetarySalesData(orders, modeloTagToFilterBy, credentials)
-    plotAdjustedMonetarySalesData(modeloAdjustedMonetarySalesMap,modeloTagToFilterBy)
+    plotAdjustedMonetarySalesData(modeloAdjustedMonetarySalesMap, modeloTagToFilterBy)
 
     val fwtografisiTagToFilterBy = "ΦΩΤΟΓΡΑΦΙΣΗ"
     val fwtografisiProductSalesMap = generateProductSalesData(orders, fwtografisiTagToFilterBy, credentials)
-    plotProductSalesData(fwtografisiProductSalesMap,fwtografisiTagToFilterBy)
+    plotProductSalesData(fwtografisiProductSalesMap, fwtografisiTagToFilterBy)
 
-    val fwtografisiAdjustedProductSalesMap = generateAdjustedProductSalesData(orders, fwtografisiTagToFilterBy, credentials)
+    val fwtografisiAdjustedProductSalesMap =
+        generateAdjustedProductSalesData(orders, fwtografisiTagToFilterBy, credentials)
     plotAdjustedProductSalesData(fwtografisiAdjustedProductSalesMap, fwtografisiTagToFilterBy)
 
     val fwtografisiMonetarySalesMap = generateMonetarySalesData(orders, fwtografisiTagToFilterBy, credentials)
-    plotMonetarySalesData(fwtografisiMonetarySalesMap,fwtografisiTagToFilterBy)
+    plotMonetarySalesData(fwtografisiMonetarySalesMap, fwtografisiTagToFilterBy)
 
-    val fwtografisiAdjustedMonetarySalesMap = generateAdjustedMonetarySalesData(orders, fwtografisiTagToFilterBy, credentials)
-    plotAdjustedMonetarySalesData(fwtografisiAdjustedMonetarySalesMap,fwtografisiTagToFilterBy)
+    val fwtografisiAdjustedMonetarySalesMap =
+        generateAdjustedMonetarySalesData(orders, fwtografisiTagToFilterBy, credentials)
+    plotAdjustedMonetarySalesData(fwtografisiAdjustedMonetarySalesMap, fwtografisiTagToFilterBy)
+    println("Finish time: ${LocalTime.now()}")
 }
 
 fun fetchAllOrdersSince2024(credentials: String): List<Order> {
