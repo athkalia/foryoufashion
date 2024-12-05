@@ -73,7 +73,7 @@
   },
   {
     "name": "Classic Editor",
-    "version": "1.6.5",
+    "version": "1.6.7",
     "status": "active",
     "description": {
       "rendered": "Ενεργοποιεί τον κλασικό κειμενογράφο του WordPress και την δική του (TinyMCE, μετα κουτιά, κλπ.) διάταξη της οθόνης επεξεργασίας κειμένων. Υποστηρίζει τα παλαιότερα πρόσθετα που επεκτείνουν τις δυνατότητες επεξεργασίας. <cite>By <a href=\"https://github.com/WordPress/classic-editor/\">Συντελεστές WordPress</a>.</cite>"
@@ -96,7 +96,7 @@
     "description": {
       "rendered": "Cloudflare speeds up and protects your WordPress site. <cite>By Cloudflare, Inc..</cite>"
     },
-    "sakis_description": ""
+    "sakis_description": "Cloudflare official plugin - Not 100% sure I need it as webexoert configured the DNS directly on Cloudflare, but it's ok."
   },
   {
     "name": "ΕΛΤΑ Courier Voucher for WooCommerce",
@@ -163,7 +163,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "14.0",
+    "version": "14.1",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -217,7 +217,7 @@
   },
   {
     "name": "Payment Gateway Based Fees and Discounts for WooCommerce",
-    "version": "2.14.0",
+    "version": "2.15.0",
     "status": "inactive",
     "description": {
       "rendered": "Set payment gateways fees and discounts in WooCommerce. <cite>By <a href=\"https://www.tychesoftwares.com/\">Tyche Softwares</a>.</cite>"
@@ -244,7 +244,7 @@
   },
   {
     "name": "Query Monitor",
-    "version": "3.16.4",
+    "version": "3.17.0",
     "status": "inactive",
     "description": {
       "rendered": "The developer tools panel for WordPress. <cite>By <a href=\"https://querymonitor.com/\">John Blackbourn</a>.</cite>"
@@ -253,7 +253,7 @@
   },
   {
     "name": "Redirection",
-    "version": "5.5.0",
+    "version": "5.5.1",
     "status": "active",
     "description": {
       "rendered": "Manage all your 301 redirects and monitor 404 errors <cite>By John Godley.</cite>"
@@ -307,7 +307,7 @@
   },
   {
     "name": "TI WooCommerce Wishlist",
-    "version": "2.9.1",
+    "version": "2.9.2",
     "status": "active",
     "description": {
       "rendered": "Λειτουργικότητα λίστας επιθυμιών για το κατάστημα WooCommerce. <cite>By <a href=\"https://templateinvaders.com/\">TemplateInvaders</a>.</cite>"
@@ -559,7 +559,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "23.9",
+    "version": "24.0",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
