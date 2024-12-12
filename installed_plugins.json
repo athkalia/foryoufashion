@@ -109,7 +109,7 @@
   },
   {
     "name": "EWWW Image Optimizer",
-    "version": "7.9.1",
+    "version": "8.0.0",
     "status": "active",
     "description": {
       "rendered": "Smaller Images, Faster Sites, Happier Visitors. Comprehensive image optimization that doesn&#8217;t require a degree in rocket science. <cite>By <a href=\"https://ewww.io/\">Exactly WWW</a>.</cite>"
@@ -154,7 +154,7 @@
   },
   {
     "name": "InfiniteWP - Client",
-    "version": "1.13.0",
+    "version": "1.13.1",
     "status": "active",
     "description": {
       "rendered": "This is the client plugin of InfiniteWP that communicates with the InfiniteWP Admin panel. <cite>By <a href=\"http://www.revmakx.com\">Revmakx</a>.</cite>"
@@ -361,7 +361,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.71",
+    "version": "1.0.75",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -487,7 +487,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "2.9.4",
+    "version": "2.9.5",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -532,7 +532,7 @@
   },
   {
     "name": "WP Mail SMTP",
-    "version": "4.2.0",
+    "version": "4.3.0",
     "status": "active",
     "description": {
       "rendered": "Reconfigures the <code>wp_mail()</code> function to use Gmail/Mailgun/SendGrid/SMTP instead of the default <code>mail()</code> and creates an options page to manage the settings. <cite>By <a href=\"https://wpmailsmtp.com/\">WP Mail SMTP</a>.</cite>"

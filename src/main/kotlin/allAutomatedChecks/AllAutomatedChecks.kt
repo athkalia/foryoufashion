@@ -1383,7 +1383,7 @@ private fun adjustPriceAbove70(price: Double): String {
     return String.format("%.0f", floor(price))
 }
 
-private fun updateProductPrice(
+fun updateProductPrice(
     productId: Int,
     variationId: Int,
     updatedPrice: String,
@@ -1581,7 +1581,7 @@ private fun getProducts(page: Int, credentials: String): List<Product> {
     }
 }
 
-private fun getVariations(productId: Int, credentials: String): List<Variation> {
+ fun getVariations(productId: Int, credentials: String): List<Variation> {
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products/$productId/variations"
     return executeWithRetry {
         val request = Request.Builder().url(url).header("Authorization", credentials).build()
