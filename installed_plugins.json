@@ -127,7 +127,7 @@
   },
   {
     "name": "Google Analytics for WooCommerce",
-    "version": "2.1.8",
+    "version": "2.1.9",
     "status": "active",
     "description": {
       "rendered": "Allows Google Analytics tracking code to be inserted into WooCommerce store pages. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
@@ -199,7 +199,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.9.19",
+    "version": "4.9.20",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -226,7 +226,7 @@
   },
   {
     "name": "Payment Plugins for Stripe WooCommerce",
-    "version": "3.3.78",
+    "version": "3.3.80",
     "status": "active",
     "description": {
       "rendered": "Accept Credit Cards, Google Pay, Apple Pay, ACH, Klarna and more using Stripe. <cite>By Payment Plugins, support@paymentplugins.com.</cite>"
@@ -397,7 +397,7 @@
   },
   {
     "name": "Web Expert WooCommerce Order Tracking",
-    "version": "1.0.28",
+    "version": "1.0.30",
     "status": "active",
     "description": {
       "rendered": "Το πρόσθετο Web Expert WooCommerce Order Tracking σας επιτρέπει να στέλνετε ένα αυτοματοποιημένο email στον πελάτη, με αριθμό αποστολής και σύνδεσμο παρακολούθησης. Το πρόσθετο μπορεί να χρησιμοποιηθεί με το Web Expert WooCommerce SMS για να στέλνετε τον αριθμό παρακολούθησης και μέσω SMS. <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -460,7 +460,7 @@
   },
   {
     "name": "WooCommerce AJAX Products Filter",
-    "version": "3.1.4.6",
+    "version": "3.1.7.2",
     "status": "active",
     "description": {
       "rendered": "Unlimited AJAX products filters to make your shop perfect <cite>By <a href=\"https://berocket.com?utm_source=paid_plugin&#038;utm_medium=plugins&#038;utm_campaign=ajax_filters\">BeRocket</a>.</cite>"
@@ -496,7 +496,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.1",
+    "version": "4.7.2",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -559,7 +559,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "24.0",
+    "version": "24.1",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"

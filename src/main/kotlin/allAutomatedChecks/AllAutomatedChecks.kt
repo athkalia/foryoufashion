@@ -833,7 +833,7 @@ fun checkForUnusedImagesInsideMediaLibrary(
             } else {
                 logError(
                     "checkForUnusedImagesInsideMediaLibrary regex mismatch",
-                    "ERROR: ${media.source_url} should always match regex"
+                    "ERROR: ${media.source_url} with id ${media.id} should always match regex"
                 )
                 true // If URL doesn't match pattern, exclude the media item to be safe
             }
@@ -934,7 +934,7 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
 
         val ratio = dimensions.second.toDouble() / dimensions.first.toDouble()
         if (ratio > 1.51 || ratio < 1.49) {
-            println("WARNING: Product ${product.sku} image ${image.src} has the wrong resolution ratio ($ratio). Image width: ${dimensions.first}px, image height: ${dimensions.second}px ")
+            println("ERROR: Product ${product.sku} image ${image.src} has the wrong resolution ratio ($ratio). Image width: ${dimensions.first}px, image height: ${dimensions.second}px ")
             println("LINK: ${product.permalink}")
         }
     }
@@ -1581,7 +1581,7 @@ private fun getProducts(page: Int, credentials: String): List<Product> {
     }
 }
 
- fun getVariations(productId: Int, credentials: String): List<Variation> {
+fun getVariations(productId: Int, credentials: String): List<Variation> {
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products/$productId/variations"
     return executeWithRetry {
         val request = Request.Builder().url(url).header("Authorization", credentials).build()
@@ -1929,28 +1929,20 @@ fun checkForMissingSizeVariations(product: Product, productVariations: List<Vari
 fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
     product: Product, productVariations: List<Variation>, credentials: String
 ) {
-    if (product.status!="draft") {
+    if (product.status!="private" && product.status!="draft") {
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val productDate = LocalDate.parse(product.date_created, dateFormatter)
         val twoYearsAgo = LocalDate.now().minus(2, ChronoUnit.YEARS)
         if (productDate.isBefore(twoYearsAgo)) {
             val allOutOfStock = productVariations.all { it.stock_status=="outofstock" }
             if (allOutOfStock) {
-                if (product.status=="private") {
-                    logError(
-                        "checkForOldProductsThatAreOutOfStockAndMoveToPrivate 1",
-                        "ERROR: Product ${product.sku} is out of stock on all sizes and private and was added more than 2 years ago."
-                    )
-                    println("LINK: ${product.permalink}")
-                } else {
-                    logError(
-                        "checkForOldProductsThatAreOutOfStockAndMoveToPrivate 1",
-                        "ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago."
-                    )
-                    println("LINK: ${product.permalink}")
-                    if (shouldMoveOldOutOfStockProductsToPrivate) {
-                        updateProductStatusToPrivate(product, credentials)
-                    }
+                logError(
+                    "checkForOldProductsThatAreOutOfStockAndMoveToPrivate 1",
+                    "ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago."
+                )
+                println("LINK: ${product.permalink}")
+                if (shouldMoveOldOutOfStockProductsToPrivate) {
+                    updateProductStatusToPrivate(product, credentials)
                 }
             }
         }
