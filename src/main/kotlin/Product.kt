@@ -128,6 +128,7 @@ data class Variation(
     val regular_price: String,
     val sale_price: String,
     val stock_status: String,
+    val manage_stock: Boolean
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

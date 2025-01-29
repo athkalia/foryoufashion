@@ -28,7 +28,7 @@
   },
   {
     "name": "Advanced Custom Fields PRO",
-    "version": "6.3.11",
+    "version": "6.3.12",
     "status": "active",
     "description": {
       "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
@@ -127,7 +127,7 @@
   },
   {
     "name": "Google Analytics for WooCommerce",
-    "version": "2.1.9",
+    "version": "2.1.11",
     "status": "active",
     "description": {
       "rendered": "Allows Google Analytics tracking code to be inserted into WooCommerce store pages. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
@@ -163,7 +163,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "14.1",
+    "version": "14.2.1",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -172,7 +172,7 @@
   },
   {
     "name": "Jetpack VideoPress",
-    "version": "2.1",
+    "version": "2.2",
     "status": "active",
     "description": {
       "rendered": "High quality, ad-free video. <cite>By <a href=\"https://jetpack.com/videopress/\">Automattic - Jetpack Video team</a>.</cite>"
@@ -181,7 +181,7 @@
   },
   {
     "name": "Klarna Order Management for WooCommerce",
-    "version": "1.9.3",
+    "version": "1.9.4",
     "status": "active",
     "description": {
       "rendered": "Provides order management for Klarna Payments and Klarna Checkout gateways. <cite>By <a href=\"https://krokedil.se/\">klarna, krokedil</a>.</cite>"
@@ -190,7 +190,7 @@
   },
   {
     "name": "Klarna Payments for WooCommerce",
-    "version": "3.8.3",
+    "version": "3.9.1",
     "status": "inactive",
     "description": {
       "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
@@ -199,7 +199,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.9.20",
+    "version": "4.10.0",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -316,7 +316,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.0.62",
+    "version": "1.0.75",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -361,7 +361,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.75",
+    "version": "1.0.77",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -415,7 +415,7 @@
   },
   {
     "name": "WooCommerce",
-    "version": "9.4.1",
+    "version": "9.6.0",
     "status": "active",
     "description": {
       "rendered": "Μια e-commerce πλατφόρμα που θα σας βοηθήσει να πουλήσετε τα πάντα. Όμορφα. <cite>By <a href=\"https://woocommerce.com\">Automattic</a>.</cite>"
@@ -460,7 +460,7 @@
   },
   {
     "name": "WooCommerce AJAX Products Filter",
-    "version": "3.1.7.2",
+    "version": "3.1.8.1",
     "status": "active",
     "description": {
       "rendered": "Unlimited AJAX products filters to make your shop perfect <cite>By <a href=\"https://berocket.com?utm_source=paid_plugin&#038;utm_medium=plugins&#038;utm_campaign=ajax_filters\">BeRocket</a>.</cite>"
@@ -478,7 +478,7 @@
   },
   {
     "name": "WooCommerce Legacy REST API",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "status": "active",
     "description": {
       "rendered": "The legacy WooCommerce REST API, which used to be part of WooCommerce itself but is removed as of WooCommerce 9.0. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
@@ -487,7 +487,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "2.9.5",
+    "version": "2.9.6",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -496,7 +496,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.2",
+    "version": "4.7.3",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -523,7 +523,7 @@
   },
   {
     "name": "WP File Manager",
-    "version": "8.0",
+    "version": "8.0.1",
     "status": "active",
     "description": {
       "rendered": "Manage your WP files. <cite>By <a href=\"https://profiles.wordpress.org/mndpsingh287\">mndpsingh287</a>.</cite>"
@@ -541,7 +541,7 @@
   },
   {
     "name": "WP Rocket",
-    "version": "3.17.1",
+    "version": "3.18",
     "status": "active",
     "description": {
       "rendered": "The best WordPress performance plugin. <cite>By <a href=\"https://wp-media.me\">WP Media</a>.</cite>"
@@ -559,7 +559,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "24.1",
+    "version": "24.3",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
@@ -568,11 +568,20 @@
   },
   {
     "name": "Yoast SEO: WooCommerce",
-    "version": "16.2",
+    "version": "16.5",
     "status": "active",
     "description": {
       "rendered": "Η επέκταση, του Woocommerce και του Yoast SEO κάνει εφικτή την άψογη επικοινωνία και συνεργατική λειτουργία μεταξύ των δύο αυτών προσθέτων <cite>By <a href=\"https://yoa.st/team-yoast-woocommerce\">Η ομάδα του Yoast</a>.</cite>"
     },
     "sakis_description": ""
+  },
+  {
+    "name": "Klaviyo",
+    "version": "3.4.2",
+    "status": "active",
+    "description": {
+      "rendered": "A plugin to automatically sync your WooCommerce sales, products and customers with Klaviyo. With Klaviyo you can set up abandoned cart emails, collect emails for your newsletter to grow your business. <cite>By <a href=\"https://www.klaviyo.com\">Klaviyo, Inc.</a>.</cite>"
+    },
+    "sakis_description": "Integration with Klaviyo for email marketing"
   }
 ]

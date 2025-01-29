@@ -67,6 +67,7 @@ const val shouldUpdateNeesAfikseisProductTag = true
 const val shouldRemoveEmptyLinesFromDescriptions = true
 const val shouldPopulateMissingImageAltText = true
 const val shouldDiscountProductPriceBasedOnLastSaleDate = true
+const val shouldAddGenericPhotoshootTag = true
 
 // One-off updates
 const val shouldSwapDescriptions = false
@@ -84,6 +85,7 @@ val allApiUpdateVariables = listOf(
     shouldDiscountProductPriceBasedOnLastSaleDate,
     shouldSwapDescriptions,
     shouldDeleteLargeImagesOutsideMediaLibraryFromFTP,
+    shouldAddGenericPhotoshootTag
 )
 
 private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
@@ -137,8 +139,7 @@ fun main() {
 
         checkForDuplicateImagesAcrossProducts(allProducts)
         val allOrders = fetchAllOrders(credentials)
-        checkPaymentMethodsInLastTwoMonths(allOrders)
-
+        checkPaymentMethodsInLastMonths(allOrders)
         val allAttributes = getAllAttributes(credentials)
         checkProductCategories(credentials)
         checkProductAttributes(allAttributes, credentials)
@@ -159,6 +160,7 @@ fun main() {
             checkForProductsWithImagesNotInMediaLibrary(product, allMedia)
             checkCasualForemataHasCasualStyleAttribute(product)
             checkFwtografisiStudioEkswterikiTag(product)
+            checkPhotoshootTags(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes)
@@ -184,7 +186,7 @@ fun main() {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
                         println("DEBUG: variation SKU: ${it.sku}")
-                        addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 10, credentials)
+                        addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 30, credentials)
                     }
                 }
                 checkForMissingSizeVariations(product, productVariations, credentials)
@@ -193,6 +195,7 @@ fun main() {
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
                 for (variation in productVariations) {
 //                    println("DEBUG: variation SKU: ${variation.sku}")
+                    checkStockManagementAtVariationLevel(variation, product)
                     checkForWrongPricesAndUpdateEndTo99(product, variation, credentials)
                     checkForInvalidSKUNumbers(product, variation)
                 }
@@ -831,10 +834,12 @@ fun checkForUnusedImagesInsideMediaLibrary(
                     true // If parsing fails, exclude the media item to be safe
                 }
             } else {
-                logError(
-                    "checkForUnusedImagesInsideMediaLibrary regex mismatch",
-                    "ERROR: ${media.source_url} with id ${media.id} should always match regex"
-                )
+                if (media.id!=38052) { // exclude a placeholder image
+                    logError(
+                        "checkForUnusedImagesInsideMediaLibrary regex mismatch",
+                        "ERROR: ${media.source_url} with id ${media.id} should always match regex"
+                    )
+                }
                 true // If URL doesn't match pattern, exclude the media item to be safe
             }
         }
@@ -1154,6 +1159,12 @@ fun checkNameModelTag(product: Product) {
         && product.sku!="59468-281"
         && product.sku!="59469-281"
         && product.sku!="57630-556"
+        && product.sku!="58747-246"
+        && product.sku!="56068-396"
+        && product.sku!="55627-027"
+        && product.sku!="58746-246"
+        && product.sku!="58722-436"
+        && product.sku!="58727-040"
     ) {
         val formatter = DateTimeFormatter.ISO_DATE_TIME
         val targetDate = LocalDate.of(2024, 9, 20) // When we started implementing this
@@ -1180,6 +1191,90 @@ fun checkFwtografisiStudioEkswterikiTag(product: Product) {
                 "ERROR: Product SKU ${product.sku} does not have a fwtografisi tag starting with 'ΦΩΤΟΓΡΑΦΙΣΗ'."
             )
             println("LINK: ${product.permalink}")
+        }
+    }
+}
+// TODO check fwtografisi studio should be in all images that doesn't have ekswteriki fwtografisi
+
+fun checkPhotoshootTags(product: Product, credentials: String) {
+    val genericFwtografisiTagSlug = "fwtografisi-ekswteriki"
+    val genericFwtografisiTagName = "ΦΩΤΟΓΡΑΦΙΣΗ ΕΞΩΤΕΡΙΚΗ"
+
+    // Check for tags that start with "ΦΩΤΟΓΡΑΦΙΣΗ ΕΞΩΤΕΡΙΚΗ"
+    val specificPhotoshootTags = product.tags.filter { it.name.startsWith("ΦΩΤΟΓΡΑΦΙΣΗ ΕΞΩΤΕΡΙΚΗ ", ignoreCase = true) }
+
+    // Check if the generic tag exists
+    val hasGenericTag = product.tags.any { it.name.equals(genericFwtografisiTagName, ignoreCase = true) }
+
+    if (specificPhotoshootTags.isNotEmpty() && !hasGenericTag) {
+        logError(
+            "checkPhotoshootTags 1",
+            "ERROR: Product SKU ${product.sku} has specific fwtografisi tag but is missing the generic tag '$genericFwtografisiTagName'."
+        )
+        if (shouldAddGenericPhotoshootTag) {
+            println("ACTION: Adding generic tag '$genericFwtografisiTagName' to product SKU ${product.sku}.")
+            addGenericPhotoshootTag(product, genericFwtografisiTagSlug, credentials)
+        }
+    }
+
+    // Check if the generic tag exists but a specific tag is missing
+    if (hasGenericTag && specificPhotoshootTags.isEmpty() &&
+        product.sku !in listOf( // Old external photoshoots - ignore
+            "55627-027",
+            "57630-556",
+            "59050-596",
+            "55627-465",
+            "58980-054",
+            "58981-054",
+            "58977-054",
+            "58979-054",
+            "58149-029",
+            "59047-031",
+            "59049-013",
+            "58978-054",
+            "58976-054",
+            "58974-054",
+            "57384-556",
+            "56068-029",
+            "58317-009",
+            "58315-027",
+            "57637-530",
+            "57394-157",
+            "57385-488",
+            "57010-019",
+            "57005-281",
+            "56072-003",
+            "56818-488",
+            "55627-007",
+            "56065-007"
+        )
+    ) {
+        logError(
+            "checkPhotoshootTags 2",
+            "ERROR: Product SKU ${product.sku} has the generic tag '$genericFwtografisiTagName' but is missing a specific photoshoot location tag."
+        )
+        println("LINK: ${product.permalink}")
+    }
+}
+
+fun addGenericPhotoshootTag(product: Product, genericTagSlug: String, credentials: String) {
+    val genericTag = Tag(id = 1577, slug = genericTagSlug, name = "ΦΩΤΟΓΡΑΦΙΣΗ ΕΞΩΤΕΡΙΚΗ")
+    val updatedTags = product.tags.toMutableList().apply { add(genericTag) }
+    val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
+
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+    val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
+
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string() ?: ""
+            if (!response.isSuccessful) {
+                println("Error adding generic tag to product ${product.id}: $responseBody")
+                throw IOException("Unexpected code $response")
+            } else {
+                println("ACTION: Generic tag added to product ${product.id}.")
+            }
         }
     }
 }
@@ -1250,6 +1345,16 @@ private fun checkForStockManagementAtProductLevelOutOfVariations(product: Produc
             "checkForStockManagementAtProductLevelOutOfVariations",
             "ERROR: Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level"
         )
+    }
+}
+
+fun checkStockManagementAtVariationLevel(variation: Variation, product: Product) {
+    if (!variation.manage_stock) {
+        logError(
+            "checkStockManagementAtVariationLevel",
+            "ERROR: Variation SKU ${variation.sku} of product SKU ${product.sku} does not have 'Manage stock?' enabled for stock management at the variation level."
+        )
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -2032,7 +2137,12 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
 
     if (newPlugins.isNotEmpty()) {
         logError("checkForPluginChanges 1", "ERROR: The following plugins have been installed:")
-        newPlugins.forEach { println("- ${it.name} v${it.version}, ${it.description.rendered}") }
+        newPlugins.forEach {
+            println(it.name)
+            println("v${it.version}")
+            println(it.status)
+            println(it.description.rendered)
+        }
     }
 
     if (deletedPlugins.isNotEmpty()) {
@@ -2101,7 +2211,8 @@ fun fetchAllOrders(credentials: String): List<Order> {
     return orders
 }
 
-fun checkPaymentMethodsInLastTwoMonths(orders: List<Order>) {
+fun checkPaymentMethodsInLastMonths(orders: List<Order>) {
+    val numberOfMonths = 3L
     val allPaymentMethods = listOf(
         "Αντικαταβολή",
         "Κάρτα",
@@ -2113,7 +2224,7 @@ fun checkPaymentMethodsInLastTwoMonths(orders: List<Order>) {
     )
 
     val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
-    val twoMonthsAgo = LocalDate.now().minusMonths(2)
+    val xMonthsAgo = LocalDate.now().minusMonths(numberOfMonths)
 
     val usedPaymentMethods = mutableSetOf<String>()
 
@@ -2132,7 +2243,7 @@ fun checkPaymentMethodsInLastTwoMonths(orders: List<Order>) {
             }
         }
 
-        if (orderDate.isAfter(twoMonthsAgo)) {
+        if (orderDate.isAfter(xMonthsAgo)) {
             usedPaymentMethods.add(paymentMethod)
         }
     }
@@ -2140,8 +2251,8 @@ fun checkPaymentMethodsInLastTwoMonths(orders: List<Order>) {
     allPaymentMethods.forEach { method ->
         if (!usedPaymentMethods.contains(method)) {
             logError(
-                "checkPaymentMethodsInLastTwoMonths 1",
-                "ERROR: The payment method '$method' has not been used in the last two months."
+                "checkPaymentMethodsInLastMonths 1",
+                "ERROR: The payment method '$method' has not been used in the last $numberOfMonths months."
             )
         }
     }
