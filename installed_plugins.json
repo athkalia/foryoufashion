@@ -127,7 +127,7 @@
   },
   {
     "name": "Google Analytics for WooCommerce",
-    "version": "2.1.11",
+    "version": "2.1.13",
     "status": "active",
     "description": {
       "rendered": "Allows Google Analytics tracking code to be inserted into WooCommerce store pages. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
@@ -154,7 +154,7 @@
   },
   {
     "name": "InfiniteWP - Client",
-    "version": "1.13.1",
+    "version": "1.13.2",
     "status": "active",
     "description": {
       "rendered": "This is the client plugin of InfiniteWP that communicates with the InfiniteWP Admin panel. <cite>By <a href=\"http://www.revmakx.com\">Revmakx</a>.</cite>"
@@ -163,7 +163,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "14.2.1",
+    "version": "14.3",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -181,7 +181,7 @@
   },
   {
     "name": "Klarna Order Management for WooCommerce",
-    "version": "1.9.4",
+    "version": "1.9.5",
     "status": "active",
     "description": {
       "rendered": "Provides order management for Klarna Payments and Klarna Checkout gateways. <cite>By <a href=\"https://krokedil.se/\">klarna, krokedil</a>.</cite>"
@@ -199,7 +199,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.10.0",
+    "version": "4.10.1",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -226,7 +226,7 @@
   },
   {
     "name": "Payment Plugins for Stripe WooCommerce",
-    "version": "3.3.80",
+    "version": "3.3.82",
     "status": "active",
     "description": {
       "rendered": "Accept Credit Cards, Google Pay, Apple Pay, ACH, Klarna and more using Stripe. <cite>By Payment Plugins, support@paymentplugins.com.</cite>"
@@ -244,7 +244,7 @@
   },
   {
     "name": "Query Monitor",
-    "version": "3.17.0",
+    "version": "3.17.2",
     "status": "inactive",
     "description": {
       "rendered": "The developer tools panel for WordPress. <cite>By <a href=\"https://querymonitor.com/\">John Blackbourn</a>.</cite>"
@@ -253,7 +253,7 @@
   },
   {
     "name": "Redirection",
-    "version": "5.5.1",
+    "version": "5.5.2",
     "status": "active",
     "description": {
       "rendered": "Manage all your 301 redirects and monitor 404 errors <cite>By John Godley.</cite>"
@@ -316,7 +316,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.0.75",
+    "version": "1.0.79",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -496,7 +496,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.3",
+    "version": "4.7.4",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -559,7 +559,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "24.3",
+    "version": "24.5",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"

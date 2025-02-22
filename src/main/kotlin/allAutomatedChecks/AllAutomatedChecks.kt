@@ -1162,6 +1162,7 @@ fun checkNameModelTag(product: Product) {
         && product.sku!="58747-246"
         && product.sku!="56068-396"
         && product.sku!="55627-027"
+        && product.sku!="58205-007"
         && product.sku!="58746-246"
         && product.sku!="58722-436"
         && product.sku!="58727-040"
@@ -1244,6 +1245,8 @@ fun checkPhotoshootTags(product: Product, credentials: String) {
             "57010-019",
             "57005-281",
             "56072-003",
+            "56662-465",
+            "58172-007",
             "56818-488",
             "55627-007",
             "56065-007"
