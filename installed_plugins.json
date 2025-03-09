@@ -37,7 +37,7 @@
   },
   {
     "name": "AfterShip Tracking - All-In-One WooCommerce Order Tracking (Free plan available)",
-    "version": "1.17.15",
+    "version": "1.17.17",
     "status": "active",
     "description": {
       "rendered": "Track orders in one place. shipment tracking, automated notifications, order lookup, branded tracking page, delivery day prediction <cite>By <a href=\"http://aftership.com\">AfterShip</a>.</cite>"
@@ -109,7 +109,7 @@
   },
   {
     "name": "EWWW Image Optimizer",
-    "version": "8.0.0",
+    "version": "8.1.2",
     "status": "active",
     "description": {
       "rendered": "Smaller Images, Faster Sites, Happier Visitors. Comprehensive image optimization that doesn&#8217;t require a degree in rocket science. <cite>By <a href=\"https://ewww.io/\">Exactly WWW</a>.</cite>"
@@ -163,7 +163,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "14.3",
+    "version": "14.4",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -199,7 +199,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.10.1",
+    "version": "4.10.2",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -217,7 +217,7 @@
   },
   {
     "name": "Payment Gateway Based Fees and Discounts for WooCommerce",
-    "version": "2.15.0",
+    "version": "2.16.0",
     "status": "inactive",
     "description": {
       "rendered": "Set payment gateways fees and discounts in WooCommerce. <cite>By <a href=\"https://www.tychesoftwares.com/\">Tyche Softwares</a>.</cite>"
@@ -289,7 +289,7 @@
   },
   {
     "name": "Smash Balloon Instagram Feed",
-    "version": "6.6.1",
+    "version": "6.7.1",
     "status": "active",
     "description": {
       "rendered": "Display beautifully clean, customizable, and responsive Instagram feeds. <cite>By <a href=\"https://smashballoon.com/\">Smash Balloon</a>.</cite>"
@@ -298,7 +298,7 @@
   },
   {
     "name": "Timologio for WooCommerce",
-    "version": "2.1.33",
+    "version": "2.1.34",
     "status": "active",
     "description": {
       "rendered": "Το πρόσθετο Web Expert Timologio for WooCommerce προσθέτει δυνατότητα επιλογής απόδειξης/τιμολογίου κατά την ολοκλήρωση παραγγελίας. Προαιρετικά ενσωματώνει δυνατότητα απαλλαγής λόγω VIES ή ΠΟΛ.1150/2017. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -316,7 +316,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.0.79",
+    "version": "1.0.81",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -405,17 +405,8 @@
     "sakis_description": "missing"
   },
   {
-    "name": "WooCommerce Επιστροφή σε ειδοποιήσεις αποθεμάτων",
-    "version": "2.0.4",
-    "status": "active",
-    "description": {
-      "rendered": "Ειδοποιήστε τους πελάτες σας όταν τα αγαπημένα τους προϊόντα είναι ξανά διαθέσιμα. <cite>By <a href=\"https://woocommerce.com/\">Woo</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
     "name": "WooCommerce",
-    "version": "9.6.0",
+    "version": "9.7.1",
     "status": "active",
     "description": {
       "rendered": "Μια e-commerce πλατφόρμα που θα σας βοηθήσει να πουλήσετε τα πάντα. Όμορφα. <cite>By <a href=\"https://woocommerce.com\">Automattic</a>.</cite>"
@@ -460,7 +451,7 @@
   },
   {
     "name": "WooCommerce AJAX Products Filter",
-    "version": "3.1.8.1",
+    "version": "3.1.8.2",
     "status": "active",
     "description": {
       "rendered": "Unlimited AJAX products filters to make your shop perfect <cite>By <a href=\"https://berocket.com?utm_source=paid_plugin&#038;utm_medium=plugins&#038;utm_campaign=ajax_filters\">BeRocket</a>.</cite>"
@@ -532,7 +523,7 @@
   },
   {
     "name": "WP Mail SMTP",
-    "version": "4.3.0",
+    "version": "4.4.0",
     "status": "active",
     "description": {
       "rendered": "Reconfigures the <code>wp_mail()</code> function to use Gmail/Mailgun/SendGrid/SMTP instead of the default <code>mail()</code> and creates an options page to manage the settings. <cite>By <a href=\"https://wpmailsmtp.com/\">WP Mail SMTP</a>.</cite>"
@@ -559,7 +550,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "24.5",
+    "version": "24.6",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"

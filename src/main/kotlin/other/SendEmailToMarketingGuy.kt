@@ -43,6 +43,7 @@ fun main(args: Array<String>) {
 private fun getPreviousMonthDate(): LocalDate = LocalDate.now().minusMonths(1)
 
 fun fetchOrders(previousMonthDate: LocalDate, credentials: String): List<Order> {
+    println("Fetching orders..")
     val client = OkHttpClient()
     val orders = mutableListOf<Order>()
     val currentMonth = previousMonthDate.monthValue
@@ -82,7 +83,8 @@ fun calculateNonCompletedOrdersPercentage(orders: List<Order>): Double {
 }
 
 fun calculateCompletedRevenue(orders: List<Order>): Double {
-    return orders.filter { it.status=="completed" }.sumOf { it.total.toDouble() }
+    val completedOrders = orders.filter { it.status=="completed" }
+    return completedOrders.sumOf { it.total.toDouble() }
 }
 
 fun generateEmailContent(
@@ -126,9 +128,13 @@ fun sendEmail(recipientEmail: String, content: String, monthAndYear: String) {
         message.setFrom(InternetAddress(username))
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail))
         if (!test) {
-            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("k.kaliakouda@foryoufashion.gr"))
+            message.setRecipients(
+                Message.RecipientType.CC,
+                InternetAddress.parse("k.kaliakouda@foryoufashion.gr, sakis@foryoufashion.gr")
+            )
+        } else {
+            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
         }
-        message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
         message.subject = "For You Fashion - Έσοδα μήνα $monthAndYear"
         message.setText(content)
         Transport.send(message)

@@ -166,6 +166,7 @@ fun main() {
             checkForMissingAttributesInProduct(product, allAttributes)
             checkCasualProductsInCasualForemataCategory(product)
             checkForMissingImages(product)
+            checkForTyposInProductText(product)
             checkForDuplicateImagesInAProduct(product)
             checkForNonPortraitImagesWithCache(product)
             checkForImagesWithTooLowResolution(product)
@@ -401,7 +402,7 @@ fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Att
                 println("LINK: ${product.permalink}")
             } else if (!productAttributeNames.contains(attributeName)) {
                 println("WARNING: Product SKU ${product.sku} is missing the required attribute '${attribute.name}'.")
-//            println("LINK: ${product.permalink}")
+                println("LINK: ${product.permalink}")
             }
         }
     }
@@ -702,17 +703,205 @@ fun listFilesRecursively(
 }
 
 fun checkForMissingGalleryVideo(product: Product) {
-    val targetDate = LocalDate.of(2024, 3, 1)
-    val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-    if (productCreationDate.isAfter(targetDate)) {
-        val galleryVideoMetaData = product.meta_data.find { it.key=="gallery_video" }
-        val isGalleryVideoMissing = galleryVideoMetaData==null || (galleryVideoMetaData.value as String).isBlank()
-        if (isGalleryVideoMissing) {
-            logError(
-                "checkForMissingGalleryVideo",
-                "ERROR: Product SKU ${product.sku} created after 1st March 2024 is missing the 'gallery_video' custom field."
-            )
-            println("LINK: ${product.permalink}")
+    if (product.status!="draft" && product.status!="private" && product.sku !in listOf(
+            "57849-556",
+            "57396-550",
+            "58205-007",
+            "58205-293",
+            "57402-028",
+            "58747-246",
+            "58746-246",
+            "58727-040",
+            "59346-002",
+            "59356-054",
+            "59356-003",
+            "59435-369",
+            "59428-246",
+            "59427-022",
+            "59427-003",
+            "58223-488",
+            "59425-051",
+            "59425-005",
+            "59345-003",
+            "59345-022",
+            "59388-1278",
+            "59343-369",
+            "58072-040",
+            "59343-003",
+            "59323-013",
+            "59260-005",
+            "59260-001",
+            "59429-246",
+            "59422-005",
+            "59422-012",
+            "59422-010",
+            "59441-003",
+            "59440-369",
+            "59440-003",
+            "59426-002",
+            "59436-060",
+            "59423-027",
+            "59212-396",
+            "59417-488",
+            "58735-003",
+            "59238-003",
+            "58593-005",
+            "59235-005",
+            "59235-003",
+            "59235-004",
+            "59235-187",
+            "58580-036",
+            "59434-003",
+            "58882-028",
+            "57630-396",
+            "59197-003",
+            "59439-369",
+            "59468-281",
+            "59269-396",
+            "59432-060",
+            "59431-1282",
+            "59432-003",
+            "59432-369",
+            "59438-003",
+            "59438-060",
+            "59418-005",
+            "59430-003",
+            "59394-003",
+            "59430-007",
+            "59393-011",
+            "59396-003",
+            "58736-005",
+            "58736-001",
+            "59397-020",
+            "59370-003",
+            "59395-011",
+            "59041-595",
+            "59370-040",
+            "58696-289",
+            "59392-281",
+            "58585-007",
+            "59461-031",
+            "59433-402",
+            "59413-020",
+            "59047-015",
+            "59409-003",
+            "59293-003",
+            "59468-561",
+            "59469-281",
+            "59333-588",
+            "59324-002",
+            "58458-007",
+            "59195-396",
+            "58549-028",
+            "58458-465",
+            "57630-556",
+            "57630-028",
+            "58902-465",
+            "59208-028",
+            "59051-017",
+            "59046-596",
+            "59065-596",
+            "59192-028",
+            "59186-097",
+            "59181-097",
+            "59193-097",
+            "59195-097",
+            "58869-011",
+            "58551-028",
+            "58856-051",
+            "59067-028",
+            "58794-289",
+            "58794-016",
+            "59137-293",
+            "59138-293",
+            "58872-488",
+            "58876-519",
+            "58548-519",
+            "58903-051",
+            "57459-561",
+            "58525-028",
+            "57140-003",
+            "56084-281",
+            "56080-556",
+            "56084-396",
+            "58218-027",
+            "59224-028",
+            "59230-003",
+            "59232-281",
+            "58504-561",
+            "59183-514",
+            "59182-514",
+            "59073-514",
+            "59072-514",
+            "58758-015",
+            "58759-015",
+            "56634-007",
+            "59167-013",
+            "59175-556",
+            "59173-027",
+            "59172-051",
+            "59050-596",
+            "59049-013",
+            "59047-031",
+            "59028-004",
+            "59043-051",
+            "59010-007",
+            "59112-550",
+            "58241-514",
+            "59113-550",
+            "59114-514",
+            "59114-550",
+            "59111-550",
+            "59110-514",
+            "59110-550",
+            "59111-514",
+            "58242-015",
+            "59109-514",
+            "59109-550",
+            "58515-029",
+            "56065-547",
+            "59016-019",
+            "58996-005",
+            "59030-096",
+            "59039-281",
+            "59039-003",
+            "58995-051",
+            "59033-013",
+            "59064-281",
+            "59017-004",
+            "59017-281",
+            "59018-013",
+            "58301-003",
+            "59040-004",
+            "59040-289",
+            "59023-023",
+            "59020-027",
+            "59020-023",
+            "59045-097",
+            "58210-293",
+            "58205-027",
+            "55627-561",
+            "58956-097",
+            "58959-097",
+            "58957-097",
+            "58983-005",
+            "59117-012",
+            "58823-488",
+        )
+    ) {
+        val startTargetDate = LocalDate.of(2024, 3, 1)
+        val endTargetDate = LocalDate.now().minusMonths(3)
+        val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        if (productCreationDate.isAfter(startTargetDate) && productCreationDate.isBefore(endTargetDate)) {
+            val galleryVideoMetaData = product.meta_data.find { it.key=="gallery_video" }
+            val isGalleryVideoMissing = galleryVideoMetaData==null || (galleryVideoMetaData.value as String).isBlank()
+            if (isGalleryVideoMissing) {
+                logError(
+                    "checkForMissingGalleryVideo",
+                    "ERROR: Product SKU ${product.sku} created after 1st March 2024 is missing the 'gallery_video' custom field."
+                )
+                println("LINK: ${product.permalink}")
+            }
         }
     }
 }
@@ -954,7 +1143,10 @@ fun checkForImagesWithTooLowResolution(product: Product) {
         }
 
         if (dimensions.first < 1200) {
-            println("WARNING: Product ${product.sku} has an image with too low resolution (width < 1200px).")
+            logError(
+                "checkForImagesWithTooLowResolution",
+                "ERROR: Product ${product.sku} has an image with too low resolution (width < 1200px)."
+            )
             println("DEBUG: Image width: ${dimensions.first}px")
             println("DEBUG: Image URL: ${image.src}")
             println("LINK: ${product.permalink}")
@@ -1089,7 +1281,7 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
             "checkForInvalidSKUNumbers 3",
             "ERROR: Variation SKU ${variation.sku} does not start with the product SKU ${product.sku}"
         )
-        println(product.permalink)
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -1108,12 +1300,17 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
             product.description.contains("μοντέλο", ignoreCase = true)
         ) {
             logError(
-                "checkForMissingToMonteloForaeiTextInDescription",
+                "checkForMissingToMonteloForaeiTextInDescription 1",
                 "ERROR: Product SKU ${product.sku} has info about the size the model is wearing in the long description."
             )
+            println("LINK: ${product.permalink}")
         }
         if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)) {
-            println("WARNING: Product SKU ${product.sku} does not have info about the size the model is wearing in the short description.")
+            logError(
+                "checkForMissingToMonteloForaeiTextInDescription 2",
+                "ERROR: Product SKU ${product.sku} does not have info about the size the model is wearing in the short description."
+            )
+            println("LINK: ${product.permalink}")
         }
     }
 }
@@ -1133,6 +1330,26 @@ fun checkForMissingSizeGuide(product: Product) {
     }
     if (isEmpty) {
         println("WARNING: No size guide for product with SKU ${product.sku}")
+    }
+}
+
+fun checkForTyposInProductText(product: Product) {
+    val dictionary = setOf("coctail") // Initial dictionary with incorrect words
+
+    val title = product.name
+    val shortDescription = product.short_description
+    val longDescription = product.description
+
+    checkForTypos(product, "Title", title, dictionary)
+    checkForTypos(product, "Short Description", shortDescription, dictionary)
+    checkForTypos(product, "Long Description", longDescription, dictionary)
+}
+
+fun checkForTypos(product: Product, field: String, content: String, dictionary: Set<String>) {
+    val words = content.split("\\s+".toRegex()) // Split into words
+    if (dictionary.any { it in words }) {
+        logError("checkForTyposInProductText", "ERROR: Possible typo in $field of product SKU ${product.sku}")
+        println("LINK: ${product.permalink}")
     }
 }
 
@@ -1164,6 +1381,7 @@ fun checkNameModelTag(product: Product) {
         && product.sku!="55627-027"
         && product.sku!="58205-007"
         && product.sku!="58746-246"
+        && product.sku!="55627-016"
         && product.sku!="58722-436"
         && product.sku!="58727-040"
     ) {
@@ -1283,7 +1501,7 @@ fun addGenericPhotoshootTag(product: Product, genericTagSlug: String, credential
 }
 
 private fun checkForInvalidDescriptions(product: Product, credentials: String) {
-    if (product.status!="draft") {
+    if (product.status!="draft" && product.status!="private") {
 //    println("DEBUG: long description ${product.description}")
 //    println("DEBUG: short description ${product.short_description}")
         isValidHtml(product.short_description)
@@ -1308,19 +1526,25 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
             }
         }
         if (product.short_description.length < 120 || product.short_description.length > 250) {
-//            println("WARNING: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}")
-//        println("DEBUG: ${product.permalink} συντομη περιγραφη μηκος: ${product.short_description.length}")
+            logError(
+                "checkForInvalidDescriptions 5",
+                "ERROR: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}"
+            )
+            println("LINK: ${product.permalink} ")
         }
         if (product.description.length < 250 || product.description.length > 550) {
-//            println("WARNING: Product ${product.sku} has a long description of invalid length, with length ${product.description.length}")
-//        println("DEBUG: ${product.permalink} μεγαλη περιγραφη μηκος: ${product.description.length}")
+            logError(
+                "checkForInvalidDescriptions 6",
+                "ERROR: Product ${product.sku} has a long description of invalid length, with length ${product.description.length}"
+            )
+            println("LINK: ${product.permalink}")
         }
         if (product.description.contains("&nbsp;")) {
             logError(
                 "checkForInvalidDescriptions 3",
                 "ERROR: Product ${product.sku} has unnecessary line breaks in description"
             )
-            println(product.permalink)
+            println("LINK: ${product.permalink}")
             if (shouldRemoveEmptyLinesFromDescriptions) {
                 updateProductDescriptions(
                     product, product.short_description, product.description.replace("&nbsp;", ""), credentials
@@ -1332,7 +1556,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
                 "checkForInvalidDescriptions 4",
                 "ERROR: Product ${product.sku} has unnecessary line breaks in short description"
             )
-            println(product.permalink)
+            println("LINK: ${product.permalink}")
             if (shouldRemoveEmptyLinesFromDescriptions) {
                 updateProductDescriptions(
                     product, product.short_description.replace("&nbsp;", ""), product.description, credentials
@@ -1415,7 +1639,7 @@ private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Var
                         updatedPrice = updatedRegularPrice,
                         PriceType.REGULAR_PRICE, credentials
                     )
-                    println(product.permalink)
+                    println("LINK: ${product.permalink}")
                 }
             }
         }
@@ -1435,7 +1659,7 @@ private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Var
                     exitProcess(1)
                 }
                 updateProductPrice(product.id, variation.id, updatedSalePrice, PriceType.SALE_PRICE, credentials)
-                println(product.permalink)
+                println("LINK: ${product.permalink}")
             }
         }
     }
@@ -1538,7 +1762,7 @@ fun checkForNonPortraitImagesWithCache(product: Product) {
 
         if (dimensions.first > dimensions.second) {
             logError("checkForNonPortraitImagesWithCache", "ERROR: Product ${product.sku} has a non-portrait image.")
-            println(product.permalink)
+            println("LINK: ${product.permalink}")
         }
     }
     saveImageCache(cache)
@@ -1609,11 +1833,14 @@ private fun checkForMissingImages(product: Product) {
 
     if (mainImageMissing) {
         logError("checkForMissingImages 1", "ERROR: Product ${product.sku} is missing a main image.")
-        println(product.permalink)
+        println("LINK: ${product.permalink}")
     }
 
     if (galleryImagesMissing) {
-        println("WARNING: Product ${product.sku} only has ${images.size} images.")
+        logError(
+            "checkForMissingImages 3",
+            "ERROR: Product ${product.sku} only has ${images.size} images."
+        )
         println("LINK: ${product.permalink}")
     }
 
