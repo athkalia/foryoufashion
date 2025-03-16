@@ -42,6 +42,7 @@ fun main() {
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val orders = fetchAllOrdersSince2024(credentials)
     println("DEBUG: Total orders fetched: ${orders.size}")
+
     val orderStatusMap = generateOrderStatusData(orders)
     plotOrdersStatusesByMonth(orderStatusMap)
 
@@ -55,13 +56,15 @@ fun main() {
     val modelProductSalesMap = generateProductSalesData(orders, modeloTagToFilterBy, credentials)
     plotProductSalesData(modelProductSalesMap, modeloTagToFilterBy)
 
-    val modeloAdjustedProductSalesMap = generateAdjustedProductSalesData(orders, modeloTagToFilterBy, credentials)
-    plotAdjustedProductSalesData(modeloAdjustedProductSalesMap, modeloTagToFilterBy)
+    val modelAdjustedProductSalesMap =
+        generateAdjustedProductSalesDataByMonthlyTag(orders, modeloTagToFilterBy, credentials)
+    plotAdjustedProductSalesDataMonthly(modelAdjustedProductSalesMap, modeloTagToFilterBy)
 
     val modeloMonetarySalesMap = generateMonetarySalesData(orders, modeloTagToFilterBy, credentials)
     plotMonetarySalesData(modeloMonetarySalesMap, modeloTagToFilterBy)
 
-    val modeloAdjustedMonetarySalesMap = generateAdjustedMonetarySalesData(orders, modeloTagToFilterBy, credentials)
+    val modeloAdjustedMonetarySalesMap =
+        generateAdjustedMonetarySalesDataByMonthlyTag(orders, modeloTagToFilterBy, credentials)
     plotAdjustedMonetarySalesData(modeloAdjustedMonetarySalesMap, modeloTagToFilterBy)
 
     val fwtografisiTagToFilterBy = "ΦΩΤΟΓΡΑΦΙΣΗ"
@@ -69,14 +72,14 @@ fun main() {
     plotProductSalesData(fwtografisiProductSalesMap, fwtografisiTagToFilterBy)
 
     val fwtografisiAdjustedProductSalesMap =
-        generateAdjustedProductSalesData(orders, fwtografisiTagToFilterBy, credentials)
-    plotAdjustedProductSalesData(fwtografisiAdjustedProductSalesMap, fwtografisiTagToFilterBy)
+        generateAdjustedProductSalesDataByMonthlyTag(orders, fwtografisiTagToFilterBy, credentials)
+    plotAdjustedProductSalesDataMonthly(fwtografisiAdjustedProductSalesMap, fwtografisiTagToFilterBy)
 
     val fwtografisiMonetarySalesMap = generateMonetarySalesData(orders, fwtografisiTagToFilterBy, credentials)
     plotMonetarySalesData(fwtografisiMonetarySalesMap, fwtografisiTagToFilterBy)
 
     val fwtografisiAdjustedMonetarySalesMap =
-        generateAdjustedMonetarySalesData(orders, fwtografisiTagToFilterBy, credentials)
+        generateAdjustedMonetarySalesDataByMonthlyTag(orders, fwtografisiTagToFilterBy, credentials)
     plotAdjustedMonetarySalesData(fwtografisiAdjustedMonetarySalesMap, fwtografisiTagToFilterBy)
     println("Finish time: ${LocalTime.now()}")
 }
@@ -425,68 +428,6 @@ private fun thickenLines(
     }
 }
 
-fun generateAdjustedProductSalesData(
-    orders: List<Order>,
-    tagToFilterBy: String,
-    credentials: String
-): Map<String, Map<String, Double>> {
-    val modelSalesMap = mutableMapOf<String, MutableMap<String, Int>>()
-    val modelProductCountMap = mutableMapOf<String, Int>()  // Track total number of products for each model
-    val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
-    val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
-
-    val allProducts = fetchAllProducts(credentials)
-
-    // Count the number of products for each model
-    allProducts.forEach { product ->
-        product.tags.forEach { tag ->
-            if (tag.name.startsWith("$tagToFilterBy ")) {
-                val modelName = tag.name.removePrefix("$tagToFilterBy ").trim()
-                modelProductCountMap.merge(modelName, 1) { old, new -> old + new }
-            }
-        }
-    }
-
-    orders.forEach { order ->
-        val orderDate = LocalDate.parse(order.date_created, dateFormatter)
-        val orderMonth = monthFormatter.format(orderDate)
-
-        order.line_items.forEach { item ->
-            if (item.product_id==0) {
-                println("WARNING: Skipping line item with invalid product_id 0 for order ${order.id}")
-                return@forEach
-            }
-            val product = allProducts.find { it.id==item.product_id }
-            // There are some products (e.g. deleted ones), that are not part of all the products when fetched in bulk.
-            val productTags = product?.tags?.map { it.name } ?: getProductTags(item.product_id, credentials)
-            productTags.forEach { tag ->
-                if (tag.startsWith("$tagToFilterBy ")) {
-                    val modelName = tag.removePrefix("$tagToFilterBy ").trim()
-                    modelSalesMap.getOrPut(orderMonth) { mutableMapOf() }
-                        .merge(modelName, 1) { old, new -> old + new }
-                }
-            }
-        }
-    }
-
-    // Now, calculate the adjusted sales (Sales per Product Photographed)
-    val adjustedSalesMap = mutableMapOf<String, MutableMap<String, Double>>()
-
-    modelSalesMap.forEach { (month, models) ->
-        models.forEach { (model, sales) ->
-            // Get the total number of products associated with the model
-            val productCount = modelProductCountMap[model]!!
-
-            // Calculate the sales per product photographed for the model
-            val adjustedSales = sales.toDouble() / productCount
-
-            // Store the adjusted sales in the map
-            adjustedSalesMap.getOrPut(month) { mutableMapOf() }[model] = adjustedSales
-        }
-    }
-    return adjustedSalesMap.toSortedMap()
-}
-
 fun generateMonetarySalesData(
     orders: List<Order>,
     tagToFilterBy: String,
@@ -675,72 +616,45 @@ fun plotProductSalesData(modelProductCountPerMonthMap: Map<String, Map<String, I
     println("ACTION: Number of products per model plot saved as $fileName")
 }
 
-fun generateAdjustedMonetarySalesData(
+fun generateAdjustedMonetarySalesDataByMonthlyTag(
     orders: List<Order>,
     tagToFilterBy: String,
     credentials: String
 ): Map<String, Map<String, Double>> {
-    val modelMonetarySalesMap = mutableMapOf<String, MutableMap<String, Double>>() // Sales in monetary terms
-    val modelProductCountMap = mutableMapOf<String, Int>() // Count of products per model
+    val monthlyProductCounts = generateMonthlyProductCountsByTag(credentials) // Get monthly product counts by tag
+    println("Monthly product tag counts: $monthlyProductCounts")
+    val modelMonetarySalesMap = mutableMapOf<String, MutableMap<String, Double>>() // Adjusted sales data
     val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
     val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
 
-    val allProducts = fetchAllProducts(credentials)
-
-    // Count the number of products for each model
-    allProducts.forEach { product ->
-        product.tags.forEach { tag ->
-            if (tag.name.startsWith("$tagToFilterBy ")) {
-                val modelName = tag.name.removePrefix("$tagToFilterBy ").trim()
-                modelProductCountMap.merge(modelName, 1) { old, new -> old + new }
-            }
-        }
-    }
-
     orders.forEach { order ->
         val orderDate = LocalDate.parse(order.date_created, dateFormatter)
-        val orderMonth = monthFormatter.format(orderDate)
-
+        val orderMonth = orderDate.format(monthFormatter)
         order.line_items.forEach { item ->
             if (item.product_id==0) {
                 println("WARNING: Skipping line item with invalid product_id 0 for order ${order.id}")
                 return@forEach
             }
-
-            val product = allProducts.find { it.id==item.product_id }
-            // There are some products (e.g. deleted ones), that are not part of all the products when fetched in bulk.
-            val productTags = product?.tags?.map { it.name } ?: getProductTags(item.product_id, credentials)
+            val productTags = getProductTags(item.product_id, credentials)
             val productPrice = getProductPrice(item.product_id, credentials)
 
             productTags.forEach { tag ->
                 if (tag.startsWith("$tagToFilterBy ")) {
                     val modelName = tag.removePrefix("$tagToFilterBy ").trim()
 
-                    // Calculate monetary sales for each model
-                    val sales = item.quantity * productPrice  // Total monetary sales for this product and quantity
+                    // Get the number of products associated with the tag (model) for the month
+                    val productCountForTagInMonth =
+                        monthlyProductCounts[orderMonth]?.get("$tagToFilterBy $modelName") ?: 1
+
+                    // Calculate adjusted monetary sales
+                    val adjustedMonetarySales = (item.quantity.toDouble() * productPrice) / productCountForTagInMonth
                     modelMonetarySalesMap.getOrPut(orderMonth) { mutableMapOf() }
-                        .merge(modelName, sales) { old, new -> old + new }
+                        .merge(modelName, adjustedMonetarySales) { old, new -> old + new }
                 }
             }
         }
     }
-
-    val adjustedMonetarySalesMap = mutableMapOf<String, MutableMap<String, Double>>()
-
-    modelMonetarySalesMap.forEach { (month, models) ->
-        models.forEach { (model, sales) ->
-            // Get the total number of products associated with the model
-            val productCount = modelProductCountMap[model]!!
-
-            // Calculate the adjusted monetary sales per product
-            val adjustedSales = sales / productCount
-
-            // Store the adjusted sales in the map
-            adjustedMonetarySalesMap.getOrPut(month) { mutableMapOf() }[model] = adjustedSales
-        }
-    }
-
-    return adjustedMonetarySalesMap.toSortedMap()
+    return modelMonetarySalesMap.toSortedMap()
 }
 
 fun plotAdjustedMonetarySalesData(modelMonetarySalesMap: Map<String, Map<String, Double>>, tagToFilterBy: String) {
@@ -777,8 +691,108 @@ fun plotAdjustedMonetarySalesData(modelMonetarySalesMap: Map<String, Map<String,
 }
 
 
-fun plotAdjustedProductSalesData(modelSalesMap: Map<String, Map<String, Double>>, tagToFilterBy: String) {
+fun generateMonthlyProductCountsByTag(credentials: String): Map<String, Map<String, Int>> {
+    val client = OkHttpClient()
+    val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss") // ISO8601 format
+    val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM") // Year-Month format
+    val historicalProductCounts = mutableMapOf<String, MutableMap<String, Int>>()
+
+    val startDate = LocalDate.of(2024, 1, 1).atStartOfDay() // Start of your analysis
+    val endDate = LocalDate.now().atStartOfDay()
+    var currentDate = startDate
+
+    while (currentDate.isBefore(endDate)) {
+        val nextMonth = currentDate.plusMonths(1)
+        val url =
+            "https://foryoufashion.gr/wp-json/wc/v3/products?before=${nextMonth.format(dateFormatter)}&per_page=100"
+        println(
+            "DEBUG: Fetching products between ${currentDate.format(dateFormatter)} and ${
+                nextMonth.format(
+                    dateFormatter
+                )
+            }"
+        )
+
+        var page = 1
+        var hasMoreProducts: Boolean
+        // println("DEBUG: Start product fetch")
+        do {
+            val pagedUrl = "$url&page=$page"
+            val request = Request.Builder().url(pagedUrl).header("Authorization", credentials).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("Unexpected code $response")
+                val body = response.body?.string()!!
+                val mapper = jacksonObjectMapper()
+                val fetchedProducts: List<Product> = mapper.readValue(body)
+
+                // Process fetched products
+                // println("DEBUG: Number of fetched products: ${fetchedProducts.size}")
+                fetchedProducts.forEach { product ->
+                    product.tags.forEach { tag ->
+                        val tagName = tag.name.trim()
+                        val monthKey = currentDate.format(monthFormatter)
+
+                        // Count the number of products associated with each tag (model) for the month
+                        historicalProductCounts.getOrPut(monthKey) { mutableMapOf() }
+                            .merge(tagName, 1) { old, new -> old + new }
+                    }
+                }
+
+                hasMoreProducts = fetchedProducts.size==100 // More products to fetch if page is full
+            }
+            page++
+        } while (hasMoreProducts)
+
+        currentDate = nextMonth // Move to the next month
+    }
+
+    println("Monthly product tag counts: $historicalProductCounts")
+    return historicalProductCounts
+}
+
+fun generateAdjustedProductSalesDataByMonthlyTag(
+    orders: List<Order>,
+    tagToFilterBy: String,
+    credentials: String
+): Map<String, Map<String, Double>> {
+    val monthlyProductCounts = generateMonthlyProductCountsByTag(credentials) // Get monthly snapshots
+    val modelSalesMap = mutableMapOf<String, MutableMap<String, Double>>() // Adjusted sales data
+    val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
+    val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM") // Year-Month format
+
+    orders.forEach { order ->
+        val orderDate = LocalDate.parse(order.date_created, dateFormatter)
+        val orderMonth = orderDate.format(monthFormatter)
+
+        order.line_items.forEach { item ->
+            if (item.product_id==0) return@forEach
+
+            val productTags = getProductTags(item.product_id, credentials)
+            productTags.forEach { tag ->
+                if (tag.startsWith("$tagToFilterBy ")) {
+                    val modelName = tag.removePrefix("$tagToFilterBy ").trim()
+
+                    // Get the number of products associated with the tag (model) for the month
+                    val productCountForTagInMonth =
+                        monthlyProductCounts[orderMonth]?.get("$tagToFilterBy $modelName") ?: 1
+                    // println("DEBUG: division by $productCountForTagInMonth for month $orderMonth for model $modelName")
+                    // println("DEBUG before division ${item.quantity.toDouble()}")
+                    val adjustedSales = item.quantity.toDouble() / productCountForTagInMonth
+                    // println("AFTER division $adjustedSales")
+                    modelSalesMap.getOrPut(orderMonth) { mutableMapOf() }
+                        .merge(modelName, adjustedSales) { old, new ->
+                            old + new
+                        }
+                }
+            }
+        }
+    }
+    return modelSalesMap.toSortedMap()
+}
+
+fun plotAdjustedProductSalesDataMonthly(modelSalesMap: Map<String, Map<String, Double>>, tagToFilterBy: String) {
     val dataset = DefaultCategoryDataset()
+
     modelSalesMap.forEach { (month, models) ->
         models.forEach { (model, adjustedSales) ->
             dataset.addValue(adjustedSales, model, month)
@@ -786,9 +800,9 @@ fun plotAdjustedProductSalesData(modelSalesMap: Map<String, Map<String, Double>>
     }
 
     val chart = ChartFactory.createLineChart(
-        "Adjusted Best-Selling Over Time-$tagToFilterBy",
+        "Adjusted Sales (Monthly) - $tagToFilterBy",
         "Month",
-        "Adjusted Sales (Sales per Product)",
+        "Adjusted Sales",
         dataset,
         PlotOrientation.VERTICAL,
         true,
@@ -796,15 +810,13 @@ fun plotAdjustedProductSalesData(modelSalesMap: Map<String, Map<String, Double>>
         false
     )
 
-    // Customize chart appearance
     val categoryPlot = chart.categoryPlot
     val domainAxis = categoryPlot.domainAxis as CategoryAxis
     domainAxis.categoryLabelPositions = CategoryLabelPositions.UP_45
     thickenLines(categoryPlot, dataset)
 
-    // Save the chart
     val fileName = "report_${tagToFilterBy}_adjusted_product_sales.png"
     val chartFile = File(fileName)
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
-    println("ACTION: Adjusted best-selling models plot saved as $fileName")
+    println("ACTION: Adjusted monthly product sales plot saved as $fileName")
 }

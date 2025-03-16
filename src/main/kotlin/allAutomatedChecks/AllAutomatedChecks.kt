@@ -1136,23 +1136,58 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
 }
 
 fun checkForImagesWithTooLowResolution(product: Product) {
-    val cache = loadImageCache()
-    for (image in product.images) {
-        val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
-            cache[image.src] = it
-        }
+    if (product.status!="private" && product.status!="draft" && product.sku !in listOf(
+            "58747-246",
+            "58747-246",
+            "59183-514",
+            "59182-514",
+            "59073-514",
+            "59072-514",
+            "59049-013",
+            "56062-465",
+            "56062-097",
+            "55627-443",
+            "55627-465",
+            "55627-396",
+            "55627-097",
+            "56031-488",
+            "57401-465",
+            "58028-028",
+            "58723-040",
+            "58635-016",
+            "58634-016",
+            "58631-022",
+            "58684-006",
+            "58630-011",
+            "58687-003",
+            "57469-007",
+            "57384-488",
+            "56484-501",
+            "55077-007",
+            "56127-396",
+            "56032-012",
+            "56067-003",
+            "59050-596",
+        )
+    ) {
+        val cache = loadImageCache()
+        for (image in product.images) {
+            val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
+                cache[image.src] = it
+            }
 
-        if (dimensions.first < 1200) {
-            logError(
-                "checkForImagesWithTooLowResolution",
-                "ERROR: Product ${product.sku} has an image with too low resolution (width < 1200px)."
-            )
-            println("DEBUG: Image width: ${dimensions.first}px")
-            println("DEBUG: Image URL: ${image.src}")
-            println("LINK: ${product.permalink}")
+            if (dimensions.first < 1200) {
+                logError(
+                    "checkForImagesWithTooLowResolution",
+                    "ERROR: Product ${product.sku} has an image with too low resolution (width < 1200px)."
+                )
+                println("DEBUG: Image width: ${dimensions.first}px")
+                println("DEBUG: Image URL: ${image.src}")
+                println("LINK: ${product.permalink}")
+            }
         }
+        saveImageCache(cache)
     }
-    saveImageCache(cache)
 }
 
 fun checkForImagesWithTooHighResolution(product: Product) {
@@ -1525,7 +1560,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
                 swapProductDescriptions(product, credentials)
             }
         }
-        if (product.short_description.length < 120 || product.short_description.length > 250) {
+        if (product.short_description.length < 140 || product.short_description.length > 300) {
             logError(
                 "checkForInvalidDescriptions 5",
                 "ERROR: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}"
@@ -1827,43 +1862,79 @@ fun checkForProductsWithImagesNotInMediaLibrary(product: Product, allMedia: List
 }
 
 private fun checkForMissingImages(product: Product) {
-    val images = product.images
-    val mainImageMissing = images.isEmpty() || images[0].src.isEmpty()
-    val galleryImagesMissing = images.size < 3
-
-    if (mainImageMissing) {
-        logError("checkForMissingImages 1", "ERROR: Product ${product.sku} is missing a main image.")
-        println("LINK: ${product.permalink}")
-    }
-
-    if (galleryImagesMissing) {
-        logError(
-            "checkForMissingImages 3",
-            "ERROR: Product ${product.sku} only has ${images.size} images."
+    if (product.status!="private" && product.status!="draft" && product.sku !in listOf(
+            "58747-246",
+            "58746-246",
+            "59183-514",
+            "59182-514",
+            "59117-012",
+            "59050-596",
+            "59043-051",
+            "59040-004",
+            "58983-005",
+            "56062-097",
+            "56062-443",
+            "56062-029",
+            "55627-443",
+            "58210-007",
+            "58721-016",
+            "58691-004",
+            "58608-003",
+            "58700-011",
+            "58631-022",
+            "58687-003",
+            "58681-006",
+            "58615-012",
+            "58603-003",
+            "58464-013",
+            "58420-009",
+            "58407-556",
+            "58154-097",
+            "58248-012",
+            "58224-488",
+            "57719-332",
+            "56072-003",
+            "56114-003",
         )
-        println("LINK: ${product.permalink}")
-    }
+    ) {
+        val images = product.images
+        val mainImageMissing = images.isEmpty() || images[0].src.isEmpty()
+        val galleryImagesMissing = images.size < 3
 
-    // A product might have an image that is not part of the media library, and that might return a 404.
-    val cache = loadMediaCache()
-    val today = LocalDate.now()
-    images.forEach { image ->
-        val cachedEntry = cache[image.src]
-        val isFileMissing = if (cachedEntry!=null && !isCacheExpired(cachedEntry.lastChecked, today)) {
-            cachedEntry.isFileMissing
-        } else {
-            val fileExists = checkIfImageExists(image.src)
-            cache[image.src] = MediaCacheEntry(image.src, !fileExists, today)
-            !fileExists
+        if (mainImageMissing) {
+            logError("checkForMissingImages 1", "ERROR: Product ${product.sku} is missing a main image.")
+            println("LINK: ${product.permalink}")
         }
-        if (isFileMissing) {
+
+        if (galleryImagesMissing) {
             logError(
-                "checkForMissingImages 2",
-                "ERROR: Product ${product.sku} has an image with URL ${image.src} that does not exist"
+                "checkForMissingImages 3",
+                "ERROR: Product ${product.sku} only has ${images.size} images."
             )
+            println("LINK: ${product.permalink}")
         }
+
+        // A product might have an image that is not part of the media library, and that might return a 404.
+        val cache = loadMediaCache()
+        val today = LocalDate.now()
+        images.forEach { image ->
+            val cachedEntry = cache[image.src]
+            val isFileMissing = if (cachedEntry!=null && !isCacheExpired(cachedEntry.lastChecked, today)) {
+                cachedEntry.isFileMissing
+            } else {
+                val fileExists = checkIfImageExists(image.src)
+                cache[image.src] = MediaCacheEntry(image.src, !fileExists, today)
+                !fileExists
+            }
+            if (isFileMissing) {
+                logError(
+                    "checkForMissingImages 2",
+                    "ERROR: Product ${product.sku} has an image with URL ${image.src} that does not exist"
+                )
+            }
+        }
+        saveMediaCache(cache)
     }
-    saveMediaCache(cache)
 }
 
 private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
@@ -2376,12 +2447,12 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     }
 
     if (deletedPlugins.isNotEmpty()) {
-        logError("checkForPluginChanges 2", "ERROR: The following plugins have been deleted:")
+        logError("checkForPluginChanges 2", "ERROR: The following ${deletedPlugins.size} plugins have been deleted:")
         deletedPlugins.forEach { println("- ${it.name} v${it.version}") }
     }
 
     if (updatedPlugins.isNotEmpty()) {
-        logError("checkForPluginChanges 3", "ERROR: The following plugins have been updated:")
+        logError("checkForPluginChanges 3", "ERROR: The following ${updatedPlugins.size} plugins have been updated:")
         updatedPlugins.forEach { println("- ${it.name} updated to v${it.version}") }
 
         // Update the versions in storedPlugins

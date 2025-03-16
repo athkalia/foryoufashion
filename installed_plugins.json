@@ -19,7 +19,7 @@
   },
   {
     "name": "Broken Link Checker",
-    "version": "2.4.1",
+    "version": "2.4.2",
     "status": "active",
     "description": {
       "rendered": "Checks your blog for broken links and notifies you on the dashboard if any are found."
@@ -64,7 +64,7 @@
   },
   {
     "name": "Category Order and Taxonomy Terms Order",
-    "version": "1.8.7",
+    "version": "1.8.8",
     "status": "active",
     "description": {
       "rendered": "Order Categories and all custom taxonomies terms (hierarchically) and child terms using a Drag and Drop Sortable javascript capability. <cite>By <a href=\"https://www.nsp-code.com\">Nsp-Code</a>.</cite>"
@@ -163,7 +163,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "14.4",
+    "version": "14.4.1",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -208,7 +208,7 @@
   },
   {
     "name": "Media Cleaner (Pro)",
-    "version": "6.7.9",
+    "version": "6.8.7",
     "status": "active",
     "description": {
       "rendered": "Clean your WordPress! Eliminate unused and broken media files. For a faster, and better website. <cite>By <a href=\"https://jordymeow.com\">Jordy Meow</a>.</cite>"
@@ -226,7 +226,7 @@
   },
   {
     "name": "Payment Plugins for Stripe WooCommerce",
-    "version": "3.3.82",
+    "version": "3.3.83",
     "status": "active",
     "description": {
       "rendered": "Accept Credit Cards, Google Pay, Apple Pay, ACH, Klarna and more using Stripe. <cite>By Payment Plugins, support@paymentplugins.com.</cite>"
@@ -289,7 +289,7 @@
   },
   {
     "name": "Smash Balloon Instagram Feed",
-    "version": "6.7.1",
+    "version": "6.8.0",
     "status": "active",
     "description": {
       "rendered": "Display beautifully clean, customizable, and responsive Instagram feeds. <cite>By <a href=\"https://smashballoon.com/\">Smash Balloon</a>.</cite>"
@@ -316,7 +316,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.0.81",
+    "version": "1.0.83",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -361,7 +361,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.77",
+    "version": "1.0.78",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -424,7 +424,7 @@
   },
   {
     "name": "WooCommerce Advanced Bulk Edit",
-    "version": "5.4.4.3.1",
+    "version": "5.5.1.4",
     "status": "active",
     "description": {
       "rendered": "Edit your products both individually or in bulk. <cite>By <a href=\"https://wpmelon.com\">George Iron &amp; Yas G.</a>.</cite>"
@@ -487,7 +487,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.4",
+    "version": "4.7.5",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -505,7 +505,7 @@
   },
   {
     "name": "Mailchimp for WooCommerce",
-    "version": "4.4",
+    "version": "5.2",
     "status": "active",
     "description": {
       "rendered": "Connects WooCommerce to Mailchimp to sync your store data, send targeted campaigns to your customers, and sell more stuff"
@@ -532,7 +532,7 @@
   },
   {
     "name": "WP Rocket",
-    "version": "3.18",
+    "version": "3.18.2",
     "status": "active",
     "description": {
       "rendered": "The best WordPress performance plugin. <cite>By <a href=\"https://wp-media.me\">WP Media</a>.</cite>"
