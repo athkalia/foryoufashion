@@ -1146,6 +1146,7 @@ fun checkForImagesWithTooLowResolution(product: Product) {
             "59049-013",
             "56062-465",
             "56062-097",
+            "57459-332",
             "55627-443",
             "55627-465",
             "55627-396",
@@ -1164,8 +1165,13 @@ fun checkForImagesWithTooLowResolution(product: Product) {
             "57384-488",
             "56484-501",
             "55077-007",
+            "56062-556",
             "56127-396",
+            "58746-246",
             "56032-012",
+            "55627-488",
+            "58689-003",
+            "56062-029",
             "56067-003",
             "59050-596",
         )
@@ -1321,7 +1327,7 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
 }
 
 fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
-    if (product.status!="publish") {
+    if (product.status!="publish" || product.sku in listOf("53860-289-01", "53860-014-01")) {
         return
     }
     // Define the target date
@@ -1340,7 +1346,8 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
             )
             println("LINK: ${product.permalink}")
         }
-        if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)) {
+        if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)
+            || !product.short_description.contains("one size", ignoreCase = true)) {
             logError(
                 "checkForMissingToMonteloForaeiTextInDescription 2",
                 "ERROR: Product SKU ${product.sku} does not have info about the size the model is wearing in the short description."
@@ -1940,7 +1947,7 @@ private fun checkForMissingImages(product: Product) {
 private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
     val imageToProductsMap = mutableMapOf<String, MutableList<Product>>()
     for (product in products) {
-        if (product.sku !in listOf("59183-514", "59182-514", "59341-003")) { // known to contain duplicate images
+        if (product.sku !in listOf("59183-514", "59182-514", "59341-003", "59492-561", "59492-488")) { // known to contain duplicate images
             val images = product.images
             for (image in images) {
                 val imageUrl = image.src
