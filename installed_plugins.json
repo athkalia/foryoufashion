@@ -28,7 +28,7 @@
   },
   {
     "name": "Advanced Custom Fields PRO",
-    "version": "6.3.12",
+    "version": "6.4.0.1",
     "status": "active",
     "description": {
       "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
@@ -172,7 +172,7 @@
   },
   {
     "name": "Jetpack VideoPress",
-    "version": "2.2",
+    "version": "2.3",
     "status": "active",
     "description": {
       "rendered": "High quality, ad-free video. <cite>By <a href=\"https://jetpack.com/videopress/\">Automattic - Jetpack Video team</a>.</cite>"
@@ -316,7 +316,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.0.89",
+    "version": "1.0.90",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -478,7 +478,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "3.0.2",
+    "version": "3.0.3",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -574,5 +574,14 @@
       "rendered": "A plugin to automatically sync your WooCommerce sales, products and customers with Klaviyo. With Klaviyo you can set up abandoned cart emails, collect emails for your newsletter to grow your business. <cite>By <a href=\"https://www.klaviyo.com\">Klaviyo, Inc.</a>.</cite>"
     },
     "sakis_description": "Integration with Klaviyo for email marketing"
+  },
+  {
+    "name": "GTM4WP - A Google Tag Manager (GTM) plugin for WordPress",
+    "version": "1.20.3",
+    "status": "active",
+    "description": {
+      "rendered": "The first Google Tag Manager plugin for WordPress with business goals in mind <cite>By <a href=\"https://gtm4wp.com/\">Thomas Geiger</a>.</cite>"
+    },
+    "sakis_description": "I installed this myself, after Google's recommendation to have actions for google ads around form submission and increasing phone calls"
   }
 ]
