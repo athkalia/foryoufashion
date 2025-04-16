@@ -1,5 +1,12 @@
 package allAutomatedChecks
 
+import javax.mail.*
+import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeMessage
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import java.util.Properties
+
 import java.io.File
 import java.io.IOException
 import okhttp3.Request
@@ -16,8 +23,6 @@ import Tag
 import Variation
 import archive.client
 import archive.mapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.twelvemonkeys.imageio.plugins.webp.WebPImageReaderSpi
 import forYouFashionFtpPassword
 import forYouFashionFtpUrl
@@ -48,6 +53,7 @@ import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
 import readOnlyConsumerKey
 import readOnlyConsumerSecret
+import sakisForYouFashionEmailPassword
 import wordPressApplicationPassword
 import wordPressUsername
 import writeConsumerKey
@@ -93,15 +99,23 @@ private const val MEDIA_LIBRARY_CACHE_FILE_PATH = "media_library_missing_files_c
 private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 private const val PLUGINS_FILE_PATH = "installed_plugins.json"
 val errorCountMap = mutableMapOf<String, Int>()
+private const val EMAIL_THROTTLE_FILE = "email_throttle_cache.csv"
+private val emailThrottleCache = loadEmailThrottleCache()
 
 private fun registerWebPReader() {
     val registry = IIORegistry.getDefaultInstance()
     registry.registerServiceProvider(WebPImageReaderSpi())
 }
 
-fun logError(messageCategory: String, message: String) {
+fun logError(messageCategory: String, message: String, alsoEmail: Boolean = false) {
     println(message)
     errorCountMap[messageCategory] = errorCountMap.getOrDefault(messageCategory, 0) + 1
+    if (alsoEmail && shouldSendEmailForCategory(messageCategory)) {
+        val subject = "ForYouFashion - εντοπιστηκε προβλημα: $messageCategory"
+        sendAlertEmail(subject, message)
+        emailThrottleCache[messageCategory] = LocalDate.now()
+        saveEmailThrottleCache()
+    }
 }
 
 fun main() {
@@ -897,10 +911,10 @@ fun checkForMissingGalleryVideo(product: Product) {
             val isGalleryVideoMissing = galleryVideoMetaData==null || (galleryVideoMetaData.value as String).isBlank()
             if (isGalleryVideoMissing) {
                 logError(
-                    "checkForMissingGalleryVideo",
-                    "ERROR: Product SKU ${product.sku} created after 1st March 2024 is missing the 'gallery_video' custom field."
+                    "Προιον χωρις βιντεο",
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku}, δεν έχει βιντεο.\nLINK: ${product.permalink}",
+                    alsoEmail = true
                 )
-                println("LINK: ${product.permalink}")
             }
         }
     }
@@ -1223,9 +1237,12 @@ fun checkForProductsInParentCategoryOnly(product: Product) {
         val parentCategories = listOf("foremata", "panoforia")
         val productCategorySlugs = product.categories.map { it.slug }.toSet()
         if ((productCategorySlugs - parentCategories).isEmpty()) {
+            val errorMessage =
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} ανήκει μόνο σε βασικές κατηγορίες ('Φορέματα' ή 'Πανωφόρια') και πρέπει να προστεθεί σε πιο συγκεκριμένη υποκατηγορία.\nLINK: ${product.permalink}"
             logError(
-                "checkForProductsInParentCategoryOnly",
-                "ERROR: Product SKU ${product.sku} is only in parent categories but should be in a more specific sub-category."
+                "Προιον μονο σε βασικές κατηγορίες",
+                errorMessage,
+                alsoEmail = true
             )
             println("LINK: ${product.permalink}")
         }
@@ -1347,7 +1364,8 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
             println("LINK: ${product.permalink}")
         }
         if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)
-            || !product.short_description.contains("one size", ignoreCase = true)) {
+            || !product.short_description.contains("one size", ignoreCase = true)
+        ) {
             logError(
                 "checkForMissingToMonteloForaeiTextInDescription 2",
                 "ERROR: Product SKU ${product.sku} does not have info about the size the model is wearing in the short description."
@@ -1947,7 +1965,14 @@ private fun checkForMissingImages(product: Product) {
 private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
     val imageToProductsMap = mutableMapOf<String, MutableList<Product>>()
     for (product in products) {
-        if (product.sku !in listOf("59183-514", "59182-514", "59341-003", "59492-561", "59492-488")) { // known to contain duplicate images
+        if (product.sku !in listOf(
+                "59183-514",
+                "59182-514",
+                "59341-003",
+                "59492-561",
+                "59492-488"
+            )
+        ) { // known to contain duplicate images
             val images = product.images
             for (image in images) {
                 val imageUrl = image.src
@@ -2562,6 +2587,62 @@ fun checkPaymentMethodsInLastMonths(orders: List<Order>) {
                 "checkPaymentMethodsInLastMonths 1",
                 "ERROR: The payment method '$method' has not been used in the last $numberOfMonths months."
             )
+        }
+    }
+}
+
+fun sendAlertEmail(subject: String, message: String) {
+    val username = "sakis@foryoufashion.gr"
+    val props = Properties().apply {
+        put("mail.smtp.auth", "true")
+        put("mail.smtp.starttls.enable", "true")
+        put("mail.smtp.host", "mail.foryoufashion.gr")
+        put("mail.smtp.port", "587")
+    }
+
+    val session = Session.getInstance(props, object : Authenticator() {
+        override fun getPasswordAuthentication(): PasswordAuthentication {
+            return PasswordAuthentication(username, sakisForYouFashionEmailPassword)
+        }
+    })
+
+    val intro = "Γεια σου Ολγα!\n\n"
+    val signature = "\n\nΦιλικά,\nΣάκης"
+    try {
+        val msg = MimeMessage(session)
+        msg.setFrom(InternetAddress(username))
+        msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse("olga@foryoufashion.gr"))
+        msg.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
+        msg.subject = subject
+        msg.setText(intro + message + signature)
+        Transport.send(msg)
+    } catch (e: MessagingException) {
+        println("ERROR: Failed to send alert email: ${e.message}")
+    }
+}
+
+fun shouldSendEmailForCategory(category: String): Boolean {
+    val lastSent = emailThrottleCache[category]
+    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 7
+}
+
+fun loadEmailThrottleCache(): MutableMap<String, LocalDate> {
+    val file = File(EMAIL_THROTTLE_FILE)
+    val map = mutableMapOf<String, LocalDate>()
+    if (file.exists()) {
+        file.readLines().forEach { line ->
+            val (category, dateStr) = line.split(",", limit = 2)
+            map[category] = LocalDate.parse(dateStr)
+        }
+    }
+    return map
+}
+
+fun saveEmailThrottleCache() {
+    val file = File(EMAIL_THROTTLE_FILE)
+    file.printWriter().use { writer ->
+        emailThrottleCache.forEach { (category, date) ->
+            writer.println("$category,$date")
         }
     }
 }
