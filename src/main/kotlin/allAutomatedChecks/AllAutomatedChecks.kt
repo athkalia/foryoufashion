@@ -65,6 +65,9 @@ const val readOnly = false
 const val shouldPerformVariationChecks = true
 const val checkMediaLibraryChecks = true
 
+// TODO private products that are in stock check
+// TODO check fwtografisi studio should be in all images that doesn't have ekswteriki fwtografisi
+
 // Recurring updates
 const val shouldMoveOldOutOfStockProductsToPrivate = true
 const val shouldUpdatePricesToEndIn99 = true
@@ -101,20 +104,19 @@ private const val PLUGINS_FILE_PATH = "installed_plugins.json"
 val errorCountMap = mutableMapOf<String, Int>()
 private const val EMAIL_THROTTLE_FILE = "email_throttle_cache.csv"
 private val emailThrottleCache = loadEmailThrottleCache()
+val emailMessageBuffer = mutableMapOf<String, MutableList<String>>()
 
 private fun registerWebPReader() {
     val registry = IIORegistry.getDefaultInstance()
     registry.registerServiceProvider(WebPImageReaderSpi())
 }
 
-fun logError(messageCategory: String, message: String, alsoEmail: Boolean = false) {
+fun logError(messageCategory: String, message: String, alsoEmail: Boolean = true) {
     println(message)
     errorCountMap[messageCategory] = errorCountMap.getOrDefault(messageCategory, 0) + 1
-    if (alsoEmail && shouldSendEmailForCategory(messageCategory)) {
-        val subject = "ForYouFashion - εντοπιστηκε προβλημα: $messageCategory"
-        sendAlertEmail(subject, message)
-        emailThrottleCache[messageCategory] = LocalDate.now()
-        saveEmailThrottleCache()
+    if (alsoEmail) {
+        val list = emailMessageBuffer.getOrPut(messageCategory) { mutableListOf() }
+        list.add(message)
     }
 }
 
@@ -166,7 +168,7 @@ fun main() {
             if (product.id==27948 || product.id==27947) {
                 continue
             }
-            println("DEBUG: product SKU: ${product.sku}")
+            // println("DEBUG: product SKU: ${product.sku}")
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
             checkForMissingImagesAltText(product, credentials)
@@ -200,7 +202,7 @@ fun main() {
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
-                        println("DEBUG: variation SKU: ${it.sku}")
+//                        println("DEBUG: variation SKU: ${it.sku}")
                         addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 30, credentials)
                     }
                 }
@@ -221,6 +223,22 @@ fun main() {
     errorCountMap.forEach { (error, count) ->
         println("$error: $count occurrence(s)")
     }
+    flushBufferedEmailAlerts()
+}
+
+fun flushBufferedEmailAlerts() {
+    val truncatedBuffer = emailMessageBuffer.mapValues { (_, messages) ->
+        messages.take(30)
+    }
+    for ((category, messages) in truncatedBuffer) {
+        if (shouldSendEmailForCategory(category)) {
+            val emailBody = messages.joinToString("\n\n")
+            val subject = "ForYouFashion: $category"
+            sendAlertEmail(subject, emailBody)
+            emailThrottleCache[category] = LocalDate.now()
+        }
+    }
+    saveEmailThrottleCache()
 }
 
 fun checkCasualForemataHasCasualStyleAttribute(product: Product) {
@@ -239,10 +257,9 @@ fun checkCasualForemataHasCasualStyleAttribute(product: Product) {
 
     if (isInCasualCategory && !hasCasualStyleAttribute) {
         logError(
-            "checkCasualForemataHasCasualStyleAttribute",
-            "ERROR: Product SKU ${product.sku} in 'casual-foremata' category but is missing the 'Casual' style attribute."
+            "Casual φορεμα δεν εχει casual 'Στυλ'",
+            "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} βρίσκεται στην κατηγορία 'casual φορεματα' αλλά λείπει η ιδιοτητα στυλ 'Casual'.\nLINK: ${product.permalink}"
         )
-        println("LINK: ${product.permalink}")
     }
 }
 
@@ -256,14 +273,15 @@ fun checkCasualProductsInCasualForemataCategory(product: Product) {
 
     if (isInCasualCategory && hasOtherCategories && !isInExcludedCategory) {
         logError(
-            "checkCasualProductsInCasualForemataCategory",
-            "ERROR: Product SKU ${product.sku} is in 'casual' category and also in another category: ${product.permalink}"
+            "Casual προιον ειναι και σε αλλη λαθος κατηγορια",
+            "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} βρίσκεται στην κατηγορία 'casual' και ταυτόχρονα σε άλλη κατηγορία.\nLINK: ${product.permalink}"
         )
     }
 }
 
+
 fun checkForMikosAttributeInForemataCategory(product: Product) {
-    val forematoCategorySlug = "foremata" // Category slug for 'Φορέματα'
+    val forematoCategorySlug = "foremata"
     val mikosAttributeName = "Μήκος"
 
     val isInForemataCategory = product.categories.any { it.slug==forematoCategorySlug }
@@ -272,10 +290,9 @@ fun checkForMikosAttributeInForemataCategory(product: Product) {
         val mikosAttribute = product.attributes.find { it.name.equals(mikosAttributeName, ignoreCase = true) }
         if (mikosAttribute==null) {
             logError(
-                "checkForMikosAttributeInForemataCategory",
-                "ERROR: Product SKU ${product.sku} is missing the 'Μήκος' attribute."
+                "Λείπει το 'Μήκος'",
+                "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} ανήκει στην κατηγορία 'Φορέματα' αλλά λείπει το 'Μήκος'. \nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
         }
     }
 }
@@ -300,7 +317,7 @@ fun discountProductBasedOnLastSale(allProducts: List<Product>, orders: List<Orde
             }
             monthsSinceLastSale
         }
-        println("DEBUG: monthsSinceLastSale for group: $monthsSinceLastSale")
+        // println("DEBUG: monthsSinceLastSale for group: $monthsSinceLastSale")
         if (monthsSinceLastSale <= 12) {
             // No discount for products sold within the last year
             return@forEach
@@ -366,21 +383,10 @@ fun applyDiscountToVariationIfNecessary(
 
 fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Attribute>) {
     val productAttributeNames = product.attributes.map { it.name.lowercase(Locale.getDefault()) }
-    val forematoCategorySlug = "foremata"
-    val mikosAttributeName = "Μήκος"
     val brandAttributeName = "Brand"
-    val isInForemataCategory = product.categories.any { it.slug==forematoCategorySlug }
     allAttributes.forEach { attribute ->
         val attributeName = attribute.name.lowercase(Locale.getDefault())
-        if (attributeName==mikosAttributeName.lowercase(Locale.getDefault())) {
-            if (isInForemataCategory && !productAttributeNames.contains(attributeName)) {
-                logError(
-                    "MissingMikosAttribute",
-                    "ERROR: Product SKU ${product.sku} is missing the required 'Μήκος' attribute."
-                )
-                println("LINK: ${product.permalink}")
-            }
-        } else if (attributeName==brandAttributeName.lowercase(Locale.getDefault())) {
+        if (attributeName==brandAttributeName.lowercase(Locale.getDefault())) {
             if (!productAttributeNames.contains(attributeName) && product.sku !in listOf(
                     // Old codes that don't need a brand.
                     "59404-251", "59419-281", "59406-011", "59403-005", "59442-005", "59407-587", "59413-020",
@@ -410,12 +416,17 @@ fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Att
                 )
             ) {
                 logError(
-                    "MissingBrandAttribute",
-                    "ERROR: Product SKU ${product.sku} is missing the required 'Brand' attribute."
+                    "SAKIS MissingBrandAttribute",
+                    "ERROR: Product SKU ${product.sku} is missing the required 'Brand' attribute.",
+                    alsoEmail = false
                 )
                 println("LINK: ${product.permalink}")
             } else if (!productAttributeNames.contains(attributeName)) {
-                println("WARNING: Product SKU ${product.sku} is missing the required attribute '${attribute.name}'.")
+                logError(
+                    "SAKIS MissingOtherAttributes",
+                    "ERROR: Product SKU ${product.sku} is missing the required attribute '${attribute.name}'.",
+                    alsoEmail = false
+                )
                 println("LINK: ${product.permalink}")
             }
         }
@@ -433,15 +444,14 @@ fun getAllAttributes(credentials: String): List<Attribute> {
     }
 }
 
-
 private fun checkAllVariationsHaveTheSamePrices(product: Product, productVariations: List<Variation>) {
     val allDistinctRegularPrices = productVariations.map { it.regular_price }.distinct()
     val allDistinctSalePrices = productVariations.map { it.sale_price }.distinct()
 
     if (allDistinctRegularPrices.size!=1 || allDistinctSalePrices.size!=1) {
         logError(
-            "checkAllVariationsHaveTheSamePrices",
-            "ERROR: Multiple variation prices for product SKU ${product.sku}."
+            "Λαθος Τιμές στις Παραλλαγές",
+            "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} έχει διαφορετικές τιμές στις παραλλαγές του. Σύνδεσμος: ${product.permalink}"
         )
         println("LINK: ${product.permalink}")
     }
@@ -451,8 +461,9 @@ fun checkForGreekCharactersInSlug(product: Product) {
     val greekCharRegex = Regex("[\u0370-\u03FF\u1F00-\u1FFF]")
     if (greekCharRegex.containsMatchIn(product.slug)) {
         logError(
-            "checkForGreekCharactersInSlug",
-            "ERROR: Product SKU ${product.sku} has a slug containing Greek characters."
+            "SAKIS checkForGreekCharactersInSlug",
+            "ERROR: Product SKU ${product.sku} has a slug containing Greek characters.",
+            alsoEmail = false
         )
         println("LINK: ${product.permalink}")
     }
@@ -512,7 +523,7 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
     product: Product,
     productVariations: List<Variation>,
 ) {
-    if (product.status!="draft") {
+    if (product.status!="draft" && product.status!="private") {
         val productOutOfStock = product.stock_status=="outofstock"
         val allVariationsOutOfStock = productVariations.all { it.stock_status=="outofstock" }
         val sixMonthsAgo = LocalDate.now().minus(6, ChronoUnit.MONTHS)
@@ -521,7 +532,10 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
 //            println("DEBUG: Last Product sale date $lastProductSaleDate")
             if (lastProductSaleDate!=null) {
                 if (lastProductSaleDate.isBefore(sixMonthsAgo)) {
-                    println("ERROR: SKU ${product.sku} has been out of stock for more than 6 months since its last sale on $lastProductSaleDate.")
+                    logError(
+                        "Παλια out of stock προιοντα",
+                        "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} είναι out of stock για περισσότερο από 6 μήνες από την τελευταία του πώληση στις $lastProductSaleDate. Ειναι για διαγραφη?\nLINK: ${product.permalink}"
+                    )
                 }
             } else {
                 // println("DEBUG: SKU ${product.sku} has no sales records.")
@@ -579,8 +593,9 @@ fun checkForImagesOutsideMediaLibraryFromFTP(allNonRecentMedia: List<Media>, all
         println("No unused images outside media library detected ")
     } else {
         logError(
-            "checkForImagesOutsideMediaLibraryFromFTP",
-            "ERROR: ${imagePathsToDelete.size} unused images outside media library detected"
+            "SAKIS checkForImagesOutsideMediaLibraryFromFTP",
+            "ERROR: ${imagePathsToDelete.size} unused images outside media library detected",
+            alsoEmail = false
         )
     }
     imagePathsToDelete.forEach {
@@ -718,189 +733,29 @@ fun listFilesRecursively(
 
 fun checkForMissingGalleryVideo(product: Product) {
     if (product.status!="draft" && product.status!="private" && product.sku !in listOf(
-            "57849-556",
-            "57396-550",
-            "58205-007",
-            "58205-293",
-            "57402-028",
-            "58747-246",
-            "58746-246",
-            "58727-040",
-            "59346-002",
-            "59356-054",
-            "59356-003",
-            "59435-369",
-            "59428-246",
-            "59427-022",
-            "59427-003",
-            "58223-488",
-            "59425-051",
-            "59425-005",
-            "59345-003",
-            "59345-022",
-            "59388-1278",
-            "59343-369",
-            "58072-040",
-            "59343-003",
-            "59323-013",
-            "59260-005",
-            "59260-001",
-            "59429-246",
-            "59422-005",
-            "59422-012",
-            "59422-010",
-            "59441-003",
-            "59440-369",
-            "59440-003",
-            "59426-002",
-            "59436-060",
-            "59423-027",
-            "59212-396",
-            "59417-488",
-            "58735-003",
-            "59238-003",
-            "58593-005",
-            "59235-005",
-            "59235-003",
-            "59235-004",
-            "59235-187",
-            "58580-036",
-            "59434-003",
-            "58882-028",
-            "57630-396",
-            "59197-003",
-            "59439-369",
-            "59468-281",
-            "59269-396",
-            "59432-060",
-            "59431-1282",
-            "59432-003",
-            "59432-369",
-            "59438-003",
-            "59438-060",
-            "59418-005",
-            "59430-003",
-            "59394-003",
-            "59430-007",
-            "59393-011",
-            "59396-003",
-            "58736-005",
-            "58736-001",
-            "59397-020",
-            "59370-003",
-            "59395-011",
-            "59041-595",
-            "59370-040",
-            "58696-289",
-            "59392-281",
-            "58585-007",
-            "59461-031",
-            "59433-402",
-            "59413-020",
-            "59047-015",
-            "59409-003",
-            "59293-003",
-            "59468-561",
-            "59469-281",
-            "59333-588",
-            "59324-002",
-            "58458-007",
-            "59195-396",
-            "58549-028",
-            "58458-465",
-            "57630-556",
-            "57630-028",
-            "58902-465",
-            "59208-028",
-            "59051-017",
-            "59046-596",
-            "59065-596",
-            "59192-028",
-            "59186-097",
-            "59181-097",
-            "59193-097",
-            "59195-097",
-            "58869-011",
-            "58551-028",
-            "58856-051",
-            "59067-028",
-            "58794-289",
-            "58794-016",
-            "59137-293",
-            "59138-293",
-            "58872-488",
-            "58876-519",
-            "58548-519",
-            "58903-051",
-            "57459-561",
-            "58525-028",
-            "57140-003",
-            "56084-281",
-            "56080-556",
-            "56084-396",
-            "58218-027",
-            "59224-028",
-            "59230-003",
-            "59232-281",
-            "58504-561",
-            "59183-514",
-            "59182-514",
-            "59073-514",
-            "59072-514",
-            "58758-015",
-            "58759-015",
-            "56634-007",
-            "59167-013",
-            "59175-556",
-            "59173-027",
-            "59172-051",
-            "59050-596",
-            "59049-013",
-            "59047-031",
-            "59028-004",
-            "59043-051",
-            "59010-007",
-            "59112-550",
-            "58241-514",
-            "59113-550",
-            "59114-514",
-            "59114-550",
-            "59111-550",
-            "59110-514",
-            "59110-550",
-            "59111-514",
-            "58242-015",
-            "59109-514",
-            "59109-550",
-            "58515-029",
-            "56065-547",
-            "59016-019",
-            "58996-005",
-            "59030-096",
-            "59039-281",
-            "59039-003",
-            "58995-051",
-            "59033-013",
-            "59064-281",
-            "59017-004",
-            "59017-281",
-            "59018-013",
-            "58301-003",
-            "59040-004",
-            "59040-289",
-            "59023-023",
-            "59020-027",
-            "59020-023",
-            "59045-097",
-            "58210-293",
-            "58205-027",
-            "55627-561",
-            "58956-097",
-            "58959-097",
-            "58957-097",
-            "58983-005",
-            "59117-012",
-            "58823-488",
+            "57849-556", "57396-550", "58205-007", "58205-293", "57402-028", "58747-246", "58746-246", "58727-040",
+            "59346-002", "59356-054", "59356-003", "59435-369", "59428-246", "59427-022", "59427-003", "58223-488",
+            "59425-051", "59425-005", "59345-003", "59345-022", "59388-1278", "59343-369", "58072-040", "59343-003",
+            "59323-013", "59260-005", "59260-001", "59429-246", "59422-005", "59422-012", "59422-010", "59441-003",
+            "59440-369", "59440-003", "59426-002", "59436-060", "59423-027", "59212-396", "59417-488", "58735-003",
+            "59238-003", "58593-005", "59235-005", "59235-003", "59235-004", "59235-187", "58580-036", "59434-003",
+            "58882-028", "57630-396", "59197-003", "59439-369", "59468-281", "59269-396", "59409-003", "56084-396",
+            "59432-060", "59431-1282", "59432-003", "59432-369", "59438-003", "59438-060", "59293-003", "59468-561",
+            "59418-005", "59430-003", "59394-003", "59430-007", "59393-011", "59396-003", "59469-281", "59333-588",
+            "58736-005", "58736-001", "59397-020", "59370-003", "59395-011", "59041-595", "59324-002", "58458-007",
+            "59370-040", "58696-289", "59392-281", "58585-007", "59461-031", "59433-402", "59413-020", "59047-015",
+            "59195-396", "58549-028", "58458-465", "57630-556", "57630-028", "58902-465", "59208-028", "59051-017",
+            "59046-596", "59065-596", "59192-028", "59186-097", "59181-097", "59193-097", "59195-097", "58869-011",
+            "58551-028", "58856-051", "59067-028", "58794-289", "58794-016", "59137-293", "59138-293", "58872-488",
+            "58876-519", "58548-519", "58903-051", "57459-561", "58525-028", "57140-003", "56084-281", "56080-556",
+            "58218-027", "59224-028", "59230-003", "59232-281", "58504-561", "59183-514", "59182-514", "59073-514",
+            "59072-514", "58758-015", "58759-015", "56634-007", "59167-013", "59175-556", "59173-027", "59172-051",
+            "59050-596", "59049-013", "59047-031", "59028-004", "59043-051", "59010-007", "59112-550", "58241-514",
+            "59113-550", "59114-514", "59114-550", "59111-550", "59110-514", "59110-550", "59111-514", "58242-015",
+            "59109-514", "59109-550", "58515-029", "56065-547", "59016-019", "58996-005", "59030-096", "59039-281",
+            "59039-003", "58995-051", "59033-013", "59064-281", "59017-004", "59017-281", "59018-013", "58301-003",
+            "59040-004", "59040-289", "59023-023", "59020-027", "59020-023", "59045-097", "58210-293", "58205-027",
+            "55627-561", "58956-097", "58959-097", "58957-097", "58983-005", "59117-012", "58823-488",
         )
     ) {
         val startTargetDate = LocalDate.of(2024, 3, 1)
@@ -912,8 +767,7 @@ fun checkForMissingGalleryVideo(product: Product) {
             if (isGalleryVideoMissing) {
                 logError(
                     "Προιον χωρις βιντεο",
-                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku}, δεν έχει βιντεο.\nLINK: ${product.permalink}",
-                    alsoEmail = true
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku}, δεν έχει βιντεο.\nLINK: ${product.permalink}"
                 )
             }
         }
@@ -927,8 +781,9 @@ fun checkForMissingImagesAltText(product: Product, credentials: String) {
             if (image.alt.isEmpty()) {
                 hasMissingAltText = true
                 logError(
-                    "checkForMissingImagesAltText",
-                    "ERROR: Product SKU ${product.sku} has an image with missing alt text."
+                    "SAKIS checkForMissingImagesAltText",
+                    "ERROR: Product SKU ${product.sku} has an image with missing alt text.",
+                    alsoEmail = false
                 )
                 println("LINK: (product) ${product.permalink}")
                 println("LINK: (image in media gallery) https://foryoufashion.gr/wp-admin/post.php?post=${image.id}&action=edit")
@@ -957,8 +812,9 @@ fun checkForMissingFilesInsideMediaLibraryEntries(allNonRecentMedia: List<Media>
 
         if (isFileMissing) {
             logError(
-                "checkForMissingFilesInsideMediaLibraryEntries",
-                "ERROR: File missing for Media ID: ${media.id}, URL: ${media.source_url}"
+                "SAKIS checkForMissingFilesInsideMediaLibraryEntries",
+                "ERROR: File missing for Media ID: ${media.id}, URL: ${media.source_url}",
+                alsoEmail = false
             )
             println("LINK: https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit")
 //            val desktop = Desktop.getDesktop()
@@ -1039,8 +895,9 @@ fun checkForUnusedImagesInsideMediaLibrary(
             } else {
                 if (media.id!=38052) { // exclude a placeholder image
                     logError(
-                        "checkForUnusedImagesInsideMediaLibrary regex mismatch",
-                        "ERROR: ${media.source_url} with id ${media.id} should always match regex"
+                        "SAKIS checkForUnusedImagesInsideMediaLibrary regex mismatch",
+                        "ERROR: ${media.source_url} with id ${media.id} should always match regex",
+                        alsoEmail = false
                     )
                 }
                 true // If URL doesn't match pattern, exclude the media item to be safe
@@ -1048,8 +905,9 @@ fun checkForUnusedImagesInsideMediaLibrary(
         }
     if (unusedImages.isNotEmpty()) {
         logError(
-            "checkForUnusedImagesInsideMediaLibrary unused images",
-            "ERROR: Unused images in media library: ${unusedImages.size}"
+            "SAKIS checkForUnusedImagesInsideMediaLibrary unused images",
+            "ERROR: Unused images in media library: ${unusedImages.size}",
+            alsoEmail = false
         )
     }
     unusedImages.forEach {
@@ -1142,7 +1000,11 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
 
         val ratio = dimensions.second.toDouble() / dimensions.first.toDouble()
         if (ratio > 1.51 || ratio < 1.49) {
-            println("ERROR: Product ${product.sku} image ${image.src} has the wrong resolution ratio ($ratio). Image width: ${dimensions.first}px, image height: ${dimensions.second}px ")
+            logError(
+                "SAKIS IncorrectImageRatio",
+                "ERROR: Product ${product.sku} image ${image.src} has the wrong resolution ratio ($ratio). Image width: ${dimensions.first}px, image height: ${dimensions.second}px ",
+                alsoEmail = false
+            )
             println("LINK: ${product.permalink}")
         }
     }
@@ -1151,43 +1013,11 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
 
 fun checkForImagesWithTooLowResolution(product: Product) {
     if (product.status!="private" && product.status!="draft" && product.sku !in listOf(
-            "58747-246",
-            "58747-246",
-            "59183-514",
-            "59182-514",
-            "59073-514",
-            "59072-514",
-            "59049-013",
-            "56062-465",
-            "56062-097",
-            "57459-332",
-            "55627-443",
-            "55627-465",
-            "55627-396",
-            "55627-097",
-            "56031-488",
-            "57401-465",
-            "58028-028",
-            "58723-040",
-            "58635-016",
-            "58634-016",
-            "58631-022",
-            "58684-006",
-            "58630-011",
-            "58687-003",
-            "57469-007",
-            "57384-488",
-            "56484-501",
-            "55077-007",
-            "56062-556",
-            "56127-396",
-            "58746-246",
-            "56032-012",
-            "55627-488",
-            "58689-003",
-            "56062-029",
-            "56067-003",
-            "59050-596",
+            "58747-246", "58747-246", "59183-514", "59182-514", "59073-514", "59072-514", "59049-013", "56062-465",
+            "56062-097", "57459-332", "55627-443", "55627-465", "55627-396", "55627-097", "56031-488", "57401-465",
+            "58028-028", "58723-040", "58635-016", "58634-016", "58631-022", "58684-006", "58630-011", "58687-003",
+            "57469-007", "57384-488", "56484-501", "55077-007", "56062-556", "56127-396", "58746-246", "56032-012",
+            "55627-488", "58689-003", "56062-029", "56067-003", "59050-596",
         )
     ) {
         val cache = loadImageCache()
@@ -1198,8 +1028,9 @@ fun checkForImagesWithTooLowResolution(product: Product) {
 
             if (dimensions.first < 1200) {
                 logError(
-                    "checkForImagesWithTooLowResolution",
-                    "ERROR: Product ${product.sku} has an image with too low resolution (width < 1200px)."
+                    "SAKIS checkForImagesWithTooLowResolution",
+                    "ERROR: Product ${product.sku} has an image with too low resolution (width < 1200px).",
+                    alsoEmail = false
                 )
                 println("DEBUG: Image width: ${dimensions.first}px")
                 println("DEBUG: Image URL: ${image.src}")
@@ -1220,8 +1051,9 @@ fun checkForImagesWithTooHighResolution(product: Product) {
             }
             if (dimensions.first > 1500) {
                 logError(
-                    "checkForImagesWithTooHighResolution",
-                    "ERROR: Product ${product.sku} has an image with too high resolution (width > 1500px)."
+                    "SAKIS checkForImagesWithTooHighResolution",
+                    "ERROR: Product ${product.sku} has an image with too high resolution (width > 1500px).",
+                    alsoEmail = false
                 )
                 println("DEBUG: Image width: ${dimensions.first}px")
                 println("DEBUG: Image URL: ${image.src}")
@@ -1239,12 +1071,7 @@ fun checkForProductsInParentCategoryOnly(product: Product) {
         if ((productCategorySlugs - parentCategories).isEmpty()) {
             val errorMessage =
                 "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} ανήκει μόνο σε βασικές κατηγορίες ('Φορέματα' ή 'Πανωφόρια') και πρέπει να προστεθεί σε πιο συγκεκριμένη υποκατηγορία.\nLINK: ${product.permalink}"
-            logError(
-                "Προιον μονο σε βασικές κατηγορίες",
-                errorMessage,
-                alsoEmail = true
-            )
-            println("LINK: ${product.permalink}")
+            logError("Προιον μονο σε βασικές κατηγορίες", errorMessage)
         }
     }
 }
@@ -1263,18 +1090,16 @@ fun checkForIncorrectPlusSizeCategorizationAndTagging(product: Product) {
 
         if ((inPlusSizeCategory || inPlusSizeForemataCategory) && !hasPlusSizeTag) {
             logError(
-                "checkForIncorrectPlusSizeCategorizationAndTagging 1",
-                "ERROR: Product SKU ${product.sku} is missing a plus size tag."
+                "Προιον χωρις ετικετα plus size",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} δεν έχει ετικέτα plus size.\nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
         }
 
         if (inPlusSizeCategory && !inOlosomesFormesCategory && !inPlusSizeForemataCategory) {
             logError(
-                "checkForIncorrectPlusSizeCategorizationAndTagging 2",
-                "ERROR: Product SKU ${product.sku} is in the plus category but it's not in olosomes formes or plus size foremata category"
+                "Προιον plus size χωρις συγκεκριμενη κατηγορια",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} είναι στην κατηγορία plus size αλλά δεν είναι στις κατηγορίες 'ολόσωμες φόρμες' ή 'plus size φορέματα'.\nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
         }
     }
 }
@@ -1291,8 +1116,8 @@ fun checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories(product: P
 
     if ((inSpecialOccasionCategory || inPlusSizeCategory) && !inAnyOtherCategories) {
         logError(
-            "checkForSpecialOccasionOrPlusSizeCategoriesWithoutOtherCategories",
-            "ERROR: Product SKU ${product.sku} is only in the 'Special Occasion' or 'Plus size' category and not in any other category."
+            "Λειπουν κατηγοριες απο προιον",
+            "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} βρίσκεται μόνο στην κατηγορία 'Special Occasion' ή 'Plus size' και δεν ανήκει σε καμία άλλη κατηγορία.\nLINK: ${product.permalink}"
         )
     }
 }
@@ -1304,8 +1129,8 @@ fun checkForDraftProducts(product: Product) {
         val oneMonthAgo = LocalDate.now().minus(1, ChronoUnit.MONTHS)
         if (productLastModificationDate.isBefore(oneMonthAgo)) {
             logError(
-                "checkForDraftProducts",
-                "ERROR: Product SKU ${product.sku} has been in draft status for more than 1 month."
+                "Προϊόντα σε προσχέδιο για πολύ καιρό",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} βρίσκεται σε προσχέδιο για πάνω από 1 μήνα.\nLINK: ${product.permalink}"
             )
         }
     }
@@ -1323,23 +1148,23 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
     }
     val finalProductRegex = Regex("^\\d{5}-\\d{3,4}$")
     if (!product.sku.matches(finalProductRegex)) {
-        logError("checkForInvalidSKUNumbers 1", "ERROR: Product SKU ${product.sku} does not match Product SKU regex ")
-        println("LINK: ${product.permalink}")
+        logError(
+            "Λαθος SKU για προιον",
+            "ΣΦΑΛΜΑ: Το SKU του προϊόντος ${product.sku} φαινεται να ειναι λανθασμενο\nLINK: ${product.permalink}"
+        )
     }
     val finalProductVariationRegex = Regex("^\\d{5}-\\d{3,4}-\\d{1,3}$")
     if (!variation.sku.matches(finalProductVariationRegex)) {
         logError(
-            "checkForInvalidSKUNumbers 2",
-            "ERROR: Variation SKU ${variation.sku} does not match Variation SKU regex "
+            "Λαθος SKU για προιον",
+            "ΣΦΑΛΜΑ: Το SKU του προϊόντος ${product.sku} φαινεται να ειναι λανθασμενο\nLINK: ${product.permalink}"
         )
-        println("LINK: ${product.permalink}")
     }
     if (!variation.sku.startsWith(product.sku)) {
         logError(
-            "checkForInvalidSKUNumbers 3",
-            "ERROR: Variation SKU ${variation.sku} does not start with the product SKU ${product.sku}"
+            "Λαθος SKU για προιον",
+            "ΣΦΑΛΜΑ: Το SKU του προϊόντος ${product.sku} φαινεται να ειναι λανθασμενο\nLINK: ${product.permalink}"
         )
-        println("LINK: ${product.permalink}")
     }
 }
 
@@ -1358,19 +1183,17 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
             product.description.contains("μοντέλο", ignoreCase = true)
         ) {
             logError(
-                "checkForMissingToMonteloForaeiTextInDescription 1",
-                "ERROR: Product SKU ${product.sku} has info about the size the model is wearing in the long description."
+                "'Το μοντελο φοραει' σε λαθος περιγραφη",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} περιλαμβάνει πληροφορίες για το μέγεθος που φοράει το μοντέλο στην αναλυτική περιγραφή αντι για τη συντομη\nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
         }
         if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)
             || !product.short_description.contains("one size", ignoreCase = true)
         ) {
             logError(
-                "checkForMissingToMonteloForaeiTextInDescription 2",
-                "ERROR: Product SKU ${product.sku} does not have info about the size the model is wearing in the short description."
+                "Προιον με περιγραφη χωρις το μεγεθος του μοντελου που το φοραει",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} δεν περιλαμβάνει πληροφορίες για το μέγεθος που φοράει το μοντέλο στη σύντομη περιγραφή.\nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
         }
     }
 }
@@ -1389,7 +1212,10 @@ fun checkForMissingSizeGuide(product: Product) {
         true
     }
     if (isEmpty) {
-        println("WARNING: No size guide for product with SKU ${product.sku}")
+        logError(
+            "Προιον χωρις οδηγο μεγεθους",
+            "ΣΦΑΛΜΑ: Δεν υπάρχει οδηγός μεγεθών για το προϊόν με SKU ${product.sku}\nLINK: ${product.permalink}"
+        )
     }
 }
 
@@ -1408,8 +1234,10 @@ fun checkForTyposInProductText(product: Product) {
 fun checkForTypos(product: Product, field: String, content: String, dictionary: Set<String>) {
     val words = content.split("\\s+".toRegex()) // Split into words
     if (dictionary.any { it in words }) {
-        logError("checkForTyposInProductText", "ERROR: Possible typo in $field of product SKU ${product.sku}")
-        println("LINK: ${product.permalink}")
+        logError(
+            "Τυπογραφικο λαθος σε προιον",
+            "ΣΦΑΛΜΑ: Πιθανό ορθογραφικό λάθος στο πεδίο '$field' του προϊόντος με SKU ${product.sku}\nLINK: ${product.permalink}"
+        )
     }
 }
 
@@ -1417,33 +1245,22 @@ private fun checkForEmptyOrShortTitlesOrLongTitles(product: Product) {
     val title = product.name.replace("&amp", "&")
     if (title.isEmpty() || title.length < 20) {
         logError(
-            "checkForEmptyOrShortTitlesOrLongTitles 1",
-            "ERROR: Product ${product.sku} has an empty or too short title: '$title'."
+            "Προιον με μικρο τιτλο",
+            "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει πολύ σύντομο τίτλο (μικροτερο απο 20 χαρακτηρες): '$title'.\nLINK: ${product.permalink}"
         )
-        println("LINK: ${product.permalink}")
     } else if (title.length > 70) { // 65 is the meta ads recommendation
         logError(
-            "checkForEmptyOrShortTitlesOrLongTitles 2",
-            "ERROR: Product ${product.sku} has a too long title: '$title'."
+            "Προιον με μεγαλο τιτλο",
+            "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει πολύ μεγαλο τίτλο (μικροτερο απο 70 χαρακτηρες): '$title'.\nLINK: ${product.permalink}"
         )
-        println("LINK: ${product.permalink}")
     }
 }
 
 fun checkNameModelTag(product: Product) {
     if (product.status!="draft"
-        && product.sku!="57140-003"
-        && product.sku!="59468-281"
-        && product.sku!="59469-281"
-        && product.sku!="57630-556"
-        && product.sku!="58747-246"
-        && product.sku!="56068-396"
-        && product.sku!="55627-027"
-        && product.sku!="58205-007"
-        && product.sku!="58746-246"
-        && product.sku!="55627-016"
-        && product.sku!="58722-436"
-        && product.sku!="58727-040"
+        && product.sku!="57140-003" && product.sku!="59468-281" && product.sku!="59469-281" && product.sku!="57630-556"
+        && product.sku!="58747-246" && product.sku!="56068-396" && product.sku!="55627-027" && product.sku!="58205-007"
+        && product.sku!="58746-246" && product.sku!="55627-016" && product.sku!="58722-436" && product.sku!="58727-040"
     ) {
         val formatter = DateTimeFormatter.ISO_DATE_TIME
         val targetDate = LocalDate.of(2024, 9, 20) // When we started implementing this
@@ -1452,10 +1269,9 @@ fun checkNameModelTag(product: Product) {
             val hasModelTag = product.tags.any { tag -> tag.name.startsWith("ΜΟΝΤΕΛΟ", ignoreCase = true) }
             if (!hasModelTag) {
                 logError(
-                    "checkNameModelTag",
-                    "ERROR: Product SKU ${product.sku} does not have a model tag starting with 'ΜΟΝΤΕΛΟ'."
+                    "Προιον χωρις ετικετα με ονομα μοντελου",
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} δεν έχει ετικετα με ονομα μοντέλου.\nLINK: ${product.permalink}"
                 )
-                println("LINK: ${product.permalink}")
             }
         }
     }
@@ -1466,14 +1282,12 @@ fun checkFwtografisiStudioEkswterikiTag(product: Product) {
         val hasFwtografisiTag = product.tags.any { tag -> tag.name.startsWith("ΦΩΤΟΓΡΑΦΙΣΗ", ignoreCase = true) }
         if (!hasFwtografisiTag) {
             logError(
-                "checkFwtografisiStudioEkswterikiTag",
-                "ERROR: Product SKU ${product.sku} does not have a fwtografisi tag starting with 'ΦΩΤΟΓΡΑΦΙΣΗ'."
+                "Προιον χωρις ετικετα με τοποθεσια φωτογραφησης",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} δεν έχει ετικετα με τοποθεσια φωτογραφησης.\nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
         }
     }
 }
-// TODO check fwtografisi studio should be in all images that doesn't have ekswteriki fwtografisi
 
 fun checkPhotoshootTags(product: Product, credentials: String) {
     val genericFwtografisiTagSlug = "fwtografisi-ekswteriki"
@@ -1487,8 +1301,9 @@ fun checkPhotoshootTags(product: Product, credentials: String) {
 
     if (specificPhotoshootTags.isNotEmpty() && !hasGenericTag) {
         logError(
-            "checkPhotoshootTags 1",
-            "ERROR: Product SKU ${product.sku} has specific fwtografisi tag but is missing the generic tag '$genericFwtografisiTagName'."
+            "SAKIS checkPhotoshootTags",
+            "ERROR: Product SKU ${product.sku} has specific fwtografisi tag but is missing the generic tag '$genericFwtografisiTagName'.",
+            alsoEmail = false
         )
         if (shouldAddGenericPhotoshootTag) {
             println("ACTION: Adding generic tag '$genericFwtografisiTagName' to product SKU ${product.sku}.")
@@ -1499,42 +1314,16 @@ fun checkPhotoshootTags(product: Product, credentials: String) {
     // Check if the generic tag exists but a specific tag is missing
     if (hasGenericTag && specificPhotoshootTags.isEmpty() &&
         product.sku !in listOf( // Old external photoshoots - ignore
-            "55627-027",
-            "57630-556",
-            "59050-596",
-            "55627-465",
-            "58980-054",
-            "58981-054",
-            "58977-054",
-            "58979-054",
-            "58149-029",
-            "59047-031",
-            "59049-013",
-            "58978-054",
-            "58976-054",
-            "58974-054",
-            "57384-556",
-            "56068-029",
-            "58317-009",
-            "58315-027",
-            "57637-530",
-            "57394-157",
-            "57385-488",
-            "57010-019",
-            "57005-281",
-            "56072-003",
-            "56662-465",
-            "58172-007",
-            "56818-488",
-            "55627-007",
-            "56065-007"
+            "55627-027", "57630-556", "59050-596", "55627-465", "58980-054", "58981-054", "58977-054", "58979-054",
+            "58149-029", "59047-031", "59049-013", "58978-054", "58976-054", "58974-054", "57384-556", "56068-029",
+            "58317-009", "58315-027", "57637-530", "57394-157", "57385-488", "57010-019", "57005-281", "56072-003",
+            "56662-465", "58172-007", "56818-488", "55627-007", "56065-007"
         )
     ) {
         logError(
-            "checkPhotoshootTags 2",
-            "ERROR: Product SKU ${product.sku} has the generic tag '$genericFwtografisiTagName' but is missing a specific photoshoot location tag."
+            "Προιον χωρις ετικετα εξωτερικης φωτογραφισης",
+            "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει τη γενικό ετικετα '$genericFwtografisiTagName' αλλά λείπει η ετικετα συγκεκριμένης τοποθεσίας φωτογράφισης.\nLINK: ${product.permalink}"
         )
-        println("LINK: ${product.permalink}")
     }
 }
 
@@ -1568,17 +1357,15 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         isValidHtml(product.description)
         if (product.short_description.equals(product.description, ignoreCase = true)) {
             logError(
-                "checkForInvalidDescriptions 1",
-                "ERROR: same short and long descriptions found for product: ${product.sku}"
+                "Προιον με ιδιες συντομες και κανονικες περιγραφες",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει τις ίδιες σύντομες και κανονικες περιγραφες.\nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
         }
         if (product.short_description.length > product.description.length) {
             logError(
-                "checkForInvalidDescriptions 2",
-                "ERROR: short description longer than long description for product: ${product.sku}"
+                "Προιον με συντομη περιγραφη μεγαλυτερη απο την κανονικη περιγραφη",
+                "ΣΦΑΛΜΑ: Η σύντομη περιγραφή είναι μεγαλύτερη από την κανονικη περιγραφη για το προϊόν με SKU ${product.sku}.\nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
 //        println("DEBUG: long description ${product.description}")
 //        println("DEBUG: short description ${product.short_description}")
             if (shouldSwapDescriptions) {
@@ -1587,22 +1374,23 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
         if (product.short_description.length < 140 || product.short_description.length > 300) {
             logError(
-                "checkForInvalidDescriptions 5",
-                "ERROR: Product ${product.sku} has a short description of invalid length, with length ${product.short_description.length}"
+                "Προιον με συντομη περιγραφη προιοντος με λαθος μηκος",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει σύντομη περιγραφή με μη έγκυρο μήκος (${product.short_description.length} χαρακτήρες)" +
+                        "\n Πρεπει να ειναι απο 140 μεχρι 300 χαρακτηρες. Μετρησε το εδω https://www.charactercountonline.com/\n LINK: ${product.permalink}."
             )
-            println("LINK: ${product.permalink} ")
         }
         if (product.description.length < 250 || product.description.length > 550) {
             logError(
-                "checkForInvalidDescriptions 6",
-                "ERROR: Product ${product.sku} has a long description of invalid length, with length ${product.description.length}"
+                "Προιον με περιγραφη προιοντος με λαθος μηκος",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει περιγραφή με μη έγκυρο μήκος (${product.description.length} χαρακτήρες)" +
+                        "\n Πρεπει να ειναι απο 250 μεχρι 550 χαρακτηρες. Μετρησε το εδω https://www.charactercountonline.com/\n LINK: ${product.permalink}."
             )
-            println("LINK: ${product.permalink}")
         }
         if (product.description.contains("&nbsp;")) {
             logError(
-                "checkForInvalidDescriptions 3",
-                "ERROR: Product ${product.sku} has unnecessary line breaks in description"
+                "SAKIS checkForInvalidDescriptions 3",
+                "ERROR: Product ${product.sku} has unnecessary line breaks in description",
+                alsoEmail = false
             )
             println("LINK: ${product.permalink}")
             if (shouldRemoveEmptyLinesFromDescriptions) {
@@ -1613,8 +1401,9 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
         if (product.short_description.contains("&nbsp;")) {
             logError(
-                "checkForInvalidDescriptions 4",
-                "ERROR: Product ${product.sku} has unnecessary line breaks in short description"
+                "SAKIS checkForInvalidDescriptions 4",
+                "ERROR: Product ${product.sku} has unnecessary line breaks in short description",
+                alsoEmail = false
             )
             println("LINK: ${product.permalink}")
             if (shouldRemoveEmptyLinesFromDescriptions) {
@@ -1629,8 +1418,9 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
 private fun checkForStockManagementAtProductLevelOutOfVariations(product: Product) {
     if (product.variations.isNotEmpty() && product.manage_stock) {
         logError(
-            "checkForStockManagementAtProductLevelOutOfVariations",
-            "ERROR: Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level"
+            "SAKIS checkForStockManagementAtProductLevelOutOfVariations",
+            "ERROR: Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level",
+            alsoEmail = false
         )
     }
 }
@@ -1638,8 +1428,9 @@ private fun checkForStockManagementAtProductLevelOutOfVariations(product: Produc
 fun checkStockManagementAtVariationLevel(variation: Variation, product: Product) {
     if (!variation.manage_stock) {
         logError(
-            "checkStockManagementAtVariationLevel",
-            "ERROR: Variation SKU ${variation.sku} of product SKU ${product.sku} does not have 'Manage stock?' enabled for stock management at the variation level."
+            "SAKIS checkStockManagementAtVariationLevel",
+            "ERROR: Variation SKU ${variation.sku} of product SKU ${product.sku} does not have 'Manage stock?' enabled for stock management at the variation level.",
+            alsoEmail = false
         )
         println("LINK: ${product.permalink}")
     }
@@ -1653,30 +1444,31 @@ private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Var
         val salePrice = salePriceString.toDoubleOrNull()
         if (regularPrice==null || regularPrice <= 0) {
             logError(
-                "checkForWrongPricesAndUpdateEndTo99 1",
-                "ERROR: Regular price for variation ${variation.id} is invalid or empty"
+                "Λαθος αρχικη τιμη για προιον",
+                "ΣΦΑΛΜΑ: Η αρχικη τιμή για τη παραλλαγή ${variation.sku} είναι λαθος.\nLINK: ${product.permalink}"
             )
             return
         }
         if (salePrice!=null && salePrice <= 0) {
             logError(
-                "checkForWrongPricesAndUpdateEndTo99 2",
-                "ERROR: Sale price for variation ${variation.id} is invalid "
+                "Λαθος εκπτωσιακη τιμη για προιον",
+                "ΣΦΑΛΜΑ: Η εκπτωσιακη τιμή για τη παραλλαγή ${variation.sku} είναι λαθος.\nLINK: ${product.permalink}"
             )
             return
         }
         if (salePrice!=null && salePrice >= regularPrice) {
             logError(
-                "checkForWrongPricesAndUpdateEndTo99 3",
-                "ERROR: Sale price for variation ${variation.id} $salePrice cannot be bigger or equal to regular price $regularPrice"
+                "Λαθος εκπτωσιακη τιμη για προιον",
+                "ΣΦΑΛΜΑ: Η εκπτωσιακη τιμη για τη παραλλαγή ${variation.sku} ($salePrice) δεν μπορεί να είναι μεγαλύτερη ή ίση με την κανονική τιμή ($regularPrice).\nLINK: ${product.permalink}"
             )
             return
         }
 
         if (regularPriceString.isNotEmpty() && !priceHasCorrectPennies(regularPriceString)) {
             logError(
-                "checkForWrongPricesAndUpdateEndTo99 4",
-                "ERROR: product SKU ${product.sku} regular price $regularPriceString has incorrect pennies"
+                "SAKIS checkForWrongPricesAndUpdateEndTo99 4",
+                "ERROR: product SKU ${product.sku} regular price $regularPriceString has incorrect pennies",
+                alsoEmail = false
             )
             if (shouldUpdatePricesToEndIn99) {
                 val updatedRegularPrice = adjustPrice(regularPriceString.toDouble())
@@ -1688,8 +1480,9 @@ private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Var
                         )
                     ) {
                         logError(
-                            "checkForWrongPricesAndUpdateEndTo99 5",
-                            "ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process."
+                            "SAKIS checkForWrongPricesAndUpdateEndTo99 5",
+                            "ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.",
+                            alsoEmail = false
                         )
                         exitProcess(1)
                     }
@@ -1705,16 +1498,18 @@ private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Var
         }
         if (salePriceString.isNotEmpty() && !priceHasCorrectPennies(salePriceString)) {
             logError(
-                "checkForWrongPricesAndUpdateEndTo99 6",
-                "ERROR: product SKU ${product.sku} salePrice price $salePriceString has incorrect pennies"
+                "SAKIS checkForWrongPricesAndUpdateEndTo99 6",
+                "ERROR: product SKU ${product.sku} salePrice price $salePriceString has incorrect pennies",
+                alsoEmail = false
             )
             if (shouldUpdatePricesToEndIn99) {
                 val updatedSalePrice = adjustPrice(salePriceString.toDouble())
                 println("ACTION: Updating product SKU ${product.sku} variation SKU ${variation.sku} sale price from $salePriceString to $updatedSalePrice")
                 if (isSignificantPriceDifference(salePriceString.toDouble(), updatedSalePrice.toDouble())) {
                     logError(
-                        "checkForWrongPricesAndUpdateEndTo99 7",
-                        "ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process."
+                        "SAKIS checkForWrongPricesAndUpdateEndTo99 7",
+                        "ERROR: Significant price difference detected for product SKU ${product.sku}. Exiting process.",
+                        alsoEmail = false
                     )
                     exitProcess(1)
                 }
@@ -1821,8 +1616,10 @@ fun checkForNonPortraitImagesWithCache(product: Product) {
         }
 
         if (dimensions.first > dimensions.second) {
-            logError("checkForNonPortraitImagesWithCache", "ERROR: Product ${product.sku} has a non-portrait image.")
-            println("LINK: ${product.permalink}")
+            logError(
+                "Προιον με οριζοντιες φωτογραφιες",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει εικόνα που δεν είναι κατακόρυφη.\nLINK: ${product.permalink}"
+            )
         }
     }
     saveImageCache(cache)
@@ -1878,8 +1675,9 @@ fun checkForProductsWithImagesNotInMediaLibrary(product: Product, allMedia: List
         // println("DEBUG: Processing ${image.src}")
         if (image.src !in allMediaUrls) {
             logError(
-                "checkForProductsWithImagesNotInMediaLibrary 1",
-                "ERROR: Product SKU ${product.sku} is using an image that is not in the media library: ${image.src}"
+                "SAKIS checkForProductsWithImagesNotInMediaLibrary 1",
+                "ERROR: Product SKU ${product.sku} is using an image that is not in the media library: ${image.src}",
+                alsoEmail = false
             )
             println("LINK: ${product.permalink}")
         }
@@ -1888,38 +1686,10 @@ fun checkForProductsWithImagesNotInMediaLibrary(product: Product, allMedia: List
 
 private fun checkForMissingImages(product: Product) {
     if (product.status!="private" && product.status!="draft" && product.sku !in listOf(
-            "58747-246",
-            "58746-246",
-            "59183-514",
-            "59182-514",
-            "59117-012",
-            "59050-596",
-            "59043-051",
-            "59040-004",
-            "58983-005",
-            "56062-097",
-            "56062-443",
-            "56062-029",
-            "55627-443",
-            "58210-007",
-            "58721-016",
-            "58691-004",
-            "58608-003",
-            "58700-011",
-            "58631-022",
-            "58687-003",
-            "58681-006",
-            "58615-012",
-            "58603-003",
-            "58464-013",
-            "58420-009",
-            "58407-556",
-            "58154-097",
-            "58248-012",
-            "58224-488",
-            "57719-332",
-            "56072-003",
-            "56114-003",
+            "58747-246", "58746-246", "59183-514", "59182-514", "59117-012", "59050-596", "59043-051", "59040-004",
+            "58983-005", "56062-097", "56062-443", "56062-029", "55627-443", "58210-007", "58721-016", "58691-004",
+            "58608-003", "58700-011", "58631-022", "58687-003", "58681-006", "58615-012", "58603-003", "58464-013",
+            "58420-009", "58407-556", "58154-097", "58248-012", "58224-488", "57719-332", "56072-003", "56114-003",
         )
     ) {
         val images = product.images
@@ -1927,16 +1697,17 @@ private fun checkForMissingImages(product: Product) {
         val galleryImagesMissing = images.size < 3
 
         if (mainImageMissing) {
-            logError("checkForMissingImages 1", "ERROR: Product ${product.sku} is missing a main image.")
-            println("LINK: ${product.permalink}")
+            logError(
+                "Προιν χωρις αρχικη φωτογραφια",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} δεν έχει κύρια εικόνα.\nLINK: ${product.permalink}"
+            )
         }
 
         if (galleryImagesMissing) {
             logError(
-                "checkForMissingImages 3",
-                "ERROR: Product ${product.sku} only has ${images.size} images."
+                "Προιον με λιγες φωτογραφιες",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει μόνο ${images.size} εικόνες.\nLINK: ${product.permalink}"
             )
-            println("LINK: ${product.permalink}")
         }
 
         // A product might have an image that is not part of the media library, and that might return a 404.
@@ -1953,8 +1724,9 @@ private fun checkForMissingImages(product: Product) {
             }
             if (isFileMissing) {
                 logError(
-                    "checkForMissingImages 2",
-                    "ERROR: Product ${product.sku} has an image with URL ${image.src} that does not exist"
+                    "SAKIS checkForMissingImages 2",
+                    "ERROR: Product ${product.sku} has an image with URL ${image.src} that does not exist",
+                    alsoEmail = false
                 )
             }
         }
@@ -1966,11 +1738,7 @@ private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
     val imageToProductsMap = mutableMapOf<String, MutableList<Product>>()
     for (product in products) {
         if (product.sku !in listOf(
-                "59183-514",
-                "59182-514",
-                "59341-003",
-                "59492-561",
-                "59492-488"
+                "59183-514", "59182-514", "59341-003", "59492-561", "59492-488"
             )
         ) { // known to contain duplicate images
             val images = product.images
@@ -1984,7 +1752,11 @@ private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
     imageToProductsMap.forEach { (imageUrl, associatedProducts) ->
         val distinctAssociatedProducts = associatedProducts.distinct()
         if (distinctAssociatedProducts.size > 1) {
-            logError("checkForDuplicateImagesAcrossProducts 1", "ERROR: Duplicate image found across products.")
+            logError(
+                "SAKIS checkForDuplicateImagesAcrossProducts 1",
+                "ERROR: Duplicate image found across products.",
+                alsoEmail = false
+            )
             println("ERROR: Image URL: $imageUrl")
             println("ERROR: Products with this image:")
             distinctAssociatedProducts.forEach { product ->
@@ -2001,8 +1773,10 @@ private fun checkForDuplicateImagesInAProduct(product: Product) {
         val uniqueUrls = imageUrls.distinct()
 
         if (imageUrls.size!=uniqueUrls.size) {
-            logError("checkForDuplicateImagesInAProduct 1", "ERROR: Product ${product.sku} has duplicate images.")
-            println("LINK: ${product.permalink}")
+            logError(
+                "Διπλές εικόνες σε προϊόν",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} περιέχει διπλές εικόνες.\nLINK: ${product.permalink}"
+            )
         }
     }
 }
@@ -2207,8 +1981,9 @@ private fun addProsforesTagForDiscountedProductsAndRemoveItForRest(
             }
         } else {
             logError(
-                "addProsforesTagForDiscountedProductsAndRemoveItForRest 1",
-                "ERROR: Could not determine discount because regular price empty or negative"
+                "SAKIS addProsforesTagForDiscountedProductsAndRemoveItForRest 1",
+                "ERROR: Could not determine discount because regular price empty or negative",
+                alsoEmail = false
             )
         }
     }
@@ -2272,7 +2047,11 @@ private fun checkProductCategories(credentials: String) {
     for (category in categories) {
         val productCount = category.count
         if (productCount < 10) {
-            println("WARNING: Category '${category.name}' contains only $productCount products.")
+            logError(
+                "SAKIS categories with few products",
+                "ERROR: Category '${category.name}' contains only $productCount products.",
+                alsoEmail = false
+            )
         }
     }
 }
@@ -2292,7 +2071,11 @@ private fun checkProductAttributes(allAttributes: List<Attribute>, credentials: 
         for (term in terms) {
             val productCount = term.count
             if (productCount < 10) {
-                println("WARNING: Attribute '${attribute.name}' with term '${term.name}' contains only $productCount products.")
+                logError(
+                    "SAKIS attributes with few products",
+                    "ERROR: Attribute '${attribute.name}' with term '${term.name}' contains only $productCount products.",
+                    alsoEmail = false
+                )
             }
         }
     }
@@ -2312,26 +2095,31 @@ private fun checkProductTags(credentials: String) {
         if (tag.name=="ΕΤΟΙΜΟ ΓΙΑ ΑΝΕΒΑΣΜΑ") continue
         val productCount = tag.count
         if (productCount!! < 10) {
-            println("WARNING: Tag '${tag.name}' contains $productCount products.")
+            logError(
+                "SAKIS tags with few products",
+                "ERROR: Tag '${tag.name}' only contains $productCount products.",
+                alsoEmail = false
+            )
         }
     }
 }
-
 
 private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product) {
     product.attributes.let { attributes ->
         if (attributes.none { it.variation }) {
             logError(
-                "checkForNonSizeAttributesUsedForVariationsEgColour 1",
-                "ERROR: Product ${product.sku} has no attributes used for variations."
+                "SAKIS checkForNonSizeAttributesUsedForVariationsEgColour 1",
+                "ERROR: Product ${product.sku} has no attributes used for variations.",
+                alsoEmail = false
             )
             println("LINK: ${product.permalink}")
         }
         attributes.forEach { attribute ->
             if (!attribute.name.equals("Μέγεθος", ignoreCase = true) && attribute.variation) {
                 logError(
-                    "checkForNonSizeAttributesUsedForVariationsEgColour 2",
-                    "ERROR: Product ${product.sku} has the '${attribute.name}' attribute marked as used for variations."
+                    "SAKIS checkForNonSizeAttributesUsedForVariationsEgColour 2",
+                    "ERROR: Product ${product.sku} has the '${attribute.name}' attribute marked as used for variations.",
+                    alsoEmail = false
                 )
                 println("LINK: ${product.permalink}")
             }
@@ -2356,8 +2144,9 @@ fun checkForMissingSizeVariations(product: Product, productVariations: List<Vari
 
         if (!variationExists) {
             logError(
-                "checkForMissingSizeVariations 1",
-                "ERROR: Product SKU ${product.sku} is missing a variation for size $size."
+                "SAKIS checkForMissingSizeVariations 1",
+                "ERROR: Product SKU ${product.sku} is missing a variation for size $size.",
+                alsoEmail = false
             )
             println("LINK: ${product.permalink}")
         }
@@ -2375,8 +2164,9 @@ fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
             val allOutOfStock = productVariations.all { it.stock_status=="outofstock" }
             if (allOutOfStock) {
                 logError(
-                    "checkForOldProductsThatAreOutOfStockAndMoveToPrivate 1",
-                    "ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago."
+                    "SAKIS checkForOldProductsThatAreOutOfStockAndMoveToPrivate 1",
+                    "ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.",
+                    alsoEmail = false
                 )
                 println("LINK: ${product.permalink}")
                 if (shouldMoveOldOutOfStockProductsToPrivate) {
@@ -2411,6 +2201,7 @@ private fun updateProductStatusToPrivate(
         }
     }
 }
+
 
 fun checkPluginsList(wordPressWriteCredentials: String) {
     val plugins = fetchInstalledPlugins(wordPressWriteCredentials)
@@ -2469,7 +2260,11 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     }
 
     if (newPlugins.isNotEmpty()) {
-        logError("checkForPluginChanges 1", "ERROR: The following plugins have been installed:")
+        logError(
+            "SAKIS checkForPluginChanges 1",
+            "ERROR: The following plugins have been installed:",
+            alsoEmail = false
+        )
         newPlugins.forEach {
             println(it.name)
             println("v${it.version}")
@@ -2479,12 +2274,20 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     }
 
     if (deletedPlugins.isNotEmpty()) {
-        logError("checkForPluginChanges 2", "ERROR: The following ${deletedPlugins.size} plugins have been deleted:")
+        logError(
+            "SAKIS checkForPluginChanges 2",
+            "ERROR: The following ${deletedPlugins.size} plugins have been deleted:",
+            alsoEmail = false
+        )
         deletedPlugins.forEach { println("- ${it.name} v${it.version}") }
     }
 
     if (updatedPlugins.isNotEmpty()) {
-        logError("checkForPluginChanges 3", "ERROR: The following ${updatedPlugins.size} plugins have been updated:")
+        logError(
+            "SAKIS checkForPluginChanges 3",
+            "ERROR: The following ${updatedPlugins.size} plugins have been updated:",
+            alsoEmail = false
+        )
         updatedPlugins.forEach { println("- ${it.name} updated to v${it.version}") }
 
         // Update the versions in storedPlugins
@@ -2515,7 +2318,11 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     }
 
     if (disabledPlugins.isNotEmpty()) {
-        logError("checkForPluginChanges 4", "ERROR: The following plugins have been enabled/disabled:")
+        logError(
+            "SAKIS checkForPluginChanges 4",
+            "ERROR: The following plugins have been enabled/disabled:",
+            alsoEmail = false
+        )
         disabledPlugins.forEach { println("- ${it.name} updated to ${it.status}") }
     }
 }
@@ -2584,8 +2391,9 @@ fun checkPaymentMethodsInLastMonths(orders: List<Order>) {
     allPaymentMethods.forEach { method ->
         if (!usedPaymentMethods.contains(method)) {
             logError(
-                "checkPaymentMethodsInLastMonths 1",
-                "ERROR: The payment method '$method' has not been used in the last $numberOfMonths months."
+                "SAKIS checkPaymentMethodsInLastMonths 1",
+                "ERROR: The payment method '$method' has not been used in the last $numberOfMonths months.",
+                alsoEmail = false
             )
         }
     }
@@ -2623,7 +2431,7 @@ fun sendAlertEmail(subject: String, message: String) {
 
 fun shouldSendEmailForCategory(category: String): Boolean {
     val lastSent = emailThrottleCache[category]
-    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 7
+    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 12
 }
 
 fun loadEmailThrottleCache(): MutableMap<String, LocalDate> {

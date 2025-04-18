@@ -127,7 +127,7 @@
   },
   {
     "name": "Google Analytics for WooCommerce",
-    "version": "2.1.13",
+    "version": "2.1.14",
     "status": "active",
     "description": {
       "rendered": "Allows Google Analytics tracking code to be inserted into WooCommerce store pages. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
@@ -199,7 +199,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.10.2",
+    "version": "4.10.3",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -352,7 +352,7 @@
   },
   {
     "name": "Web Expert Piraeus Bank WooCommerce Payment Gateway",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "status": "active",
     "description": {
       "rendered": "Web Expert Piraeus Bank WooCommerce Payment Gateway allows you to accept payments through various credit cards such as Maestro, Mastercard, and Visa on your Woocommerce Site. <cite>By <a href=\"http://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -361,7 +361,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.81",
+    "version": "1.0.82",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -487,7 +487,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.5",
+    "version": "4.7.6",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -550,7 +550,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "24.8.1",
+    "version": "24.9",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
