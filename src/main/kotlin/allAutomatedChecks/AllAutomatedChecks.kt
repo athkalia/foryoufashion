@@ -79,10 +79,10 @@ const val shouldDiscountProductPriceBasedOnLastSaleDate = true
 const val shouldAddGenericPhotoshootTag = true
 
 // One-off updates
-const val shouldSwapDescriptions = false
 const val shouldAutomaticallyDeleteUnusedImages = false
 const val shouldCheckForLargeImagesOutsideMediaLibraryFromFTP = false
 const val shouldDeleteLargeImagesOutsideMediaLibraryFromFTP = false
+
 
 val allApiUpdateVariables = listOf(
     shouldMoveOldOutOfStockProductsToPrivate,
@@ -92,7 +92,6 @@ val allApiUpdateVariables = listOf(
     shouldRemoveEmptyLinesFromDescriptions,
     shouldPopulateMissingImageAltText,
     shouldDiscountProductPriceBasedOnLastSaleDate,
-    shouldSwapDescriptions,
     shouldDeleteLargeImagesOutsideMediaLibraryFromFTP,
     shouldAddGenericPhotoshootTag
 )
@@ -281,10 +280,10 @@ fun checkCasualProductsInCasualForemataCategory(product: Product) {
 
 
 fun checkForMikosAttributeInForemataCategory(product: Product) {
-    val forematoCategorySlug = "foremata"
+    val foremataCategorySlug = "foremata"
     val mikosAttributeName = "Μήκος"
 
-    val isInForemataCategory = product.categories.any { it.slug==forematoCategorySlug }
+    val isInForemataCategory = product.categories.any { it.slug==foremataCategorySlug }
 
     if (isInForemataCategory) {
         val mikosAttribute = product.attributes.find { it.name.equals(mikosAttributeName, ignoreCase = true) }
@@ -755,14 +754,16 @@ fun checkForMissingGalleryVideo(product: Product) {
             "59109-514", "59109-550", "58515-029", "56065-547", "59016-019", "58996-005", "59030-096", "59039-281",
             "59039-003", "58995-051", "59033-013", "59064-281", "59017-004", "59017-281", "59018-013", "58301-003",
             "59040-004", "59040-289", "59023-023", "59020-027", "59020-023", "59045-097", "58210-293", "58205-027",
-            "55627-561", "58956-097", "58959-097", "58957-097", "58983-005", "59117-012", "58823-488",
+            "55627-561", "58956-097", "58959-097", "58957-097", "58983-005", "59117-012", "58823-488", "57661-097"
         )
     ) {
         val startTargetDate = LocalDate.of(2024, 3, 1)
-        val endTargetDate = LocalDate.now().minusMonths(3)
+        val endTargetDate = LocalDate.now().minusMonths(2)
         val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         if (productCreationDate.isAfter(startTargetDate) && productCreationDate.isBefore(endTargetDate)) {
-            val galleryVideoMetaData = product.meta_data.find { it.key=="gallery_video" }
+            val metaData = product.meta_data
+            // println("DEBUG: meta_data: $metaData")
+            val galleryVideoMetaData = metaData.find { it.key=="gallery_video" }
             val isGalleryVideoMissing = galleryVideoMetaData==null || (galleryVideoMetaData.value as String).isBlank()
             if (isGalleryVideoMissing) {
                 logError(
@@ -1188,7 +1189,7 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
             )
         }
         if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)
-            || !product.short_description.contains("one size", ignoreCase = true)
+            && !product.short_description.contains("one size", ignoreCase = true)
         ) {
             logError(
                 "Προιον με περιγραφη χωρις το μεγεθος του μοντελου που το φοραει",
@@ -1200,22 +1201,43 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
 
 fun checkForMissingSizeGuide(product: Product) {
 //    println("DEBUG: product meta data ${product.meta_data}")
-    val metaData = product.meta_data
-    val sizeGuideMetaData = metaData.find { it.key=="size_guide" }
-    val isEmpty = if (sizeGuideMetaData!=null) {
-        when (val sizeGuideMetaDataValue = sizeGuideMetaData.value) {
-            is List<*> -> sizeGuideMetaDataValue.isEmpty()
-            is String -> sizeGuideMetaDataValue.isBlank()
-            else -> true
+    val specialOccasionCategorySlug = "special-occasion"
+    val foremataCategorySlug = "foremata"
+    val plusSizeCategorySlug = "plus-size"
+    val olosomesFormesCategorySlug = "olosomes-formes"
+    val nyfikaForemataCategorySlug = "nyfika-foremata"
+    val casualForemataCategorySlug = "casual-foremata"
+
+    val isInSpecialOccasionCategory = product.categories.any { it.slug==specialOccasionCategorySlug }
+    val isInForemataCategory = product.categories.any { it.slug==foremataCategorySlug }
+    val isInPlusSizeCategory = product.categories.any { it.slug==plusSizeCategorySlug }
+    val isInOlosomesFormesCategory = product.categories.any { it.slug==olosomesFormesCategorySlug }
+    val isInNyfikaForemataCategory = product.categories.any { it.slug==nyfikaForemataCategorySlug }
+    val isIncasualForemataCategory = product.categories.any { it.slug==casualForemataCategorySlug }
+
+    if ((isInSpecialOccasionCategory ||
+                isInForemataCategory ||
+                isInPlusSizeCategory ||
+                isInOlosomesFormesCategory ||
+                isInNyfikaForemataCategory) && !isIncasualForemataCategory
+    ) {
+        val metaData = product.meta_data
+        val sizeGuideMetaData = metaData.find { it.key=="size_guide" }
+        val isEmpty = if (sizeGuideMetaData!=null) {
+            when (val sizeGuideMetaDataValue = sizeGuideMetaData.value) {
+                is List<*> -> sizeGuideMetaDataValue.isEmpty()
+                is String -> sizeGuideMetaDataValue.isBlank()
+                else -> true
+            }
+        } else {
+            true
         }
-    } else {
-        true
-    }
-    if (isEmpty) {
-        logError(
-            "Προιον χωρις οδηγο μεγεθους",
-            "ΣΦΑΛΜΑ: Δεν υπάρχει οδηγός μεγεθών για το προϊόν με SKU ${product.sku}\nLINK: ${product.permalink}"
-        )
+        if (isEmpty) {
+            logError(
+                "Προιον χωρις οδηγο μεγεθους",
+                "ΣΦΑΛΜΑ: Δεν υπάρχει οδηγός μεγεθών για το προϊόν με SKU ${product.sku}\nLINK: ${product.permalink}"
+            )
+        }
     }
 }
 
@@ -1361,30 +1383,29 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
                 "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει τις ίδιες σύντομες και κανονικες περιγραφες.\nLINK: ${product.permalink}"
             )
         }
-        if (product.short_description.length > product.description.length) {
-            logError(
-                "Προιον με συντομη περιγραφη μεγαλυτερη απο την κανονικη περιγραφη",
-                "ΣΦΑΛΜΑ: Η σύντομη περιγραφή είναι μεγαλύτερη από την κανονικη περιγραφη για το προϊόν με SKU ${product.sku}.\nLINK: ${product.permalink}"
-            )
-//        println("DEBUG: long description ${product.description}")
-//        println("DEBUG: short description ${product.short_description}")
-            if (shouldSwapDescriptions) {
-                swapProductDescriptions(product, credentials)
+        val startTargetDate = LocalDate.of(2025, 4, 20)
+        val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        if (productCreationDate.isAfter(startTargetDate)) {
+            if (product.short_description.length < 140 || product.short_description.length > 300) {
+                logError(
+                    "Προιον με συντομη περιγραφη προιοντος με λαθος μηκος",
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει σύντομη περιγραφή με μη έγκυρο μήκος (${product.short_description.length} χαρακτήρες)" +
+                            "\n Πρεπει να ειναι απο 140 μεχρι 300 χαρακτηρες. Μετρησε το εδω https://www.charactercountonline.com/\n LINK: ${product.permalink}."
+                )
             }
         }
-        if (product.short_description.length < 140 || product.short_description.length > 300) {
-            logError(
-                "Προιον με συντομη περιγραφη προιοντος με λαθος μηκος",
-                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει σύντομη περιγραφή με μη έγκυρο μήκος (${product.short_description.length} χαρακτήρες)" +
-                        "\n Πρεπει να ειναι απο 140 μεχρι 300 χαρακτηρες. Μετρησε το εδω https://www.charactercountonline.com/\n LINK: ${product.permalink}."
+        if (product.sku !in listOf(
+                "51746-332", "59431-1282", "58736-005", "58736-001", "59370-003", "59041-595",
+                "59182-514", "59073-514", "59072-514", "58072-040"
             )
-        }
-        if (product.description.length < 250 || product.description.length > 550) {
-            logError(
-                "Προιον με περιγραφη προιοντος με λαθος μηκος",
-                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει περιγραφή με μη έγκυρο μήκος (${product.description.length} χαρακτήρες)" +
-                        "\n Πρεπει να ειναι απο 250 μεχρι 550 χαρακτηρες. Μετρησε το εδω https://www.charactercountonline.com/\n LINK: ${product.permalink}."
-            )
+        ) {
+            if (product.description.length < 250 || product.description.length > 550) {
+                logError(
+                    "Προιον με περιγραφη προιοντος με λαθος μηκος",
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει περιγραφή με μη έγκυρο μήκος (${product.description.length} χαρακτήρες)" +
+                            "\n Πρεπει να ειναι απο 250 μεχρι 550 χαρακτηρες. Μετρησε το εδω https://www.charactercountonline.com/\n LINK: ${product.permalink}."
+                )
+            }
         }
         if (product.description.contains("&nbsp;")) {
             logError(
@@ -1840,14 +1861,6 @@ private fun updateProductDescriptions(
             throw IOException("Unexpected code $response, body: $responseBody")
         }
     }
-}
-
-
-private fun swapProductDescriptions(
-    product: Product, credentials: String
-) {
-    println("reversing descriptions for product ${product.sku}")
-    updateProductDescriptions(product, product.description, product.short_description, credentials)
 }
 
 fun updateNeesAfikseisProducts(products: List<Product>, credentials: String) {
