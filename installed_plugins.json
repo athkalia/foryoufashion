@@ -19,7 +19,7 @@
   },
   {
     "name": "Broken Link Checker",
-    "version": "2.4.2",
+    "version": "2.4.3",
     "status": "active",
     "description": {
       "rendered": "Checks your blog for broken links and notifies you on the dashboard if any are found."
@@ -43,24 +43,6 @@
       "rendered": "Track orders in one place. shipment tracking, automated notifications, order lookup, branded tracking page, delivery day prediction <cite>By <a href=\"http://aftership.com\">AfterShip</a>.</cite>"
     },
     "sakis_description": "missing"
-  },
-  {
-    "name": "B2BKing Core",
-    "version": "4.7.10",
-    "status": "inactive",
-    "description": {
-      "rendered": "B2BKing is the complete solution for turning WooCommerce into an enterprise-level B2B e-commerce platform. Core Plugin. <cite>By <a href=\"http://webwizards.dev\">WebWizards</a>.</cite>"
-    },
-    "sakis_description": "Old b2b plugin"
-  },
-  {
-    "name": "B2BKing Pro",
-    "version": "4.5.30",
-    "status": "inactive",
-    "description": {
-      "rendered": "B2BKing is the complete solution for turning WooCommerce into an enterprise-level B2B e-commerce platform. <cite>By <a href=\"http://webwizards.dev\">WebWizards</a>.</cite>"
-    },
-    "sakis_description": "Old b2b plugin"
   },
   {
     "name": "Category Order and Taxonomy Terms Order",
@@ -217,7 +199,7 @@
   },
   {
     "name": "Payment Gateway Based Fees and Discounts for WooCommerce",
-    "version": "2.16.0",
+    "version": "2.17.0",
     "status": "inactive",
     "description": {
       "rendered": "Set payment gateways fees and discounts in WooCommerce. <cite>By <a href=\"https://www.tychesoftwares.com/\">Tyche Softwares</a>.</cite>"
@@ -226,7 +208,7 @@
   },
   {
     "name": "Payment Plugins for Stripe WooCommerce",
-    "version": "3.3.84",
+    "version": "3.3.86",
     "status": "active",
     "description": {
       "rendered": "Accept Credit Cards, Google Pay, Apple Pay, ACH, Klarna and more using Stripe. <cite>By Payment Plugins, support@paymentplugins.com.</cite>"
@@ -361,7 +343,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.82",
+    "version": "1.0.84",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -406,7 +388,7 @@
   },
   {
     "name": "WooCommerce",
-    "version": "9.7.1",
+    "version": "9.8.3",
     "status": "active",
     "description": {
       "rendered": "Μια e-commerce πλατφόρμα που θα σας βοηθήσει να πουλήσετε τα πάντα. Όμορφα. <cite>By <a href=\"https://woocommerce.com\">Automattic</a>.</cite>"
@@ -424,7 +406,7 @@
   },
   {
     "name": "WooCommerce Advanced Bulk Edit",
-    "version": "5.5.1.4",
+    "version": "5.5.2.3",
     "status": "active",
     "description": {
       "rendered": "Edit your products both individually or in bulk. <cite>By <a href=\"https://wpmelon.com\">George Iron &amp; Yas G.</a>.</cite>"
@@ -478,7 +460,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "3.0.3",
+    "version": "3.0.5",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -496,7 +478,7 @@
   },
   {
     "name": "WooCommerce Smart COD",
-    "version": "1.7.2",
+    "version": "1.7.3",
     "status": "active",
     "description": {
       "rendered": "A powerful plugin that extends WooCommerce COD (Cash on Delivery) Gateway, supporting multiple extra fees and a multiple factor gateway restriction. <cite>By <a href=\"https://woosmartcod.com\">woosmartcod.com</a>.</cite>"
@@ -505,7 +487,7 @@
   },
   {
     "name": "Mailchimp for WooCommerce",
-    "version": "5.2",
+    "version": "5.4",
     "status": "active",
     "description": {
       "rendered": "Connects WooCommerce to Mailchimp to sync your store data, send targeted campaigns to your customers, and sell more stuff"
@@ -515,11 +497,11 @@
   {
     "name": "WP File Manager",
     "version": "8.0.1",
-    "status": "active",
+    "status": "deleted",
     "description": {
       "rendered": "Manage your WP files. <cite>By <a href=\"https://profiles.wordpress.org/mndpsingh287\">mndpsingh287</a>.</cite>"
     },
-    "sakis_description": "missing"
+    "sakis_description": "Plugin that I installed to edit files directly on the server (some nginx redirect config). Seems like webexpert deleted it without asking me"
   },
   {
     "name": "WP Mail SMTP",
@@ -532,7 +514,7 @@
   },
   {
     "name": "WP Rocket",
-    "version": "3.18.2",
+    "version": "3.18.3",
     "status": "active",
     "description": {
       "rendered": "The best WordPress performance plugin. <cite>By <a href=\"https://wp-media.me\">WP Media</a>.</cite>"
@@ -550,7 +532,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "24.9",
+    "version": "25.0",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
@@ -568,7 +550,7 @@
   },
   {
     "name": "Klaviyo",
-    "version": "3.4.3",
+    "version": "3.5.0",
     "status": "active",
     "description": {
       "rendered": "A plugin to automatically sync your WooCommerce sales, products and customers with Klaviyo. With Klaviyo you can set up abandoned cart emails, collect emails for your newsletter to grow your business. <cite>By <a href=\"https://www.klaviyo.com\">Klaviyo, Inc.</a>.</cite>"
@@ -583,5 +565,32 @@
       "rendered": "The first Google Tag Manager plugin for WordPress with business goals in mind <cite>By <a href=\"https://gtm4wp.com/\">Thomas Geiger</a>.</cite>"
     },
     "sakis_description": "I installed this myself, after Google's recommendation to have actions for google ads around form submission and increasing phone calls"
+  },
+  {
+    "name": "TikTok",
+    "version": "1.3.1",
+    "status": "active",
+    "description": {
+      "rendered": "With the TikTok x WooCommerce integration, it&#8217;s easier than ever to unlock innovative social commerce features for your business to drive traffic and sales to a highly engaged community. With guided &amp; simple setup prompts, you can sync your WooCommerce product catalog and promote it with custom ads without leaving your dashboard. Also, in just 1 click you can install the most-advanced TikTok pixel to unlock advanced visibility into detailed campaign performance tracking. Reach over 1 billion users, globally, and drive more e-commerce sales when you sell via one of the world’s most downloaded applications! <cite>By TikTok.</cite>"
+    },
+    "sakis_description": "Official tik tok plugin (for pixel)"
+  },
+  {
+    "name": "WooCommerce Wholesale Prices",
+    "version": "2.2.3",
+    "status": "active",
+    "description": {
+      "rendered": "WooCommerce Extension to Provide Wholesale Prices Functionality <cite>By <a href=\"http://rymera.com.au/\">Rymera Web Co</a>.</cite>\n"
+    },
+    "sakis_description": "B2B plugin"
+  },
+  {
+    "name": "WooCommerce Wholesale Prices Premium",
+    "version": "2.0.4",
+    "status": "active",
+    "description": {
+      "rendered": "WooCommerce Premium Extension for the Woocommerce Wholesale Prices Plugin <cite>By <a href=\"http://rymera.com.au/\">Rymera Web Co</a>.</cite>\n"
+    },
+    "sakis_description": "B2B plugin"
   }
 ]
