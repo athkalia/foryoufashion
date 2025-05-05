@@ -17,19 +17,22 @@ import readOnlyConsumerKey
 import readOnlyConsumerSecret
 import sakisForYouFashionEmailPassword
 
-const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 0.0
+const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 2500.0
+const val monthlyMarketingPayment: Double = 400.0
+const val totalMarketingSpendIncludingMonthlyPayment =   MANUAL_INPUT_totalMarketingExpensesForMonth + monthlyMarketingPayment
 const val test = true
+const val thisMonth = false
 
 fun main(args: Array<String>) {
     val toEmail = if (test) "sakis@foryoufashion.gr" else "ads@conversion.gr"
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
-    val previousMonthDate = getPreviousMonthDate()
-    val currentMonthOrders = fetchOrders(previousMonthDate, credentials)
+    val month = if (thisMonth) getCurrentMonth() else getPreviousMonthDate()
+    val currentMonthOrders = fetchOrders(month, credentials)
     val totalRevenue = calculateTotalRevenue(currentMonthOrders)
     val nonCompletedOrdersPercentage = calculateNonCompletedOrdersPercentage(currentMonthOrders)
     val completedRevenue = calculateCompletedRevenue(currentMonthOrders)
 
-    val monthAndYear = previousMonthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+    val monthAndYear = month.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val emailContent = generateEmailContent(
         totalRevenue,
         nonCompletedOrdersPercentage,
@@ -41,6 +44,7 @@ fun main(args: Array<String>) {
 }
 
 private fun getPreviousMonthDate(): LocalDate = LocalDate.now().minusMonths(1)
+private fun getCurrentMonth(): LocalDate = LocalDate.now().minusMonths(0)
 
 fun fetchOrders(previousMonthDate: LocalDate, credentials: String): List<Order> {
     println("Fetching orders..")
@@ -100,8 +104,8 @@ fun generateEmailContent(
         - Συνολικές Πωλήσεις: €${"%.2f".format(allOrdersRevenue)}
         - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue)}
         - Μη ολοκληρωμένες παραγγελίες %: ${"%.2f".format(nonCompletedOrdersPercentage)}%
-        - Συνολικά έξοδα marketing για το μήνα: €${"%.2f".format(MANUAL_INPUT_totalMarketingExpensesForMonth)} 
-        - Συνολικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / MANUAL_INPUT_totalMarketingExpensesForMonth)} 
+        - Συνολικά έξοδα marketing για το μήνα: €${"%.2f".format(totalMarketingSpendIncludingMonthlyPayment)} 
+        - Συνολικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / totalMarketingSpendIncludingMonthlyPayment)} 
 
         Φιλικά,
         Σάκης
