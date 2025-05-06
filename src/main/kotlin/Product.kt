@@ -136,7 +136,8 @@ data class Attribute(
     val id: Int? = null,
     val name: String,
     val variation: Boolean,
-    val option: String?,
+    val visible: Boolean,
+    val option: String?= null,
     val options: List<String>? = null,
 )
 

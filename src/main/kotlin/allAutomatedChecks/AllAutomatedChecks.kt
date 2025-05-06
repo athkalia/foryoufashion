@@ -82,6 +82,7 @@ const val shouldAddGenericPhotoshootTag = true
 const val shouldAutomaticallyDeleteUnusedImages = false
 const val shouldCheckForLargeImagesOutsideMediaLibraryFromFTP = false
 const val shouldDeleteLargeImagesOutsideMediaLibraryFromFTP = false
+const val shouldUpdateProductsWithoutABrandToForYou = false
 
 
 val allApiUpdateVariables = listOf(
@@ -93,7 +94,8 @@ val allApiUpdateVariables = listOf(
     shouldPopulateMissingImageAltText,
     shouldDiscountProductPriceBasedOnLastSaleDate,
     shouldDeleteLargeImagesOutsideMediaLibraryFromFTP,
-    shouldAddGenericPhotoshootTag
+    shouldAddGenericPhotoshootTag,
+    shouldUpdateProductsWithoutABrandToForYou
 )
 
 private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
@@ -178,7 +180,7 @@ fun main() {
             checkPhotoshootTags(product, credentials)
             checkForGreekCharactersInSlug(product)
             checkForMikosAttributeInForemataCategory(product)
-            checkForMissingAttributesInProduct(product, allAttributes)
+            checkForMissingAttributesInProduct(product, allAttributes, credentials)
             checkCasualProductsInCasualForemataCategory(product)
             checkForMissingImages(product)
             checkForTyposInProductText(product)
@@ -278,7 +280,6 @@ fun checkCasualProductsInCasualForemataCategory(product: Product) {
     }
 }
 
-
 fun checkForMikosAttributeInForemataCategory(product: Product) {
     val foremataCategorySlug = "foremata"
     val mikosAttributeName = "Μήκος"
@@ -299,7 +300,7 @@ fun checkForMikosAttributeInForemataCategory(product: Product) {
 fun discountProductBasedOnLastSale(allProducts: List<Product>, orders: List<Order>, credentials: String) {
     val baseSkuMap = allProducts.groupBy { it.sku.substringBefore('-') }
     baseSkuMap.forEach { (baseSku, products) ->
-        println("DEBUG: Processing baseSku :$baseSku")
+        // println("DEBUG: Processing baseSku :$baseSku")
         // Step 3: Find the product with the latest creation date in the group
         val monthsSinceLastSale = products.minOf { product ->
             val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -380,7 +381,7 @@ fun applyDiscountToVariationIfNecessary(
     updateProductPrice(product.id, variationId = variation.id, adjustedSalePrice, PriceType.SALE_PRICE, credentials)
 }
 
-fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Attribute>) {
+fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Attribute>, credentials: String) {
     val productAttributeNames = product.attributes.map { it.name.lowercase(Locale.getDefault()) }
     val brandAttributeName = "Brand"
     allAttributes.forEach { attribute ->
@@ -389,8 +390,11 @@ fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Att
             if (attributeName==brandAttributeName.lowercase(Locale.getDefault())) {
                 logError(
                     "Λειπει το 'brand' απο το προιον",
-                    "ΣΦΑΛΜΑ: Το προιον με SKU ${product.sku} δεν εχει 'brand'\nLINK: ${product.permalink}",
+                    "ΣΦΑΛΜΑ: Το προιον με SKU ${product.sku} δεν εχει 'brand'\nLINK: ${product.permalink}"
                 )
+                if (shouldUpdateProductsWithoutABrandToForYou) {
+                    addForYouBrandAttribute(product, credentials)
+                }
             } else {
                 logError(
                     "SAKIS MissingOtherAttributes",
@@ -398,6 +402,38 @@ fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Att
                     alsoEmail = false
                 )
                 println("LINK: ${product.permalink}")
+            }
+        }
+    }
+}
+
+fun addForYouBrandAttribute(product: Product, credentials: String) {
+    val brandAttribute = Attribute(
+        id = 15,
+        name = "Brand",
+        variation = false,
+        options = listOf("For You"),
+        visible = true,
+    )
+
+    val updatedAttributes = product.attributes.toMutableList().apply { add(brandAttribute) }
+
+    val data = mapper.writeValueAsString(mapOf("attributes" to updatedAttributes))
+    // println("DEBUG: REQUEST BODY: $data")
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+
+    val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
+
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string() ?: ""
+            // println("DEBUG: RESPONSE BODY: $responseBody")
+            if (!response.isSuccessful) {
+                println("Error adding Brand attribute to product ${product.id}: $responseBody")
+                throw IOException("Unexpected code $response")
+            } else {
+                println("ACTION: Successfully added default Brand attribute to product ${product.sku}")
             }
         }
     }
@@ -724,7 +760,9 @@ fun checkForMissingGalleryVideo(product: Product) {
             "59109-514", "59109-550", "58515-029", "56065-547", "59016-019", "58996-005", "59030-096", "59039-281",
             "59039-003", "58995-051", "59033-013", "59064-281", "59017-004", "59017-281", "59018-013", "58301-003",
             "59040-004", "59040-289", "59023-023", "59020-027", "59020-023", "59045-097", "58210-293", "58205-027",
-            "55627-561", "58956-097", "58959-097", "58957-097", "58983-005", "59117-012", "58823-488", "57661-097"
+            "55627-561", "58956-097", "58959-097", "58957-097", "58983-005", "59117-012", "58823-488", "57661-097",
+            "59501-556", "55627-016", "58201-509", "57846-519", "56071-465", "57073-028", "57382-281", "56068-396",
+            "55627-027"
         )
     ) {
         val startTargetDate = LocalDate.of(2024, 3, 1)
@@ -1128,13 +1166,13 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
     if (!variation.sku.matches(finalProductVariationRegex)) {
         logError(
             "Λαθος SKU για προιον",
-            "ΣΦΑΛΜΑ: Το SKU του προϊόντος ${product.sku} φαινεται να ειναι λανθασμενο\nLINK: ${product.permalink}"
+            "ΣΦΑΛΜΑ: Το SKU της παραλλαγης ${variation.sku} φαινεται λανθασμενο\nLINK: ${product.permalink}"
         )
     }
     if (!variation.sku.startsWith(product.sku)) {
         logError(
             "Λαθος SKU για προιον",
-            "ΣΦΑΛΜΑ: Το SKU του προϊόντος ${product.sku} φαινεται να ειναι λανθασμενο\nLINK: ${product.permalink}"
+            "ΣΦΑΛΜΑ: Το SKU της παραλλαγης ${variation.sku} φαινεται να ειναι διαφορετικο απο του προιοντος ${product.sku}\nLINK: ${product.permalink}"
         )
     }
 }
@@ -1150,8 +1188,10 @@ fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
 
     // Check if the product was created on or after the target date
     if (productCreationDate.isAfter(startingCheckDate)) {
-        if (product.description.contains("μοντελο", ignoreCase = true) ||
-            product.description.contains("μοντέλο", ignoreCase = true)
+        val esarpesCategorySlug = "esarpes"
+        val isInEsarpesCategory = product.categories.any { it.slug==esarpesCategorySlug }
+        if ((product.description.contains("μοντελο", ignoreCase = true) ||
+                    product.description.contains("μοντέλο", ignoreCase = true)) && !isInEsarpesCategory
         ) {
             logError(
                 "'Το μοντελο φοραει' σε λαθος περιγραφη",
