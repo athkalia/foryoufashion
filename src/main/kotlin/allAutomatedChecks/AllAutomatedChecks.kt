@@ -65,7 +65,6 @@ const val readOnly = false
 const val shouldPerformVariationChecks = true
 const val checkMediaLibraryChecks = true
 
-// TODO private products that are in stock check
 // TODO check fwtografisi studio should be in all images that doesn't have ekswteriki fwtografisi
 
 // Recurring updates
@@ -211,6 +210,7 @@ fun main() {
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(allOrders, product, productVariations)
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
+                checkPrivateProductsInStock(product, productVariations)
                 for (variation in productVariations) {
 //                    println("DEBUG: variation SKU: ${variation.sku}")
                     checkStockManagementAtVariationLevel(variation, product)
@@ -2175,6 +2175,23 @@ fun checkForMissingSizeVariations(product: Product, productVariations: List<Vari
         }
     }
 }
+
+fun checkPrivateProductsInStock(product: Product, productVariations: List<Variation>) {
+    val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+    val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
+    val threeMonthsAgo = LocalDate.now().minusMonths(3)
+
+    if (product.status=="private" && productCreationDate.isBefore(threeMonthsAgo)) {
+        val anyVariationInStock = productVariations.any { it.stock_status=="instock" }
+        if (anyVariationInStock) {
+            logError(
+                "Private προϊόν σε στοκ",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} είναι ιδιωτικο, αλλά κάποια παραλλαγή του είναι σε στοκ.\nLINK: ${product.permalink}"
+            )
+        }
+    }
+}
+
 
 fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
     product: Product, productVariations: List<Variation>, credentials: String
