@@ -65,8 +65,6 @@ const val readOnly = false
 const val shouldPerformVariationChecks = true
 const val checkMediaLibraryChecks = true
 
-// TODO check fwtografisi studio should be in all images that doesn't have ekswteriki fwtografisi
-
 // Recurring updates
 const val shouldMoveOldOutOfStockProductsToPrivate = true
 const val shouldUpdatePricesToEndIn99 = true
@@ -76,6 +74,7 @@ const val shouldRemoveEmptyLinesFromDescriptions = true
 const val shouldPopulateMissingImageAltText = true
 const val shouldDiscountProductPriceBasedOnLastSaleDate = true
 const val shouldAddGenericPhotoshootTag = true
+const val shouldSyncTiktokVideoLinkFromGallery = true
 
 // One-off updates
 const val shouldAutomaticallyDeleteUnusedImages = false
@@ -772,13 +771,51 @@ fun checkForMissingGalleryVideo(product: Product) {
             val metaData = product.meta_data
             // println("DEBUG: meta_data: $metaData")
             val galleryVideoMetaData = metaData.find { it.key=="gallery_video" }
-            val isGalleryVideoMissing = galleryVideoMetaData==null || (galleryVideoMetaData.value as String).isBlank()
+            val galleryVideo = galleryVideoMetaData?.value as? String ?: ""
+            val isGalleryVideoMissing = galleryVideo.isBlank()
+            val tikTokVideoMetaData = metaData.find { it.key=="_tiktok_video_url" }
+            val tikTokVideo = tikTokVideoMetaData?.value as? String ?: ""
+            val isTikTokVideoMissing = tikTokVideo.isBlank()
             if (isGalleryVideoMissing) {
                 logError(
                     "Προιον χωρις βιντεο",
                     "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku}, δεν έχει βιντεο.\nLINK: ${product.permalink}"
                 )
             }
+            if (!isGalleryVideoMissing && !isTikTokVideoMissing && tikTokVideo!=galleryVideo) {
+                logError(
+                    "SAKIS Gallery video και TikTok video διαφέρουν",
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει διαφορετικά links για gallery_video και TikTok video.\nLINK: ${product.permalink}",
+                    alsoEmail = false
+                )
+            }
+            if (!isGalleryVideoMissing && isTikTokVideoMissing && shouldSyncTiktokVideoLinkFromGallery) {
+                println("ACTION: Copying gallery_video '$galleryVideo' to '_tiktok_video_url' for SKU ${product.sku}")
+                updateTiktokVideoUrl(product, galleryVideo)
+            }
+        }
+    }
+}
+
+fun updateTiktokVideoUrl(product: Product, videoUrl: String) {
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val payload = mapper.writeValueAsString(
+        mapOf("meta_data" to listOf(mapOf("key" to "_tiktok_video_url", "value" to videoUrl)))
+    )
+    val body = payload.toRequestBody("application/json".toMediaTypeOrNull())
+    val request = Request.Builder()
+        .url(url)
+        .put(body)
+        .header("Authorization", Credentials.basic(writeConsumerKey, writeConsumerSecret))
+        .build()
+
+    client.newCall(request).execute().use { response ->
+        val responseBody = response.body?.string()
+        if (!response.isSuccessful) {
+            println("ERROR: Failed to update TikTok video URL for product ${product.id}: $responseBody")
+            throw IOException("Unexpected code $response")
+        } else {
+            println("SUCCESS: Updated TikTok video URL for product ${product.sku}")
         }
     }
 }
