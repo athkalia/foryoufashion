@@ -177,6 +177,7 @@ fun main() {
             checkFwtografisiStudioEkswterikiTag(product)
             checkPhotoshootTags(product, credentials)
             checkForGreekCharactersInSlug(product)
+            checkOneSizeIsOnlySize(product)
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes, credentials)
             checkCasualProductsInCasualForemataCategory(product)
@@ -1214,28 +1215,53 @@ fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
     }
 }
 
+fun checkOneSizeIsOnlySize(product: Product) {
+    if (product.status!="publish") return
+
+    val sizeAttribute = product.attributes.find {
+        it.name.equals("Μέγεθος", ignoreCase = true)
+    }
+
+    if (sizeAttribute!=null) {
+        val sizeOptions = sizeAttribute.options!!.map { it.trim().lowercase() }.toSet()
+        val hasOneSize = sizeOptions.any { it=="one size" }
+        val hasOtherSizes = sizeOptions.any { it!="one size" }
+
+        if (hasOneSize && hasOtherSizes) {
+            logError(
+                "Προϊόν με 'One size' αλλά και άλλα μεγέθη",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει 'One size' μαζί με άλλα μεγέθη: ${sizeAttribute.options.joinToString()}.\nLINK: ${product.permalink}"
+            )
+        }
+    }
+}
+
 fun checkForMissingToMonteloForaeiTextInDescription(product: Product) {
     if (product.status!="publish" || product.sku in listOf("53860-289-01", "53860-014-01")) {
         return
     }
-    // Define the target date
     val startingCheckDate = LocalDate.of(2024, Month.AUGUST, 9)
     val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
     val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
 
-    // Check if the product was created on or after the target date
     if (productCreationDate.isAfter(startingCheckDate)) {
-        val esarpesCategorySlug = "esarpes"
-        val isInEsarpesCategory = product.categories.any { it.slug==esarpesCategorySlug }
+        // Exclude products that are explicitly one size
+        val isOneSize = product.attributes.any {
+            it.name.equals("Μέγεθος", ignoreCase = true) &&
+                    it.options!!.any { option -> option.equals("One size", ignoreCase = true) }
+        }
+        if (isOneSize) {
+            return
+        }
         if ((product.description.contains("μοντελο", ignoreCase = true) ||
-                    product.description.contains("μοντέλο", ignoreCase = true)) && !isInEsarpesCategory
+                    product.description.contains("μοντέλο", ignoreCase = true))
         ) {
             logError(
                 "'Το μοντελο φοραει' σε λαθος περιγραφη",
                 "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} περιλαμβάνει πληροφορίες για το μέγεθος που φοράει το μοντέλο στην αναλυτική περιγραφή αντι για τη συντομη\nLINK: ${product.permalink}"
             )
         }
-        if (!product.short_description.contains("το μοντέλο φοράει", ignoreCase = true)
+        if (!product.short_description.contains("μοντέλο φοράει", ignoreCase = true)
             && !product.short_description.contains("one size", ignoreCase = true)
         ) {
             logError(
@@ -2325,7 +2351,7 @@ fun checkForPluginChanges(storedPlugins: List<Plugin>, currentPlugins: List<Plug
     }
 
     val deletedPlugins = storedPlugins.filterNot { stored ->
-        currentPlugins.any { plugin -> plugin.name==stored.name }
+        currentPlugins.any { plugin -> plugin.name==stored.name } || stored.status=="deleted"
     }
 
     val updatedPlugins = currentPlugins.filter { current ->

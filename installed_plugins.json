@@ -145,7 +145,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "14.5",
+    "version": "14.6",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -164,18 +164,18 @@
   {
     "name": "Klarna Order Management for WooCommerce",
     "version": "1.9.6",
-    "status": "active",
+    "status": "inactive",
     "description": {
       "rendered": "Provides order management for Klarna Payments and Klarna Checkout gateways. <cite>By <a href=\"https://krokedil.se/\">klarna, krokedil</a>.</cite>"
     },
     "sakis_description": "missing"
   },
   {
-    "name": "Klarna Payments for WooCommerce",
-    "version": "3.9.1",
+    "name": "Klarna for WooCommerce",
+    "version": "4.1.2",
     "status": "inactive",
     "description": {
-      "rendered": "Provides Klarna Payments as payment method to WooCommerce. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>"
+      "rendered": "Provides Klarna as a payment method to WooCommerce and Klarna conversion boosters. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>\n"
     },
     "sakis_description": "missing"
   },
@@ -277,6 +277,15 @@
       "rendered": "Display beautifully clean, customizable, and responsive Instagram feeds. <cite>By <a href=\"https://smashballoon.com/\">Smash Balloon</a>.</cite>"
     },
     "sakis_description": "missing"
+  },
+  {
+    "name": "WooCommerce Back In Stock Notifications",
+    "version": "3.2.0",
+    "status": "active",
+    "description": {
+      "rendered": "Ειδοποιήστε τους πελάτες σας όταν τα αγαπημένα τους προϊόντα είναι ξανά διαθέσιμα. <cite>By <a href=\"https://woocommerce.com/\">Woo</a>.</cite>\n"
+    },
+    "sakis_description": "self explanatory"
   },
   {
     "name": "Timologio for WooCommerce",
@@ -592,5 +601,32 @@
       "rendered": "WooCommerce Premium Extension for the Woocommerce Wholesale Prices Plugin <cite>By <a href=\"http://rymera.com.au/\">Rymera Web Co</a>.</cite>\n"
     },
     "sakis_description": "B2B plugin"
+  },
+  {
+    "name": "Preview E-mails for WooCommerce",
+    "version": "2.2.14",
+    "status": "active",
+    "description": {
+      "rendered": "An Extension for WooCommerce that lets you Preview Emails, without having to send them. <cite>By <a href=\"https://digamberpradhan.com/\">Digamber Pradhan</a>.</cite>\n"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "Preview E-mails for WooCommerce",
+    "version": "2.2.14",
+    "status": "active",
+    "description": {
+      "rendered": "An Extension for WooCommerce that lets you Preview Emails, without having to send them. <cite>By <a href=\"https://digamberpradhan.com/\">Digamber Pradhan</a>.</cite>\n"
+    },
+    "sakis_description": "missing"
+  },
+  {
+    "name": "User Switching",
+    "version": "1.9.2",
+    "status": "active",
+    "description": {
+      "rendered": "Στιγμιαία εναλλαγή μεταξύ λογαριασμών χρηστών στο WordPress <cite>By <a href=\"https://johnblackbourn.com\">John Blackbourn</a>.</cite>"
+    },
+    "sakis_description": "missing"
   }
 ]
