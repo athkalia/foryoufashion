@@ -628,5 +628,14 @@
       "rendered": "Στιγμιαία εναλλαγή μεταξύ λογαριασμών χρηστών στο WordPress <cite>By <a href=\"https://johnblackbourn.com\">John Blackbourn</a>.</cite>"
     },
     "sakis_description": "missing"
+  },
+  {
+    "name": "WP Rocket | Disable Cache Clearing",
+    "version": "",
+    "status": "inactive",
+    "description": {
+      "rendered": "Disables all of WP Rocket’s automatic cache clearing. <cite>By <a href=\"http://wp-rocket.me/\">WP Rocket Support Team</a>.</cite>"
+    },
+    "sakis_description": "I don't think it's used"
   }
 ]

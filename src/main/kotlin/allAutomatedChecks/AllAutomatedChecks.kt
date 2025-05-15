@@ -180,7 +180,6 @@ fun main() {
             checkOneSizeIsOnlySize(product)
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes, credentials)
-            checkCasualProductsInCasualForemataCategory(product)
             checkForMissingImages(product)
             checkForTyposInProductText(product)
             checkForDuplicateImagesInAProduct(product)
@@ -229,7 +228,7 @@ fun main() {
 
 fun flushBufferedEmailAlerts() {
     val truncatedBuffer = emailMessageBuffer.mapValues { (_, messages) ->
-        messages.take(30)
+        messages.take(40)
     }
     for ((category, messages) in truncatedBuffer) {
         if (shouldSendEmailForCategory(category)) {
@@ -260,22 +259,6 @@ fun checkCasualForemataHasCasualStyleAttribute(product: Product) {
         logError(
             "Casual φορεμα δεν εχει casual 'Στυλ'",
             "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} βρίσκεται στην κατηγορία 'casual φορεματα' αλλά λείπει η ιδιοτητα στυλ 'Casual'.\nLINK: ${product.permalink}"
-        )
-    }
-}
-
-fun checkCasualProductsInCasualForemataCategory(product: Product) {
-    val casualCategorySlug = "casual-foremata"
-    val excludedCategories = setOf("foremata", "plus-size") // Use lowercase for comparison
-    val isInCasualCategory = product.categories.any { it.slug.equals(casualCategorySlug, ignoreCase = true) }
-    val hasOtherCategories = product.categories.size > 1
-    val isInExcludedCategory =
-        product.categories.any { excludedCategories.contains(it.slug.lowercase(Locale.getDefault())) }
-
-    if (isInCasualCategory && hasOtherCategories && !isInExcludedCategory) {
-        logError(
-            "Casual προιον ειναι και σε αλλη λαθος κατηγορια",
-            "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} βρίσκεται στην κατηγορία 'casual' και ταυτόχρονα σε άλλη κατηγορία.\nLINK: ${product.permalink}"
         )
     }
 }
@@ -950,15 +933,11 @@ fun checkForUnusedImagesInsideMediaLibrary(
                 true // If URL doesn't match pattern, exclude the media item to be safe
             }
         }
-    if (unusedImages.isNotEmpty()) {
-        logError(
-            "SAKIS checkForUnusedImagesInsideMediaLibrary unused images",
-            "ERROR: Unused images in media library: ${unusedImages.size}",
-            alsoEmail = false
-        )
-    }
     unusedImages.forEach {
-        println("LINK: https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit")
+        logError(
+            "Φωτογραφιες που δεν χρησιμοποιουνται",
+            "Αυτη η φωτογραφια δεν φαινεται να χρησιμοποιειται, διαγραφη? https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit",
+        )
         if (shouldAutomaticallyDeleteUnusedImages) {
             deleteUnusedImage(it, wordPressWriteCredentials)
         }
@@ -2536,7 +2515,7 @@ fun sendAlertEmail(subject: String, message: String) {
 
 fun shouldSendEmailForCategory(category: String): Boolean {
     val lastSent = emailThrottleCache[category]
-    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 12
+    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 9
 }
 
 fun loadEmailThrottleCache(): MutableMap<String, LocalDate> {
