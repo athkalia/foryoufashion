@@ -19,7 +19,7 @@
   },
   {
     "name": "Broken Link Checker",
-    "version": "2.4.3",
+    "version": "2.4.4",
     "status": "active",
     "description": {
       "rendered": "Checks your blog for broken links and notifies you on the dashboard if any are found."
@@ -28,7 +28,7 @@
   },
   {
     "name": "Advanced Custom Fields PRO",
-    "version": "6.4.0.1",
+    "version": "6.4.1",
     "status": "active",
     "description": {
       "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
@@ -172,7 +172,7 @@
   },
   {
     "name": "Klarna for WooCommerce",
-    "version": "4.1.2",
+    "version": "4.1.3",
     "status": "inactive",
     "description": {
       "rendered": "Provides Klarna as a payment method to WooCommerce and Klarna conversion boosters. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>\n"
@@ -271,7 +271,7 @@
   },
   {
     "name": "Smash Balloon Instagram Feed",
-    "version": "6.8.0",
+    "version": "6.9.0",
     "status": "active",
     "description": {
       "rendered": "Display beautifully clean, customizable, and responsive Instagram feeds. <cite>By <a href=\"https://smashballoon.com/\">Smash Balloon</a>.</cite>"
@@ -307,7 +307,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.0.90",
+    "version": "1.0.92",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -352,7 +352,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.84",
+    "version": "1.0.85",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -541,7 +541,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "25.0",
+    "version": "25.1",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
@@ -568,7 +568,7 @@
   },
   {
     "name": "GTM4WP - A Google Tag Manager (GTM) plugin for WordPress",
-    "version": "1.20.3",
+    "version": "1.21",
     "status": "active",
     "description": {
       "rendered": "The first Google Tag Manager plugin for WordPress with business goals in mind <cite>By <a href=\"https://gtm4wp.com/\">Thomas Geiger</a>.</cite>"
