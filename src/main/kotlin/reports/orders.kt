@@ -466,22 +466,26 @@ fun generateMonetarySalesData(
             val productTags = product?.tags?.map { it.name } ?: getProductTags(item.product_id, credentials)
             val productPrice = getProductPrice(item.product_id, credentials)  // Get the product price
 
-            productTags.forEach { tag ->
-                if (tag.startsWith("$tagToFilterBy ")) {
-                    val modelName = tag.removePrefix("$tagToFilterBy ").trim()
+            if (productPrice!=null) {
+                productTags.forEach { tag ->
+                    if (tag.startsWith("$tagToFilterBy ")) {
+                        val modelName = tag.removePrefix("$tagToFilterBy ").trim()
 
-                    // Calculate monetary sales for each model
-                    val sales = item.quantity * productPrice  // Total monetary sales for this product and quantity
-                    modelMonetarySalesMap.getOrPut(orderMonth) { mutableMapOf() }
-                        .merge(modelName, sales) { old, new -> old + new }
+                        // Calculate monetary sales for each model
+                        val sales = item.quantity * productPrice  // Total monetary sales for this product and quantity
+                        modelMonetarySalesMap.getOrPut(orderMonth) { mutableMapOf() }
+                            .merge(modelName, sales) { old, new -> old + new }
+                    }
                 }
+            } else {
+                println("Skipping null product price")
             }
         }
     }
     return modelMonetarySalesMap.toSortedMap()
 }
 
-fun getProductPrice(productId: Int, credentials: String): Double {
+fun getProductPrice(productId: Int, credentials: String): Double? {
     println("DEBUG: Fetching product price for product $productId")
     val client = OkHttpClient()
     val url = "https://foryoufashion.gr/wp-json/wc/v3/products/$productId"
@@ -492,7 +496,8 @@ fun getProductPrice(productId: Int, credentials: String): Double {
         val body = response.body?.string()!!
         val mapper = jacksonObjectMapper()
         val product: Product = mapper.readValue(body)
-        return product.price.toDouble()
+        val price = product.price
+        return if (product.price.isNotBlank()) price.toDouble() else null
     }
 }
 
@@ -637,20 +642,24 @@ fun generateAdjustedMonetarySalesDataByMonthlyTag(
             }
             val productTags = getProductTags(item.product_id, credentials)
             val productPrice = getProductPrice(item.product_id, credentials)
+            if (productPrice!=null) {
+                productTags.forEach { tag ->
+                    if (tag.startsWith("$tagToFilterBy ")) {
+                        val modelName = tag.removePrefix("$tagToFilterBy ").trim()
 
-            productTags.forEach { tag ->
-                if (tag.startsWith("$tagToFilterBy ")) {
-                    val modelName = tag.removePrefix("$tagToFilterBy ").trim()
+                        // Get the number of products associated with the tag (model) for the month
+                        val productCountForTagInMonth =
+                            monthlyProductCounts[orderMonth]?.get("$tagToFilterBy $modelName") ?: 1
 
-                    // Get the number of products associated with the tag (model) for the month
-                    val productCountForTagInMonth =
-                        monthlyProductCounts[orderMonth]?.get("$tagToFilterBy $modelName") ?: 1
-
-                    // Calculate adjusted monetary sales
-                    val adjustedMonetarySales = (item.quantity.toDouble() * productPrice) / productCountForTagInMonth
-                    modelMonetarySalesMap.getOrPut(orderMonth) { mutableMapOf() }
-                        .merge(modelName, adjustedMonetarySales) { old, new -> old + new }
+                        // Calculate adjusted monetary sales
+                        val adjustedMonetarySales =
+                            (item.quantity.toDouble() * productPrice) / productCountForTagInMonth
+                        modelMonetarySalesMap.getOrPut(orderMonth) { mutableMapOf() }
+                            .merge(modelName, adjustedMonetarySales) { old, new -> old + new }
+                    }
                 }
+            } else {
+                println("Skipping null product price")
             }
         }
     }

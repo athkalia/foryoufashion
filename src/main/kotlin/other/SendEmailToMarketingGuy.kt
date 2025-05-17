@@ -17,9 +17,10 @@ import readOnlyConsumerKey
 import readOnlyConsumerSecret
 import sakisForYouFashionEmailPassword
 
-const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 2500.0
+const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 2318.0
 const val monthlyMarketingPayment: Double = 400.0
-const val totalMarketingSpendIncludingMonthlyPayment =   MANUAL_INPUT_totalMarketingExpensesForMonth + monthlyMarketingPayment
+const val totalMarketingSpendIncludingMonthlyPayment =
+    MANUAL_INPUT_totalMarketingExpensesForMonth + monthlyMarketingPayment
 const val test = true
 const val thisMonth = false
 
