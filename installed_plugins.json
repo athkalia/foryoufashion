@@ -19,7 +19,7 @@
   },
   {
     "name": "Broken Link Checker",
-    "version": "2.4.4",
+    "version": "2.4.6",
     "status": "active",
     "description": {
       "rendered": "Checks your blog for broken links and notifies you on the dashboard if any are found."
@@ -28,7 +28,7 @@
   },
   {
     "name": "Advanced Custom Fields PRO",
-    "version": "6.4.1",
+    "version": "6.4.2",
     "status": "active",
     "description": {
       "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
@@ -99,15 +99,6 @@
     "sakis_description": "Scales larger images at upload time."
   },
   {
-    "name": "First Order Discount Woocommerce",
-    "version": "1.23",
-    "status": "inactive",
-    "description": {
-      "rendered": "&#8220;First Order Discount Woocommerce&#8221; allows administrator to offer customers tempting promotions on their first purchase. Admin can offer either flat discount in terms of money or offer some products for free. <cite>By <a href=\"https://quanticedge.co.in/?utm-source=free-plugin&#038;utm-medium=wooextend\">QuanticEdge</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
     "name": "Google Analytics for WooCommerce",
     "version": "2.1.14",
     "status": "active",
@@ -136,7 +127,7 @@
   },
   {
     "name": "InfiniteWP - Client",
-    "version": "1.13.2",
+    "version": "1.13.3",
     "status": "active",
     "description": {
       "rendered": "This is the client plugin of InfiniteWP that communicates with the InfiniteWP Admin panel. <cite>By <a href=\"http://www.revmakx.com\">Revmakx</a>.</cite>"
@@ -162,24 +153,6 @@
     "sakis_description": "missing"
   },
   {
-    "name": "Klarna Order Management for WooCommerce",
-    "version": "1.9.6",
-    "status": "inactive",
-    "description": {
-      "rendered": "Provides order management for Klarna Payments and Klarna Checkout gateways. <cite>By <a href=\"https://krokedil.se/\">klarna, krokedil</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
-    "name": "Klarna for WooCommerce",
-    "version": "4.1.3",
-    "status": "inactive",
-    "description": {
-      "rendered": "Provides Klarna as a payment method to WooCommerce and Klarna conversion boosters. <cite>By <a href=\"https://www.klarna.com/\">klarna</a>.</cite>\n"
-    },
-    "sakis_description": "missing"
-  },
-  {
     "name": "MC4WP: Mailchimp for WordPress",
     "version": "4.10.3",
     "status": "active",
@@ -190,19 +163,10 @@
   },
   {
     "name": "Media Cleaner (Pro)",
-    "version": "6.8.7",
+    "version": "6.8.9",
     "status": "active",
     "description": {
       "rendered": "Clean your WordPress! Eliminate unused and broken media files. For a faster, and better website. <cite>By <a href=\"https://jordymeow.com\">Jordy Meow</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
-    "name": "Payment Gateway Based Fees and Discounts for WooCommerce",
-    "version": "2.17.0",
-    "status": "inactive",
-    "description": {
-      "rendered": "Set payment gateways fees and discounts in WooCommerce. <cite>By <a href=\"https://www.tychesoftwares.com/\">Tyche Softwares</a>.</cite>"
     },
     "sakis_description": "missing"
   },
@@ -271,7 +235,7 @@
   },
   {
     "name": "Smash Balloon Instagram Feed",
-    "version": "6.9.0",
+    "version": "6.9.1",
     "status": "active",
     "description": {
       "rendered": "Display beautifully clean, customizable, and responsive Instagram feeds. <cite>By <a href=\"https://smashballoon.com/\">Smash Balloon</a>.</cite>"
@@ -280,7 +244,7 @@
   },
   {
     "name": "WooCommerce Back In Stock Notifications",
-    "version": "3.2.0",
+    "version": "3.2.1",
     "status": "active",
     "description": {
       "rendered": "Ειδοποιήστε τους πελάτες σας όταν τα αγαπημένα τους προϊόντα είναι ξανά διαθέσιμα. <cite>By <a href=\"https://woocommerce.com/\">Woo</a>.</cite>\n"
@@ -307,7 +271,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.0.92",
+    "version": "1.0.93",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -352,7 +316,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.85",
+    "version": "1.0.86",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -397,7 +361,7 @@
   },
   {
     "name": "WooCommerce",
-    "version": "9.8.3",
+    "version": "9.8.5",
     "status": "active",
     "description": {
       "rendered": "Μια e-commerce πλατφόρμα που θα σας βοηθήσει να πουλήσετε τα πάντα. Όμορφα. <cite>By <a href=\"https://woocommerce.com\">Automattic</a>.</cite>"
@@ -415,7 +379,7 @@
   },
   {
     "name": "WooCommerce Advanced Bulk Edit",
-    "version": "5.5.2.3",
+    "version": "5.5.3.1",
     "status": "active",
     "description": {
       "rendered": "Edit your products both individually or in bulk. <cite>By <a href=\"https://wpmelon.com\">George Iron &amp; Yas G.</a>.</cite>"
@@ -478,7 +442,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.6",
+    "version": "4.7.7",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -568,7 +532,7 @@
   },
   {
     "name": "GTM4WP - A Google Tag Manager (GTM) plugin for WordPress",
-    "version": "1.21",
+    "version": "1.21.1",
     "status": "active",
     "description": {
       "rendered": "The first Google Tag Manager plugin for WordPress with business goals in mind <cite>By <a href=\"https://gtm4wp.com/\">Thomas Geiger</a>.</cite>"
@@ -628,14 +592,5 @@
       "rendered": "Στιγμιαία εναλλαγή μεταξύ λογαριασμών χρηστών στο WordPress <cite>By <a href=\"https://johnblackbourn.com\">John Blackbourn</a>.</cite>"
     },
     "sakis_description": "missing"
-  },
-  {
-    "name": "WP Rocket | Disable Cache Clearing",
-    "version": "",
-    "status": "inactive",
-    "description": {
-      "rendered": "Disables all of WP Rocket’s automatic cache clearing. <cite>By <a href=\"http://wp-rocket.me/\">WP Rocket Support Team</a>.</cite>"
-    },
-    "sakis_description": "I don't think it's used"
   }
 ]

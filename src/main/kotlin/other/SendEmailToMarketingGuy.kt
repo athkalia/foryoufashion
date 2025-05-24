@@ -25,7 +25,7 @@ const val test = true
 const val thisMonth = false
 
 fun main(args: Array<String>) {
-    val toEmail = if (test) "sakis@foryoufashion.gr" else "ads@conversion.gr"
+    val toEmail = if (test || thisMonth) "sakis@foryoufashion.gr" else "ads@conversion.gr"
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val month = if (thisMonth) getCurrentMonth() else getPreviousMonthDate()
     val currentMonthOrders = fetchOrders(month, credentials)
@@ -132,13 +132,13 @@ fun sendEmail(recipientEmail: String, content: String, monthAndYear: String) {
         val message = MimeMessage(session)
         message.setFrom(InternetAddress(username))
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail))
-        if (!test) {
+        if (test || thisMonth) {
+            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
+        } else {
             message.setRecipients(
                 Message.RecipientType.CC,
                 InternetAddress.parse("k.kaliakouda@foryoufashion.gr, sakis@foryoufashion.gr")
             )
-        } else {
-            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
         }
         message.subject = "For You Fashion - Έσοδα μήνα $monthAndYear"
         message.setText(content)

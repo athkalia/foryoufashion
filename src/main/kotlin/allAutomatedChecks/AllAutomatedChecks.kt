@@ -75,6 +75,8 @@ const val shouldPopulateMissingImageAltText = true
 const val shouldDiscountProductPriceBasedOnLastSaleDate = true
 const val shouldAddGenericPhotoshootTag = true
 const val shouldSyncTiktokVideoLinkFromGallery = true
+const val shouldSyncWholesalePricesAcrossVariations = true
+const val shouldSyncWholesaleSalePricesAcrossVariations = true
 
 // One-off updates
 const val shouldAutomaticallyDeleteUnusedImages = false
@@ -104,18 +106,29 @@ val errorCountMap = mutableMapOf<String, Int>()
 private const val EMAIL_THROTTLE_FILE = "email_throttle_cache.csv"
 private val emailThrottleCache = loadEmailThrottleCache()
 val emailMessageBuffer = mutableMapOf<String, MutableList<String>>()
+val emailMessageBufferB2B = mutableMapOf<String, MutableList<String>>()
 
 private fun registerWebPReader() {
     val registry = IIORegistry.getDefaultInstance()
     registry.registerServiceProvider(WebPImageReaderSpi())
 }
 
-fun logError(messageCategory: String, message: String, alsoEmail: Boolean = true) {
+fun logError(
+    messageCategory: String,
+    message: String,
+    alsoEmail: Boolean = true,
+    b2b: Boolean = false
+) {
     println(message)
     errorCountMap[messageCategory] = errorCountMap.getOrDefault(messageCategory, 0) + 1
     if (alsoEmail) {
-        val list = emailMessageBuffer.getOrPut(messageCategory) { mutableListOf() }
-        list.add(message)
+        if (b2b) {
+            val list = emailMessageBufferB2B.getOrPut(messageCategory) { mutableListOf() }
+            list.add(message)
+        } else {
+            val list = emailMessageBuffer.getOrPut(messageCategory) { mutableListOf() }
+            list.add(message)
+        }
     }
 }
 
@@ -210,6 +223,7 @@ fun main() {
                 checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(allOrders, product, productVariations)
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
                 checkPrivateProductsInStock(product, productVariations)
+                checkAllVariationsHaveTheSamePricesB2B(product, productVariations)
                 for (variation in productVariations) {
 //                    println("DEBUG: variation SKU: ${variation.sku}")
                     checkStockManagementAtVariationLevel(variation, product)
@@ -234,7 +248,18 @@ fun flushBufferedEmailAlerts() {
         if (shouldSendEmailForCategory(category)) {
             val emailBody = messages.joinToString("\n\n")
             val subject = "ForYouFashion: $category"
-            sendAlertEmail(subject, emailBody)
+            sendAlertEmail(subject, emailBody, b2b = false)
+            emailThrottleCache[category] = LocalDate.now()
+        }
+    }
+    val truncatedBufferB2B = emailMessageBufferB2B.mapValues { (_, messages) ->
+        messages.take(40)
+    }
+    for ((category, messages) in truncatedBufferB2B) {
+        if (shouldSendEmailForCategory(category)) {
+            val emailBody = messages.joinToString("\n\n")
+            val subject = "ForYouFashion: $category"
+            sendAlertEmail(subject, emailBody, b2b = true)
             emailThrottleCache[category] = LocalDate.now()
         }
     }
@@ -442,6 +467,100 @@ private fun checkAllVariationsHaveTheSamePrices(product: Product, productVariati
             "Λαθος Τιμές στις Παραλλαγές",
             "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} έχει διαφορετικές τιμές στις παραλλαγές του. Σύνδεσμος: ${product.permalink}"
         )
+    }
+}
+
+fun checkAllVariationsHaveTheSamePricesB2B(product: Product, productVariations: List<Variation>) {
+    val wholesalePricesList = mutableListOf<String>()
+    val wholesaleSalePricesList = mutableListOf<String>()
+    productVariations.forEach { variation ->
+        // println("DEBUG: meta_data: $variation.metaData")
+        val wholesalePrice = variation.meta_data.find {
+            it.key=="wholesale_customer_wholesale_price"
+        }?.value.toString()
+
+        val wholesaleSalePrice = variation.meta_data.find {
+            it.key=="wholesale_customer_wholesale_sale_price"
+        }?.value.toString()
+
+        if (wholesalePrice.isNotBlank() && wholesalePrice!="null") {
+            wholesalePricesList.add(wholesalePrice)
+        }
+
+        if (wholesaleSalePrice.isNotBlank() && wholesaleSalePrice!="null") {
+            wholesaleSalePricesList.add(wholesaleSalePrice)
+        }
+    }
+    val wholesalePricesSet = wholesalePricesList.toSet()
+    val wholesaleSalePricesSet = wholesaleSalePricesList.toSet()
+    if (wholesalePricesSet.size > 1) {
+        logError(
+            "Λάθος B2B Wholesale Τιμές στις Παραλλαγές",
+            "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} έχει διαφορετικές αρχικές ΧΟΝΔΡΙΚΕΣ τιμές στις παραλλαγές του. Διαφορετικες τιμες: $wholesalePricesSet\nΣύνδεσμος: ${product.permalink}",
+            b2b = true
+        )
+
+    } else if (shouldSyncWholesalePricesAcrossVariations && wholesalePricesSet.size==1 && wholesalePricesList.size!=productVariations.size) {
+        productVariations.forEach { variation ->
+            updateVariationWholesalePrice(
+                product.id,
+                variation.id,
+                "wholesale_customer_wholesale_price",
+                wholesalePricesSet.single()
+            )
+        }
+    }
+
+    if (wholesaleSalePricesSet.size > 1) {
+        logError(
+            "Λάθος B2B Wholesale Sale Τιμές στις Παραλλαγές",
+            "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} έχει διαφορετικές εκπτωτικες ΧΟΝΔΡΙΚΕΣ τιμές στις παραλλαγές του. Διαφορετικες τιμες: $wholesaleSalePricesSet\nΣύνδεσμος: ${product.permalink}",
+            b2b = true
+        )
+
+    } else if (shouldSyncWholesaleSalePricesAcrossVariations && wholesaleSalePricesSet.size==1 && wholesaleSalePricesList.size!=productVariations.size) {
+        productVariations.forEach { variation ->
+            updateVariationWholesalePrice(
+                product.id,
+                variation.id,
+                "wholesale_customer_wholesale_sale_price",
+                wholesaleSalePricesSet.single()
+            )
+        }
+    }
+}
+
+fun updateVariationWholesalePrice(
+    productId: Int,
+    variationId: Int,
+    metaKey: String,
+    price: String
+) {
+    val credentials = Credentials.basic(writeConsumerKey, writeConsumerSecret)
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/$productId/variations/$variationId"
+
+    val payload = mapOf(
+        "meta_data" to listOf(
+            mapOf("key" to metaKey, "value" to price)
+        )
+    )
+
+    val requestBody = mapper.writeValueAsString(payload).toRequestBody("application/json".toMediaTypeOrNull())
+
+    val request = Request.Builder()
+        .url(url)
+        .put(requestBody)
+        .header("Authorization", credentials)
+        .build()
+
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                println("ERROR: Failed to update wholesale price for variation $variationId. Response: ${response.body?.string()}")
+            } else {
+                println("ACTION: Updated wholesale price ($metaKey) to '$price' for variation '$variationId' of product '$productId'.")
+            }
+        }
     }
 }
 
@@ -1368,7 +1487,8 @@ fun checkPhotoshootTags(product: Product, credentials: String) {
     val genericFwtografisiTagName = "ΦΩΤΟΓΡΑΦΙΣΗ ΕΞΩΤΕΡΙΚΗ"
 
     // Check for tags that start with "ΦΩΤΟΓΡΑΦΙΣΗ ΕΞΩΤΕΡΙΚΗ"
-    val specificPhotoshootTags = product.tags.filter { it.name.startsWith("ΦΩΤΟΓΡΑΦΙΣΗ ΕΞΩΤΕΡΙΚΗ ", ignoreCase = true) }
+    val specificPhotoshootTags =
+        product.tags.filter { it.name.startsWith("ΦΩΤΟΓΡΑΦΙΣΗ ΕΞΩΤΕΡΙΚΗ ", ignoreCase = true) }
 
     // Check if the generic tag exists
     val hasGenericTag = product.tags.any { it.name.equals(genericFwtografisiTagName, ignoreCase = true) }
@@ -1447,26 +1567,164 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
             }
         }
         if (product.sku !in listOf(
-                "51746-332", "59431-1282", "58736-005", "58736-001", "59370-003", "59041-595",
-                "59182-514", "59073-514", "59072-514", "58072-040", "51746-332", "53860-015", "53860-014", "53860-289",
-                "58746-246", "59346-002", "59356-054", "59356-003", "59435-369", "59345-022", "59388-1278", "59343-003",
-                "55954-007", "59260-005", "59260-001", "59441-003", "58735-003", "59238-003", "58593-005", "59235-005",
-                "59235-003", "59235-004", "58580-036", "59434-003", "59432-003", "59432-369", "58585-007", "59433-402",
-                "55954-005", "59237-1278", "58735-004", "59017-004", "59017-281", "58301-003", "57967-003", "58807-004",
-                "58693-003", "58691-004", "57256-003", "58608-003", "58635-016", "58685-003", "58686-003", "58602-003",
-                "57966-003", "58002-003", "57869-005", "58747-246", "59427-022", "59427-003", "59425-051", "59425-005",
-                "58072-040", "59323-013", "59422-005", "59422-012", "59422-010", "59440-369", "59440-003", "59426-002",
-                "59436-060", "59423-027", "59439-369", "59431-1282", "59438-003", "59450-002", "59438-060", "59458-005",
-                "59454-587", "59412-1274", "59411-003", "59327-281", "59337-529", "59394-003", "59430-007", "59393-011",
-                "59396-003", "58736-005", "58736-001", "59397-020", "59370-003", "59395-011", "59041-595", "59370-040",
-                "58696-289", "59392-281", "59401-060", "59340-003", "59401-005", "59340-036", "59404-251", "59419-281",
-                "59403-005", "59442-005", "59407-587", "59413-020", "59414-003", "59416-251", "59459-003", "59409-003",
-                "59410-003", "59410-020", "59332-005", "59329-561", "59333-588", "59330-1282", "59331-567", "59324-002",
-                "59338-501", "59335-002", "59342-003", "59183-514", "59182-514", "59072-514", "59028-004", "59043-051",
-                "59016-019", "58996-005", "59039-281", "59039-003", "58995-051", "59040-004", "59020-023", "58983-005",
-                "58823-488", "58721-003", "58721-016", "58719-001", "58621-012", "58696-003", "58699-041", "58723-040",
-                "58684-006", "58630-011", "58682-003", "58681-006", "58619-005", "58620-006", "58618-006", "58064-040",
-                "57948-003", "57211-060", "57211-013", "58057-002", "58071-011", "58071-029", "57210-060", "57155-003",
+                "51746-332",
+                "59431-1282",
+                "58736-005",
+                "58736-001",
+                "59370-003",
+                "59041-595",
+                "59182-514",
+                "59073-514",
+                "59072-514",
+                "58072-040",
+                "51746-332",
+                "53860-015",
+                "53860-014",
+                "53860-289",
+                "58746-246",
+                "59346-002",
+                "59356-054",
+                "59356-003",
+                "59435-369",
+                "59345-022",
+                "59388-1278",
+                "59343-003",
+                "55954-007",
+                "59260-005",
+                "59260-001",
+                "59441-003",
+                "58735-003",
+                "59238-003",
+                "58593-005",
+                "59235-005",
+                "59235-003",
+                "59235-004",
+                "58580-036",
+                "59434-003",
+                "59432-003",
+                "59432-369",
+                "58585-007",
+                "59433-402",
+                "55954-005",
+                "59237-1278",
+                "58735-004",
+                "59017-004",
+                "59017-281",
+                "58301-003",
+                "57967-003",
+                "58807-004",
+                "58693-003",
+                "58691-004",
+                "57256-003",
+                "58608-003",
+                "58635-016",
+                "58685-003",
+                "58686-003",
+                "58602-003",
+                "57966-003",
+                "58002-003",
+                "57869-005",
+                "58747-246",
+                "59427-022",
+                "59427-003",
+                "59425-051",
+                "59425-005",
+                "58072-040",
+                "59323-013",
+                "59422-005",
+                "59422-012",
+                "59422-010",
+                "59440-369",
+                "59440-003",
+                "59426-002",
+                "59436-060",
+                "59423-027",
+                "59439-369",
+                "59431-1282",
+                "59438-003",
+                "59450-002",
+                "59438-060",
+                "59458-005",
+                "59454-587",
+                "59412-1274",
+                "59411-003",
+                "59327-281",
+                "59337-529",
+                "59394-003",
+                "59430-007",
+                "59393-011",
+                "59396-003",
+                "58736-005",
+                "58736-001",
+                "59397-020",
+                "59370-003",
+                "59395-011",
+                "59041-595",
+                "59370-040",
+                "58696-289",
+                "59392-281",
+                "59401-060",
+                "59340-003",
+                "59401-005",
+                "59340-036",
+                "59404-251",
+                "59419-281",
+                "59403-005",
+                "59442-005",
+                "59407-587",
+                "59413-020",
+                "59414-003",
+                "59416-251",
+                "59459-003",
+                "59409-003",
+                "59410-003",
+                "59410-020",
+                "59332-005",
+                "59329-561",
+                "59333-588",
+                "59330-1282",
+                "59331-567",
+                "59324-002",
+                "59338-501",
+                "59335-002",
+                "59342-003",
+                "59183-514",
+                "59182-514",
+                "59072-514",
+                "59028-004",
+                "59043-051",
+                "59016-019",
+                "58996-005",
+                "59039-281",
+                "59039-003",
+                "58995-051",
+                "59040-004",
+                "59020-023",
+                "58983-005",
+                "58823-488",
+                "58721-003",
+                "58721-016",
+                "58719-001",
+                "58621-012",
+                "58696-003",
+                "58699-041",
+                "58723-040",
+                "58684-006",
+                "58630-011",
+                "58682-003",
+                "58681-006",
+                "58619-005",
+                "58620-006",
+                "58618-006",
+                "58064-040",
+                "57948-003",
+                "57211-060",
+                "57211-013",
+                "58057-002",
+                "58071-011",
+                "58071-029",
+                "57210-060",
+                "57155-003",
             )
         ) {
             if (product.description.length < 250 || product.description.length > 550) {
@@ -2501,7 +2759,7 @@ fun checkPaymentMethodsInLastMonths(orders: List<Order>) {
     }
 }
 
-fun sendAlertEmail(subject: String, message: String) {
+fun sendAlertEmail(subject: String, message: String, b2b: Boolean) {
     val username = "sakis@foryoufashion.gr"
     val props = Properties().apply {
         put("mail.smtp.auth", "true")
@@ -2516,12 +2774,16 @@ fun sendAlertEmail(subject: String, message: String) {
         }
     })
 
-    val intro = "Γεια σου Ολγα!\n\n"
+    val intro = if (b2b) "Γεια σου Δημητρα!\n\n" else "Γεια σου Ολγα!\n\n"
     val signature = "\n\nΦιλικά,\nΣάκης"
     try {
         val msg = MimeMessage(session)
         msg.setFrom(InternetAddress(username))
-        msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse("olga@foryoufashion.gr"))
+        if (b2b) {
+            msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse("b2b@foryoufashion.gr"))
+        } else {
+            msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse("olga@foryoufashion.gr"))
+        }
         msg.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
         msg.subject = subject
         msg.setText(intro + message + signature)

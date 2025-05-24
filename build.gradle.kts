@@ -13,6 +13,8 @@ tasks.test {
 }
 
 dependencies {
+    implementation("com.google.analytics:google-analytics-data:0.74.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.22.0")
     implementation("com.twelvemonkeys.imageio:imageio-webp:3.8.2")
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
