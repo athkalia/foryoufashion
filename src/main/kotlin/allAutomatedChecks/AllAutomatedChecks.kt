@@ -28,6 +28,7 @@ import forYouFashionFtpPassword
 import forYouFashionFtpUrl
 import forYouFashionFtpUsername
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.Month
 import java.time.Period
 import java.time.format.DateTimeFormatter
@@ -1331,6 +1332,194 @@ fun checkOneSizeIsOnlySize(product: Product) {
                 "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει 'One size' μαζί με άλλα μεγέθη: ${sizeAttribute.options.joinToString()}.\nLINK: ${product.permalink}"
             )
         }
+    }
+}
+
+fun checkAllCustomerFacingUrlsForSeoViaYoast(allProducts: List<Product>, wordPressWriteCredentials: String) {
+    val allUrls = mutableSetOf<String>()
+
+    val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
+    allUrls += allProducts.filter { it.status=="publish" }.map { it.permalink }
+
+    val pagesUrl = "https://foryoufashion.gr/wp-json/wp/v2/pages?per_page=100&page="
+    var page = 1
+    do {
+        val response = executeWithRetry {
+            val request = Request.Builder()
+                .url("$pagesUrl$page")
+                .header("Authorization", "Basic $wordPressWriteCredentials")
+                .build()
+
+            client.newCall(request).execute().use { res ->
+                if (!res.isSuccessful) return@executeWithRetry emptyList<Map<String, Any>>()
+                mapper.readValue(res.body?.string() ?: "")
+            }
+        }
+        val urls = response.mapNotNull { it["link"] as? String }
+        println("DEBUG: Page URLs found: $urls")
+        allUrls += urls
+        page++
+    } while (response.isNotEmpty())
+
+    val categoryUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/categories"
+    val categories = executeWithRetry {
+        val req = Request.Builder().url(categoryUrl).header("Authorization", credentials).build()
+        client.newCall(req).execute().use { res ->
+            if (!res.isSuccessful) throw IOException("Unexpected code $res")
+            mapper.readValue<List<Category>>(res.body?.string() ?: "")
+        }
+    }
+    val categoryUrls = categories.map { "https://foryoufashion.gr/gynaikeia-rouxa-online/${it.slug}/" }
+    println("DEBUG: Category URLs found: $categoryUrls")
+    allUrls += categoryUrls
+
+    val tagsUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/tags"
+    val tags = executeWithRetry {
+        val req = Request.Builder().url(tagsUrl).header("Authorization", credentials).build()
+        client.newCall(req).execute().use { res ->
+            if (!res.isSuccessful) throw IOException("Unexpected code $res")
+            mapper.readValue<List<Tag>>(res.body?.string() ?: "")
+        }
+    }
+
+    val tagUrls = tags.map { "https://foryoufashion.gr/product-tag/${it.slug}/" }.toSet()
+    println("DEBUG: Tag URLs found: $tagUrls")
+    allUrls += tagUrls
+
+    println("DEBUG: Total public-facing URLs to check: ${allUrls.size}")
+    val yoastBaseUrl = "https://foryoufashion.gr/wp-json/yoast/v1/get_head?url="
+    for (url in allUrls) {
+        if (url in tagUrls && url !in listOf(
+                "https://foryoufashion.gr/product-tag/plus-size",
+                "https://foryoufashion.gr/product-tag/prosfores",
+                "https://foryoufashion.gr/product-tag/nees-afikseis"
+            )
+        ) {
+            println("DEBUG: Skipping tag URL: $url")
+            continue
+        }
+        println("DEBUG: Processing url: $url")
+        val yoastUrl = "$yoastBaseUrl$url"
+        val seoRequest = Request.Builder().url(yoastUrl).get().build()
+        client.newCall(seoRequest).execute().use { response ->
+            val responseBody = response.body?.string()
+            // println("DEBUG: $responseBody")
+            if (!response.isSuccessful) {
+                println("ERROR: Could not fetch SEO data for $yoastUrl, HTTP ${response.code}")
+                return@use
+            }
+
+            val jsonNode = mapper.readTree(responseBody ?: return@use)
+            val json = jsonNode.get("json") ?: return@use
+
+            val robots = json.get("robots")
+            // println("DEBUG: SEO robots $robots")
+
+            if (robots==null) {
+                logError(
+                    "SAKIS Missing robots meta tag",
+                    "ERROR: Η σελίδα $url δεν έχει robots meta tag",
+                    alsoEmail = false
+                )
+            }
+
+            if (url !in listOf(
+                    "https://foryoufashion.gr/efcharistoume/", "https://foryoufashion.gr/agaphmena/",
+                    "https://foryoufashion.gr/ekseliksh-parangelias/", "https://foryoufashion.gr/enhmerwsh-katatheshs/",
+                    "https://foryoufashion.gr/my-account/", "https://foryoufashion.gr/checkout/",
+                    "https://foryoufashion.gr/cart/", "https://foryoufashion.gr/terms/",
+                    "https://foryoufashion.gr/privacy-policy/"
+                )
+            ) {
+                val title = json.get("title")?.asText()
+                // println("DEBUG: SEO title $title")
+
+                val ogDescription = json.get("og_description")?.asText()
+                // println("DEBUG: SEO meta description $ogDescription")
+                // TODO compare the description to the product short description, and if it's the same then update it.
+
+                val canonical = json.get("canonical")?.asText()
+                // println("DEBUG: SEO canonical $canonical")
+
+                val ogImage = json.get("og_image")?.firstOrNull()
+                // println("DEBUG: SEO og image $ogImage")
+
+                val ogImageWidth = ogImage?.get("width")?.asText()
+                // println("DEBUG: SEO og image width $ogImageWidth")
+
+                val ogImageHeight = ogImage?.get("height")?.asText()
+                // println("DEBUG: SEO og image height $ogImageHeight")
+
+                val ogImageUrl = ogImage?.get("url")?.asText()
+                // println("DEBUG: SEO og image url $ogImageUrl")
+
+                val modified = json.get("article_modified_time")?.asText()
+                // println("DEBUG: SEO modified $modified")
+                // TODO add a fake meta_data to triggered a new modified time.
+
+                if (title?.isBlank()!=false) {
+                    logError(
+                        "SAKIS Σελίδες χωρίς SEO τίτλο",
+                        "ERROR: Η σελίδα $url δεν έχει SEO title tag.",
+                        alsoEmail = false
+                    )
+                }
+
+                if (canonical?.isBlank()!=false || !canonical.startsWith("https://")) {
+                    logError(
+                        "SAKIS Κακή canonical",
+                        "ERROR: Η σελίδα $url έχει λάθος ή ανύπαρκτο canonical tag.",
+                        alsoEmail = false
+                    )
+                }
+
+                if (robots!=null) {
+                    val index = robots.get("index")?.asText() ?: ""
+                    val follow = robots.get("follow")?.asText() ?: ""
+                    if (index=="noindex" || follow=="nofollow") {
+                        logError(
+                            "SAKIS Robots noindex/nofollow",
+                            "ERROR: Η σελίδα $url έχει robots tag με τιμές $index / $follow",
+                            alsoEmail = false
+                        )
+                    }
+                }
+
+                if (ogImageUrl?.isBlank()!=false || (ogImageWidth?.toIntOrNull() ?: 0) < 600) {
+                    logError(
+                        "SAKIS Πρόβλημα με og:image",
+                        "ERROR: Η σελίδα $url έχει λάθος ή μικρή og:image ($ogImageWidth px).",
+                        alsoEmail = false
+                    )
+                }
+
+                if (modified?.isNotBlank() ?: false) {
+                    println("DEBUG: modified date $modified")
+                    val formatter = DateTimeFormatter.ISO_DATE_TIME
+                    val modifiedDate = LocalDateTime.parse(modified, formatter)
+                    if (modifiedDate.isBefore(LocalDateTime.now().minusYears(1))) {
+                        logError(
+                            "SAKIS Παλιό περιεχόμενο",
+                            "ERROR: Η σελίδα $url έχει παλιό content (last modified: $modified).",
+                            alsoEmail = false
+                        )
+                    }
+                }
+            } else {
+                if (robots!=null) {
+                    val index = robots.get("index")?.asText() ?: ""
+                    val follow = robots.get("follow")?.asText() ?: ""
+                    if (index!="noindex" || follow!="nofollow") {
+                        logError(
+                            "SAKIS Robots noindex/nofollow",
+                            "ERROR: Η σελίδα $url έχει robots tag με τιμές $index / $follow",
+                            alsoEmail = false
+                        )
+                    }
+                }
+            }
+        }
+        // TODO add some cache so that I don't check each url all the time - takes a long time.
     }
 }
 
