@@ -149,7 +149,7 @@ fun main() {
 
     val allMedia = getAllMedia(wordPressWriteCredentials, nonRecent = false)
     val allProducts = fetchAllProducts(credentials)
-
+    checkAllCustomerFacingUrlsForSeoViaYoast(allProducts, wordPressWriteCredentials)
     if (shouldCheckForLargeImagesOutsideMediaLibraryFromFTP) {
         checkForImagesOutsideMediaLibraryFromFTP(allMedia, allProducts)
     } else {
@@ -1335,12 +1335,13 @@ fun checkOneSizeIsOnlySize(product: Product) {
     }
 }
 
-fun checkAllCustomerFacingUrlsForSeoViaYoast(allProducts: List<Product>, wordPressWriteCredentials: String) {
+fun checkAllCustomerFacingUrlsForSeoViaYoast(
+    allProducts: List<Product>,
+    wordPressWriteCredentials: String
+) {
     val allUrls = mutableSetOf<String>()
-
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
-    allUrls += allProducts.filter { it.status=="publish" }.map { it.permalink }
-
+    val productUrls = allProducts.filter { it.status=="publish" }.map { it.permalink }
     val pagesUrl = "https://foryoufashion.gr/wp-json/wp/v2/pages?per_page=100&page="
     var page = 1
     do {
@@ -1361,7 +1362,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(allProducts: List<Product>, wordPre
         page++
     } while (response.isNotEmpty())
 
-    val categoryUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/categories"
+    val categoryUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/categories?per_page=100"
     val categories = executeWithRetry {
         val req = Request.Builder().url(categoryUrl).header("Authorization", credentials).build()
         client.newCall(req).execute().use { res ->
@@ -1369,11 +1370,14 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(allProducts: List<Product>, wordPre
             mapper.readValue<List<Category>>(res.body?.string() ?: "")
         }
     }
-    val categoryUrls = categories.map { "https://foryoufashion.gr/gynaikeia-rouxa-online/${it.slug}/" }
+    val categoryUrls = categories.map { category ->
+        val parentPath = categories.find { it.id==category.parent }?.slug?.let { "$it/" } ?: ""
+        "https://foryoufashion.gr/gynaikeia-rouxa-online/$parentPath${category.slug}/"
+    }
     println("DEBUG: Category URLs found: $categoryUrls")
     allUrls += categoryUrls
 
-    val tagsUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/tags"
+    val tagsUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/tags?per_page=100"
     val tags = executeWithRetry {
         val req = Request.Builder().url(tagsUrl).header("Authorization", credentials).build()
         client.newCall(req).execute().use { res ->
@@ -1386,13 +1390,14 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(allProducts: List<Product>, wordPre
     println("DEBUG: Tag URLs found: $tagUrls")
     allUrls += tagUrls
 
-    println("DEBUG: Total public-facing URLs to check: ${allUrls.size}")
     val yoastBaseUrl = "https://foryoufashion.gr/wp-json/yoast/v1/get_head?url="
+    allUrls += productUrls // Process products last.
+    println("DEBUG: Total public-facing URLs to check: ${allUrls.size}")
     for (url in allUrls) {
         if (url in tagUrls && url !in listOf(
-                "https://foryoufashion.gr/product-tag/plus-size",
-                "https://foryoufashion.gr/product-tag/prosfores",
-                "https://foryoufashion.gr/product-tag/nees-afikseis"
+                "https://foryoufashion.gr/product-tag/plus-size/",
+                "https://foryoufashion.gr/product-tag/prosfores/",
+                "https://foryoufashion.gr/product-tag/nees-afikseis/"
             )
         ) {
             println("DEBUG: Skipping tag URL: $url")
@@ -1436,7 +1441,17 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(allProducts: List<Product>, wordPre
 
                 val ogDescription = json.get("og_description")?.asText()
                 // println("DEBUG: SEO meta description $ogDescription")
+
                 // TODO compare the description to the product short description, and if it's the same then update it.
+                // Product Urls automatically get a description from the product short description - that's good enough.
+                if (url !in productUrls && (ogDescription==null || ogDescription!!.isBlank())) {
+                    println("DEBUG: Scanning og:description for page: $url")
+                    logError(
+                        "SAKIS Yoast: Page without meta description",
+                        "ERROR: Page $url has no meta description",
+                        alsoEmail = false
+                    )
+                }
 
                 val canonical = json.get("canonical")?.asText()
                 // println("DEBUG: SEO canonical $canonical")
@@ -1485,16 +1500,28 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(allProducts: List<Product>, wordPre
                     }
                 }
 
-                if (ogImageUrl?.isBlank()!=false || (ogImageWidth?.toIntOrNull() ?: 0) < 600) {
+                if (ogImage==null || ogImageUrl==null || ogImageUrl.isBlank()) {
                     logError(
-                        "SAKIS Πρόβλημα με og:image",
-                        "ERROR: Η σελίδα $url έχει λάθος ή μικρή og:image ($ogImageWidth px).",
+                        "SAKIS Yoast: Πρόβλημα με og:image",
+                        "ERROR: Η σελίδα $url δεν έχει og:image\nCheck with https://developers.facebook.com/tools/debug",
+                        alsoEmail = false
+                    )
+                } else if (ogImageWidth==null || ogImageWidth.toInt() < 600) {
+                    logError(
+                        "SAKIS Yoast: Πρόβλημα με og:image width",
+                        "ERROR: Η σελίδα $url έχει μικρή og:image ($ogImageWidth px).",
+                        alsoEmail = false
+                    )
+                } else if (ogImageHeight==null || ogImageHeight.toInt() < 600) {
+                    logError(
+                        "SAKIS Yoast: Πρόβλημα με og:image height",
+                        "ERROR: Η σελίδα $url έχει μικρή og:image ($ogImageHeight px).",
                         alsoEmail = false
                     )
                 }
 
                 if (modified?.isNotBlank() ?: false) {
-                    println("DEBUG: modified date $modified")
+                    // println("DEBUG: modified date $modified")
                     val formatter = DateTimeFormatter.ISO_DATE_TIME
                     val modifiedDate = LocalDateTime.parse(modified, formatter)
                     if (modifiedDate.isBefore(LocalDateTime.now().minusYears(1))) {

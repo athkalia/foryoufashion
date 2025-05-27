@@ -138,7 +138,7 @@ data class Attribute(
     val name: String,
     val variation: Boolean,
     val visible: Boolean,
-    val option: String?= null,
+    val option: String? = null,
     val options: List<String>? = null,
 )
 
@@ -156,7 +156,8 @@ data class Category(
     val id: Int,
     val name: String,
     val slug: String,
-    val count: Int
+    val count: Int,
+    val parent: Int
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
