@@ -141,15 +141,15 @@ fun main() {
         throw Exception("Something set for update but readOnly is set to 'false'")
     }
 
+
     val credentials = if (allApiUpdateVariables.any { it }) {
         Credentials.basic(writeConsumerKey, writeConsumerSecret)
     } else {
         Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     }
 
-    val allMedia = getAllMedia(wordPressWriteCredentials, nonRecent = false)
     val allProducts = fetchAllProducts(credentials)
-    checkAllCustomerFacingUrlsForSeoViaYoast(allProducts, wordPressWriteCredentials)
+    val allMedia = getAllMedia(wordPressWriteCredentials, skipRecentMedia = false)
     if (shouldCheckForLargeImagesOutsideMediaLibraryFromFTP) {
         checkForImagesOutsideMediaLibraryFromFTP(allMedia, allProducts)
     } else {
@@ -157,7 +157,7 @@ fun main() {
         checkPluginsList(wordPressWriteCredentials)
 
         if (checkMediaLibraryChecks) {
-            val allNonRecentMedia = getAllMedia(wordPressWriteCredentials, nonRecent = true)
+            val allNonRecentMedia = getAllMedia(wordPressWriteCredentials, skipRecentMedia = true)
             checkForUnusedImagesInsideMediaLibrary(allNonRecentMedia, allProducts, wordPressWriteCredentials)
             checkForMissingFilesInsideMediaLibraryEntries(allNonRecentMedia)
         }
@@ -233,6 +233,8 @@ fun main() {
                 }
             }
         }
+        checkAllCustomerFacingUrlsForSeoViaYoast(allProducts, wordPressWriteCredentials)
+        checkAllMediaLibraryImagesForMissingAltText(allMedia)
     }
     println("\nSummary of triggered checks:")
     errorCountMap.forEach { (error, count) ->
@@ -1086,7 +1088,7 @@ fun deleteUnusedImage(unusedImage: Media, wordPressWriteCredentials: String) {
     }
 }
 
-fun getAllMedia(wordPressWriteCredentials: String, nonRecent: Boolean): List<Media> {
+fun getAllMedia(wordPressWriteCredentials: String, skipRecentMedia: Boolean): List<Media> {
     val formatter = DateTimeFormatter.ISO_DATE_TIME
     val threeMonthsAgo = LocalDate.now().minusMonths(3)
     val url = "https://foryoufashion.gr/wp-json/wp/v2/media?per_page=100&page="
@@ -1114,7 +1116,7 @@ fun getAllMedia(wordPressWriteCredentials: String, nonRecent: Boolean): List<Med
             }
         }
 
-        val filteredMedia = if (nonRecent) {
+        val filteredMedia = if (skipRecentMedia) {
             media.filter {
                 val mediaDate = LocalDate.parse(it.date, formatter)
                 mediaDate.isBefore(threeMonthsAgo)
@@ -1470,8 +1472,8 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
 
                 val modified = json.get("article_modified_time")?.asText()
                 // println("DEBUG: SEO modified $modified")
-                // TODO add a fake meta_data to triggered a new modified time.
 
+                // TODO review the quality of all titles, headers, and meta descriptions of my pages.
                 if (title?.isBlank()!=false) {
                     logError(
                         "SAKIS Σελίδες χωρίς SEO τίτλο",
@@ -1520,7 +1522,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                     )
                 }
 
-                if (modified?.isNotBlank() ?: false) {
+                if (modified?.isNotBlank()==true) {
                     // println("DEBUG: modified date $modified")
                     val formatter = DateTimeFormatter.ISO_DATE_TIME
                     val modifiedDate = LocalDateTime.parse(modified, formatter)
@@ -1546,7 +1548,6 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                 }
             }
         }
-        // TODO add some cache so that I don't check each url all the time - takes a long time.
     }
 }
 
@@ -1711,10 +1712,11 @@ fun checkPhotoshootTags(product: Product, credentials: String) {
 
     if (specificPhotoshootTags.isNotEmpty() && !hasGenericTag) {
         logError(
-            "SAKIS checkPhotoshootTags",
+            "SAKIS checkPhotoshootTags (actioned automatically)",
             "ERROR: Product SKU ${product.sku} has specific fwtografisi tag but is missing the generic tag '$genericFwtografisiTagName'.",
             alsoEmail = false
         )
+        println("LINK: ${product.permalink}")
         if (shouldAddGenericPhotoshootTag) {
             println("ACTION: Adding generic tag '$genericFwtografisiTagName' to product SKU ${product.sku}.")
             addGenericPhotoshootTag(product, genericFwtografisiTagSlug, credentials)
@@ -2317,16 +2319,13 @@ private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
     imageToProductsMap.forEach { (imageUrl, associatedProducts) ->
         val distinctAssociatedProducts = associatedProducts.distinct()
         if (distinctAssociatedProducts.size > 1) {
+            val productsWithSharedImage = distinctAssociatedProducts.map { product ->
+                "-SKU: ${product.sku}, LINK: ${product.permalink}"
+            }.joinToString("\n")
             logError(
-                "SAKIS checkForDuplicateImagesAcrossProducts 1",
-                "ERROR: Duplicate image found across products.",
-                alsoEmail = false
+                "Η ιδια φωτογραφια σε πολλα προιοντα",
+                "ΣΦΑΛΜΑ: Η ιδια φωτογραφια χρησιμοποιειται σε περισσοτερα απο ενα προιοντα.\nΦωτογραφια: $imageUrl\nΠροιοντα με την ιδια φωτογραφια:\n$productsWithSharedImage",
             )
-            println("ERROR: Image URL: $imageUrl")
-            println("ERROR: Products with this image:")
-            distinctAssociatedProducts.forEach { product ->
-                println("ERROR: SKU: ${product.sku}, LINK: ${product.permalink}")
-            }
         }
     }
 }

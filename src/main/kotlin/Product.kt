@@ -87,7 +87,8 @@ data class Media(
     val media_type: String, // Should be "image" for images
     val mime_type: String, // MIME type to ensure you're working with images
     val source_url: String, // The URL of the image file
-    val date: String // Date when the media was uploaded (ISO 8601 format)
+    val date: String, // Date when the media was uploaded (ISO 8601 format)
+    val alt_text: String? = null // Alt text for accessibility
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -106,8 +107,8 @@ data class MediaDetails(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MediaSize(
     val file: String?,
-    val width: Int?,
-    val height: Int?,
+    val width: Any?,
+    val height: Any?,
     val mime_type: String?,
     val source_url: String?
 )

@@ -9,15 +9,6 @@
     "sakis_description": ""
   },
   {
-    "name": "Advanced Custom Fields: Table Field",
-    "version": "1.3.27",
-    "status": "active",
-    "description": {
-      "rendered": "This free Add-on adds a table field type for the Advanced Custom Fields plugin. <cite>By <a href=\"http://www.johannheyne.de/\">Johann Heyne</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
     "name": "Broken Link Checker",
     "version": "2.4.6",
     "status": "active",
@@ -46,7 +37,7 @@
   },
   {
     "name": "Category Order and Taxonomy Terms Order",
-    "version": "1.8.8",
+    "version": "1.9",
     "status": "active",
     "description": {
       "rendered": "Order Categories and all custom taxonomies terms (hierarchically) and child terms using a Drag and Drop Sortable javascript capability. <cite>By <a href=\"https://www.nsp-code.com\">Nsp-Code</a>.</cite>"
@@ -433,7 +424,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "3.0.5",
+    "version": "3.0.6",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -505,7 +496,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "25.1",
+    "version": "25.2",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
@@ -567,24 +558,6 @@
     "sakis_description": "B2B plugin"
   },
   {
-    "name": "Preview E-mails for WooCommerce",
-    "version": "2.2.14",
-    "status": "active",
-    "description": {
-      "rendered": "An Extension for WooCommerce that lets you Preview Emails, without having to send them. <cite>By <a href=\"https://digamberpradhan.com/\">Digamber Pradhan</a>.</cite>\n"
-    },
-    "sakis_description": "missing"
-  },
-  {
-    "name": "Preview E-mails for WooCommerce",
-    "version": "2.2.14",
-    "status": "active",
-    "description": {
-      "rendered": "An Extension for WooCommerce that lets you Preview Emails, without having to send them. <cite>By <a href=\"https://digamberpradhan.com/\">Digamber Pradhan</a>.</cite>\n"
-    },
-    "sakis_description": "missing"
-  },
-  {
     "name": "User Switching",
     "version": "1.9.2",
     "status": "active",
@@ -592,5 +565,23 @@
       "rendered": "Στιγμιαία εναλλαγή μεταξύ λογαριασμών χρηστών στο WordPress <cite>By <a href=\"https://johnblackbourn.com\">John Blackbourn</a>.</cite>"
     },
     "sakis_description": "missing"
+  },
+  {
+    "name": "SVG Suport",
+    "version": "2.5.14",
+    "status": "active",
+    "description": {
+      "rendered": "Upload SVG files to the Media Library and render SVG files inline for direct styling/animation of an SVG&#8217;s internal elements using CSS/JS.\n"
+    },
+    "sakis_description": "We have some website icons (e.g. social media) that are SVGs"
+  },
+  {
+    "name": "WPCode Lite",
+    "version": "2.2.8",
+    "status": "active",
+    "description": {
+      "rendered": "Easily add code snippets in WordPress. Insert scripts to the header and footer, add PHP code snippets with conditional logic, insert ads pixel, custom content, and more. <cite>By <a href=\"https://www.wpcode.com/\">WPCode</a>.</cite>"
+    },
+    "sakis_description": "I installed this to add a custom script in the header, for SEO purposes"
   }
 ]
