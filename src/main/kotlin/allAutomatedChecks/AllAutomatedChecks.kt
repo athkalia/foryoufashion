@@ -947,6 +947,20 @@ fun checkForMissingImagesAltText(product: Product, credentials: String) {
     }
 }
 
+fun checkAllMediaLibraryImagesForMissingAltText(allMedia: List<Media>) {
+    for (media in allMedia) {
+        if (media.media_type.startsWith("image") // Check only image media types
+            && media.alt_text.isNullOrEmpty()
+        ) {
+            logError(
+                "Λειπουν εναλλακτικα κειμενα για φωτογραφιες",
+                "ΣΦΑΛΜΑ: Η φωτογραφια LINK 'https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit' δεν εχει εναλλακτικο κειμενο. " +
+                        "Αν η εικονα χρειαζεται, τοτε βαλε μια συντομη περιγραφη της εικονας, αλλιως διεγραψε την.",
+            )
+        }
+    }
+}
+
 fun checkForMissingFilesInsideMediaLibraryEntries(allNonRecentMedia: List<Media>) {
     val cache = loadMediaCache()
     val today = LocalDate.now()
