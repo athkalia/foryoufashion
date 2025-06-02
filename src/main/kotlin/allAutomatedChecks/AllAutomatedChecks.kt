@@ -1438,7 +1438,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
 
             if (robots==null) {
                 logError(
-                    "SAKIS Missing robots meta tag",
+                    "SAKIS Yoast: Missing robots meta tag",
                     "ERROR: Η σελίδα $url δεν έχει robots meta tag",
                     alsoEmail = false
                 )
@@ -1458,9 +1458,27 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                 val ogDescription = json.get("og_description")?.asText()
                 // println("DEBUG: SEO meta description $ogDescription")
 
-                // TODO compare the description to the product short description, and if it's the same then update it.
-                // Product Urls automatically get a description from the product short description - that's good enough.
-                if (url !in productUrls && (ogDescription==null || ogDescription!!.isBlank())) {
+                val productShortDescriptions = allProducts
+                    .filter { it.status=="publish" }
+                    .associate { it.permalink to it.short_description }
+
+                if (url in productUrls) {
+                    if (url in productShortDescriptions) {
+                        val shortDescription = productShortDescriptions.getValue(url)
+                        val shortDescriptionWithoutSpecialChars =
+                            shortDescription.replace(Regex("<[^>]*>"), "").replace(Regex("\\s+"), " ")
+                                .replace("  ", " ").replace("&#8220;", "\"").replace("&#8221;", "\"").trim()
+                        val ogDescriptionWithoutSpecialChars =
+                            ogDescription?.replace("   ", " ")?.replace("  ", " ")?.trim()
+                        if (shortDescriptionWithoutSpecialChars==ogDescriptionWithoutSpecialChars) {
+                            logError(
+                                "SAKIS Yoast: Περιγραφή ίδια με short description",
+                                "ERROR: Η σελίδα $url έχει ίδια Yoast meta description με το short description του προϊόντος.",
+                                alsoEmail = false
+                            )
+                        }
+                    } else throw Exception("ERROR: Missing URL: $url")
+                } else if (url !in productUrls && ogDescription.isNullOrBlank()) {
                     println("DEBUG: Scanning og:description for page: $url")
                     logError(
                         "SAKIS Yoast: Page without meta description",
@@ -1490,7 +1508,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                 // TODO review the quality of all titles, headers, and meta descriptions of my pages.
                 if (title?.isBlank()!=false) {
                     logError(
-                        "SAKIS Σελίδες χωρίς SEO τίτλο",
+                        "SAKIS Yoast: Σελίδες χωρίς SEO τίτλο",
                         "ERROR: Η σελίδα $url δεν έχει SEO title tag.",
                         alsoEmail = false
                     )
@@ -1498,7 +1516,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
 
                 if (canonical?.isBlank()!=false || !canonical.startsWith("https://")) {
                     logError(
-                        "SAKIS Κακή canonical",
+                        "SAKIS Yoast: Κακή canonical",
                         "ERROR: Η σελίδα $url έχει λάθος ή ανύπαρκτο canonical tag.",
                         alsoEmail = false
                     )
@@ -1509,7 +1527,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                     val follow = robots.get("follow")?.asText() ?: ""
                     if (index=="noindex" || follow=="nofollow") {
                         logError(
-                            "SAKIS Robots noindex/nofollow",
+                            "SAKIS Yoast: Robots noindex/nofollow",
                             "ERROR: Η σελίδα $url έχει robots tag με τιμές $index / $follow",
                             alsoEmail = false
                         )
@@ -1542,7 +1560,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                     val modifiedDate = LocalDateTime.parse(modified, formatter)
                     if (modifiedDate.isBefore(LocalDateTime.now().minusYears(1))) {
                         logError(
-                            "SAKIS Παλιό περιεχόμενο",
+                            "SAKIS Yoast: Παλιό περιεχόμενο",
                             "ERROR: Η σελίδα $url έχει παλιό content (last modified: $modified).",
                             alsoEmail = false
                         )
@@ -1554,7 +1572,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                     val follow = robots.get("follow")?.asText() ?: ""
                     if (index!="noindex" || follow!="nofollow") {
                         logError(
-                            "SAKIS Robots noindex/nofollow",
+                            "SAKIS Yoast: Robots noindex/nofollow",
                             "ERROR: Η σελίδα $url έχει robots tag με τιμές $index / $follow",
                             alsoEmail = false
                         )
