@@ -195,6 +195,7 @@ fun main() {
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes, credentials)
             checkForMissingImages(product)
+            checkForMissingPromitheutisTag(product)
             checkForTyposInProductText(product)
             checkForDuplicateImagesInAProduct(product)
             checkForNonPortraitImagesWithCache(product)
@@ -875,7 +876,7 @@ fun checkForMissingGalleryVideo(product: Product) {
         val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         if (productCreationDate.isAfter(startTargetDate) && productCreationDate.isBefore(endTargetDate)) {
             val metaData = product.meta_data
-            // println("DEBUG: meta_data: $metaData")
+            // println("DEBUG: meta_data for SKU ${product.sku}: $metaData")
             val galleryVideoMetaData = metaData.find { it.key=="gallery_video" }
             val galleryVideo = galleryVideoMetaData?.value as? String ?: ""
             val isGalleryVideoMissing = galleryVideo.isBlank()
@@ -1163,11 +1164,14 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
         val ratio = dimensions.second.toDouble() / dimensions.first.toDouble()
         if (ratio > 1.51 || ratio < 1.49) {
             logError(
-                "SAKIS IncorrectImageRatio",
-                "ERROR: Product ${product.sku} image ${image.src} has the wrong resolution ratio ($ratio). Image width: ${dimensions.first}px, image height: ${dimensions.second}px ",
-                alsoEmail = false
+                "Λαθος αναλογια υψους και πλατους για φωτογραφια",
+                "ΣΦΑΛΜΑ: Η εικόνα ${image.src} του προϊόντος ${product.sku} έχει λάθος αναλογία υψους και πλατους ($ratio). " +
+                        "Πλάτος εικόνας: ${dimensions.first}, ύψος εικόνας: ${dimensions.second}" +
+                        "\nΤσεκαρε την φωτογραφια αν φαινεται καλα μεσα στο προιον και απο κινητο και απο υπολογιστη. " +
+                        "Εαν φαινεται οκ τοτε ενημερωσε με για να την εξαιρεσω απο τον ελεγχο. Εαν κατι δεν φαινεται καλα "+
+                         "τοτε πες μου για να φτιαξω τη φωτογραφια." +
+                        "\nLINK: ${product.permalink}",
             )
-            println("LINK: ${product.permalink}")
         }
     }
     saveImageCache(cache)
@@ -2337,7 +2341,8 @@ private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
     val imageToProductsMap = mutableMapOf<String, MutableList<Product>>()
     for (product in products) {
         if (product.sku !in listOf(
-                "59183-514", "59182-514", "59341-003", "59492-561", "59492-488"
+                "59183-514", "59182-514", "59341-003", "59492-561", "59492-488", "59481-561", "58797-561",
+                "59420-029", "59667-029"
             )
         ) { // known to contain duplicate images
             val images = product.images
@@ -2346,18 +2351,17 @@ private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
                 imageToProductsMap.computeIfAbsent(imageUrl) { mutableListOf() }.add(product)
             }
         }
-    }
-
-    imageToProductsMap.forEach { (imageUrl, associatedProducts) ->
-        val distinctAssociatedProducts = associatedProducts.distinct()
-        if (distinctAssociatedProducts.size > 1) {
-            val productsWithSharedImage = distinctAssociatedProducts.map { product ->
-                "-SKU: ${product.sku}, LINK: ${product.permalink}"
-            }.joinToString("\n")
-            logError(
-                "Η ιδια φωτογραφια σε πολλα προιοντα",
-                "ΣΦΑΛΜΑ: Η ιδια φωτογραφια χρησιμοποιειται σε περισσοτερα απο ενα προιοντα.\nΦωτογραφια: $imageUrl\nΠροιοντα με την ιδια φωτογραφια:\n$productsWithSharedImage",
-            )
+        imageToProductsMap.forEach { (imageUrl, associatedProducts) ->
+            val distinctAssociatedProducts = associatedProducts.distinct()
+            if (distinctAssociatedProducts.size > 1) {
+                val productsWithSharedImage = distinctAssociatedProducts.map { product ->
+                    "-SKU: ${product.sku}, LINK: ${product.permalink}"
+                }.joinToString("\n")
+                logError(
+                    "Η ιδια φωτογραφια σε πολλα προιοντα",
+                    "ΣΦΑΛΜΑ: Η ιδια φωτογραφια χρησιμοποιειται σε περισσοτερα απο ενα προιοντα.\nΦωτογραφια: $imageUrl\nΠροιοντα με την ιδια φωτογραφια:\n$productsWithSharedImage",
+                )
+            }
         }
     }
 }
@@ -2434,6 +2438,21 @@ private fun updateProductDescriptions(
         val responseBody = response.body?.string()
         if (!response.isSuccessful) {
             throw IOException("Unexpected code $response, body: $responseBody")
+        }
+    }
+}
+
+fun checkForMissingPromitheutisTag(product: Product) {
+    if (product.status!="private" && product.status!="draft" && product.sku !in listOf(
+            "3821", "9101", "2345", "8Ε0053", "3858", "3885", "5832", "7489",
+        )
+    ) {
+        val hasTag = product.tags.any { it.name.startsWith("ΠΡΟΜΗΘΕΥΤΗΣ_") }
+        if (!hasTag) {
+            logError(
+                "Προϊόν χωρίς ετικέτα προμηθευτή",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} δεν έχει ετικέτα προμηθευτή.\nLINK: ${product.permalink}",
+            )
         }
     }
 }
@@ -2769,11 +2788,9 @@ fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
             val allOutOfStock = productVariations.all { it.stock_status=="outofstock" }
             if (allOutOfStock) {
                 logError(
-                    "SAKIS checkForOldProductsThatAreOutOfStockAndMoveToPrivate 1",
-                    "ERROR: Product ${product.sku} is out of stock on all sizes and was added more than 2 years ago.",
-                    alsoEmail = false
+                    "Παλιο προιον out of stock",
+                    "ΣΦΑΛΜΑ: Το προιον ${product.sku} ειναι out of stock σε ολα τα μεγεθη και δημιουργηθηκε παραπανω απο 2 χρονια πριν\nLINK: ${product.permalink}\nΜεταφερθηκε αυτοματα στα απορρητα προιοντα",
                 )
-                println("LINK: ${product.permalink}")
                 if (shouldMoveOldOutOfStockProductsToPrivate) {
                     updateProductStatusToPrivate(product, credentials)
                 }

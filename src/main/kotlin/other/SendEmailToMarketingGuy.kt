@@ -17,7 +17,7 @@ import readOnlyConsumerKey
 import readOnlyConsumerSecret
 import sakisForYouFashionEmailPassword
 
-const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 2318.0
+const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 5000.0
 const val monthlyMarketingPayment: Double = 400.0
 const val totalMarketingSpendIncludingMonthlyPayment =
     MANUAL_INPUT_totalMarketingExpensesForMonth + monthlyMarketingPayment
@@ -29,15 +29,15 @@ fun main(args: Array<String>) {
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val month = if (thisMonth) getCurrentMonth() else getPreviousMonthDate()
     val currentMonthOrders = fetchOrders(month, credentials)
-    val totalRevenue = calculateTotalRevenue(currentMonthOrders)
-    val nonCompletedOrdersPercentage = calculateNonCompletedOrdersPercentage(currentMonthOrders)
+    val refundedOrdersPercentage = calculateRefundedOrdersPercentage(currentMonthOrders)
     val completedRevenue = calculateCompletedRevenue(currentMonthOrders)
+    val refundedRevenue = calculateRefundedRevenue(currentMonthOrders)
 
     val monthAndYear = month.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val emailContent = generateEmailContent(
-        totalRevenue,
-        nonCompletedOrdersPercentage,
+        refundedOrdersPercentage,
         completedRevenue,
+        refundedRevenue,
         monthAndYear,
     )
     sendEmail(toEmail, emailContent, monthAndYear)
@@ -77,14 +77,10 @@ fun fetchOrders(previousMonthDate: LocalDate, credentials: String): List<Order> 
     return orders
 }
 
-fun calculateTotalRevenue(orders: List<Order>): Double {
-    return orders.sumOf { it.total.toDouble() }
-}
-
-fun calculateNonCompletedOrdersPercentage(orders: List<Order>): Double {
-    val totalOrders = orders.size
-    val nonCompletedOrders = orders.count { it.status!="completed" }
-    return if (totalOrders > 0) (nonCompletedOrders.toDouble() / totalOrders.toDouble()) * 100 else 0.0
+fun calculateRefundedOrdersPercentage(orders: List<Order>): Double {
+    val refundedOrders = orders.count { it.status=="refunded" }
+    val completedOrders = orders.count { it.status=="completed" }
+    return (refundedOrders.toDouble() / (completedOrders + refundedOrders).toDouble()) * 100
 }
 
 fun calculateCompletedRevenue(orders: List<Order>): Double {
@@ -92,21 +88,26 @@ fun calculateCompletedRevenue(orders: List<Order>): Double {
     return completedOrders.sumOf { it.total.toDouble() }
 }
 
+fun calculateRefundedRevenue(orders: List<Order>): Double {
+    return orders.filter { it.status=="refunded" }.sumOf { it.total.toDouble() }
+}
+
 fun generateEmailContent(
-    allOrdersRevenue: Double,
-    nonCompletedOrdersPercentage: Double,
+    refundedOrdersPercentage: Double,
     completedOrdersRevenue: Double,
+    refundedRevenue: Double,
     monthAndYear: String,
 ): String {
     return """
         Καλησπέρα,
 
-        Σας επισυνάπτω τις πωλήσεις απο το site για το μήνα $monthAndYear
-        - Συνολικές Πωλήσεις: €${"%.2f".format(allOrdersRevenue)}
-        - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue)}
-        - Μη ολοκληρωμένες παραγγελίες %: ${"%.2f".format(nonCompletedOrdersPercentage)}%
+        Σας επισυνάπτω τις πωλήσεις από το site για το μήνα $monthAndYear
+        - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue+refundedRevenue)}
+        - Επιστροφές χρημάτων: €${"%.2f".format(refundedRevenue)}
+        - Έσοδα μετά τις επιστροφές: €${"%.2f".format(completedOrdersRevenue)}
+        - Ποσοστό επιστροφών: ${"%.2f".format(refundedOrdersPercentage)}%
         - Συνολικά έξοδα marketing για το μήνα: €${"%.2f".format(totalMarketingSpendIncludingMonthlyPayment)} 
-        - Συνολικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / totalMarketingSpendIncludingMonthlyPayment)} 
+        - Συνολικό πραγματικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / totalMarketingSpendIncludingMonthlyPayment)} 
 
         Φιλικά,
         Σάκης
