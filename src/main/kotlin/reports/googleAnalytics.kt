@@ -29,7 +29,7 @@ fun main() {
         val response = analyticsData.runReport(
             RunReportRequest.newBuilder()
                 .setProperty("properties/$propertyId")
-                .addDateRanges(DateRange.newBuilder().setStartDate("30daysAgo").setEndDate("today"))
+                .addDateRanges(DateRange.newBuilder().setStartDate("15daysAgo").setEndDate("today"))
                 .addDimensions(Dimension.newBuilder().setName("pagePath"))
                 .addMetrics(Metric.newBuilder().setName("screenPageViews"))
                 .addOrderBys(OrderBy.newBuilder()
@@ -41,9 +41,10 @@ fun main() {
         val baseUrl = "https://foryoufashion.gr"
         val prefix = "/e-shop-gynaikeia-rouxa-online/"
 
-        println("Top Visited Product Pages (Last 30 Days):")
+        println("Top Visited Product Pages (Last 15 Days):")
         response.rowsList
             .filter { row -> row.dimensionValuesList[0].value.startsWith(prefix) }
+            .take(10)
             .forEachIndexed { index, row ->
                 val fullUrl = baseUrl + row.dimensionValuesList[0].value
                 println("${index + 1}. $fullUrl - ${row.metricValuesList[0].value} views")

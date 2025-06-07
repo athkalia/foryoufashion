@@ -23,6 +23,7 @@ import Tag
 import Variation
 import archive.client
 import archive.mapper
+import chatGPTRestApiKey
 import com.twelvemonkeys.imageio.plugins.webp.WebPImageReaderSpi
 import forYouFashionFtpPassword
 import forYouFashionFtpUrl
@@ -44,6 +45,7 @@ import org.apache.commons.net.ftp.FTPClient
 import kotlin.random.Random
 import kotlin.system.exitProcess
 import okhttp3.Credentials
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
@@ -78,6 +80,7 @@ const val shouldAddGenericPhotoshootTag = true
 const val shouldSyncTiktokVideoLinkFromGallery = true
 const val shouldSyncWholesalePricesAcrossVariations = true
 const val shouldSyncWholesaleSalePricesAcrossVariations = true
+const val useChatGptForSeoSuggestions = true
 
 // One-off updates
 const val shouldAutomaticallyDeleteUnusedImages = false
@@ -140,7 +143,6 @@ fun main() {
     if (readOnly && (allApiUpdateVariables.any { it })) {
         throw Exception("Something set for update but readOnly is set to 'false'")
     }
-
 
     val credentials = if (allApiUpdateVariables.any { it }) {
         Credentials.basic(writeConsumerKey, writeConsumerSecret)
@@ -1168,8 +1170,8 @@ fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
                 "ΣΦΑΛΜΑ: Η εικόνα ${image.src} του προϊόντος ${product.sku} έχει λάθος αναλογία υψους και πλατους ($ratio). " +
                         "Πλάτος εικόνας: ${dimensions.first}, ύψος εικόνας: ${dimensions.second}" +
                         "\nΤσεκαρε την φωτογραφια αν φαινεται καλα μεσα στο προιον και απο κινητο και απο υπολογιστη. " +
-                        "Εαν φαινεται οκ τοτε ενημερωσε με για να την εξαιρεσω απο τον ελεγχο. Εαν κατι δεν φαινεται καλα "+
-                         "τοτε πες μου για να φτιαξω τη φωτογραφια." +
+                        "Εαν φαινεται οκ τοτε ενημερωσε με για να την εξαιρεσω απο τον ελεγχο. Εαν κατι δεν φαινεται καλα " +
+                        "τοτε πες μου για να φτιαξω τη φωτογραφια." +
                         "\nLINK: ${product.permalink}",
             )
         }
@@ -1462,13 +1464,31 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                 val ogDescription = json.get("og_description")?.asText()
                 // println("DEBUG: SEO meta description $ogDescription")
 
-                val productShortDescriptions = allProducts
-                    .filter { it.status=="publish" }
-                    .associate { it.permalink to it.short_description }
-
                 if (url in productUrls) {
-                    if (url in productShortDescriptions) {
-                        val shortDescription = productShortDescriptions.getValue(url)
+                    val currentProduct = allProducts.first { it.permalink==url }
+                    if (currentProduct.sku !in listOf(
+                            "59393-011", "59041-595", "59370-040", "58696-289", "59392-281", "58585-007",
+                            "59433-402", "59401-060", "59340-003", "59401-005", "59340-036", "59413-020",
+                            "59414-003", "59195-396", "58956-396", "59181-097", "59193-097", "59194-097",
+                            "59195-097", "59294-003", "57140-003", "55954-005", "58218-027", "59060-011",
+                            "59237-1278", "58735-004", "59068-561", "59052-004", "59183-514", "59182-514",
+                            "59073-514", "59072-514", "59043-051", "58996-005", "59039-281", "59039-003",
+                            "58995-051", "59017-004", "59017-281", "58301-003", "59040-004", "58956-097",
+                            "58958-396", "58871-465", "58957-097", "58983-005", "58823-488", "57762-003",
+                            "57761-003", "58807-004", "58721-003", "58721-016", "58719-001", "58693-003",
+                            "58474-396", "58474-097", "57256-003", "58608-003", "58696-003", "58699-041",
+                            "58723-040", "58635-016", "58687-003", "58685-003", "58686-003", "58689-003",
+                            "58679-005", "58678-006", "58677-007", "58616-003", "58615-012", "58612-006",
+                            "58611-012", "58611-003", "57762-396", "58610-003", "58609-003", "58604-006",
+                            "58602-003", "58603-003", "58603-012", "58315-027", "57761-396", "57763-396",
+                            "58064-040", "57948-003", "57211-060", "57211-013", "58057-002", "58061-332",
+                            "58069-029", "57966-003", "58071-011", "58071-029", "58002-003", "58060-003",
+                            "57869-005", "57762-097", "57763-097", "57761-097", "57761-576", "57517-004",
+                            "57151-023", "57144-060", "57210-060", "57155-003", "57992-097", "58444-027",
+                            "58459-028", "58459-561", "57998-003"
+                        )
+                    ) {
+                        val shortDescription = currentProduct.short_description
                         val shortDescriptionWithoutSpecialChars =
                             shortDescription.replace(Regex("<[^>]*>"), "").replace(Regex("\\s+"), " ")
                                 .replace("  ", " ").replace("&#8220;", "\"").replace("&#8221;", "\"").trim()
@@ -1480,8 +1500,29 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                                 "ERROR: Η σελίδα $url έχει ίδια Yoast meta description με το short description του προϊόντος.",
                                 alsoEmail = false
                             )
+                            if (useChatGptForSeoSuggestions) {
+                                println("DEBUG: Generating Yoast SEO meta description suggestion for $url...")
+                                val suggestedYoastMetaDescription = generateSeoDescriptionWithChatGPT(
+                                    productTitle = currentProduct.name,
+                                    productUrl = url,
+                                    shortDescription = shortDescription,
+                                    longDescription = currentProduct.description,
+                                    imageUrls = currentProduct.images.map { it.src },
+                                    openAiApiKey = chatGPTRestApiKey
+                                )
+                                println("DEBUG: Suggested Meta Description from ChatGPT: $suggestedYoastMetaDescription")
+                                if (suggestedYoastMetaDescription=="Skipping - not a dress") {
+                                    logError(
+                                        "SAKIS chatGPT skipped a product",
+                                        "ERROR: Page $url is likely not a dress - review and add to excluded products",
+                                        alsoEmail = false
+                                    )
+                                } else {
+                                    updateYoastMetaDescription(currentProduct, suggestedYoastMetaDescription)
+                                }
+                            }
                         }
-                    } else throw Exception("ERROR: Missing URL: $url")
+                    }
                 } else if (url !in productUrls && ogDescription.isNullOrBlank()) {
                     println("DEBUG: Scanning og:description for page: $url")
                     logError(
@@ -1509,7 +1550,6 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                 val modified = json.get("article_modified_time")?.asText()
                 // println("DEBUG: SEO modified $modified")
 
-                // TODO review the quality of all titles, headers, and meta descriptions of my pages.
                 if (title?.isBlank()!=false) {
                     logError(
                         "SAKIS Yoast: Σελίδες χωρίς SEO τίτλο",
@@ -1583,6 +1623,116 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                     }
                 }
             }
+        }
+    }
+}
+
+fun updateYoastMetaDescription(product: Product, yoastMetaDescription: String) {
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val payload = mapper.writeValueAsString(
+        mapOf("meta_data" to listOf(mapOf("key" to "_yoast_wpseo_metadesc", "value" to yoastMetaDescription)))
+    )
+    val body = payload.toRequestBody("application/json".toMediaTypeOrNull())
+    val request = Request.Builder()
+        .url(url)
+        .put(body)
+        .header("Authorization", Credentials.basic(writeConsumerKey, writeConsumerSecret))
+        .build()
+
+    client.newCall(request).execute().use { response ->
+        val responseBody = response.body?.string()
+        if (!response.isSuccessful) {
+            println("ERROR: Failed to update Yoast Meta Description for product ${product.id}: $responseBody")
+            throw IOException("Unexpected code $response")
+        } else {
+            println("SUCCESS: Updated Yoast Meta Description for product ${product.sku}")
+        }
+    }
+}
+
+fun generateSeoDescriptionWithChatGPT(
+    productTitle: String,
+    productUrl: String,
+    shortDescription: String,
+    longDescription: String,
+    imageUrls: List<String>,
+    openAiApiKey: String
+): String {
+    val textContent = """
+        You are an expert SEO copywriter for a premium Greek fashion brand (foryoufashion.gr) that sells elegant women’s dresses online. Your task is to generate concise, persuasive **Yoast meta descriptions** (under 155 characters) for individual product pages.
+        
+        Your writing should reflect a tone of **luxury, femininity, and confidence**, and be tailored to women shopping for dresses for **special occasions** such as weddings, baptisms, galas, and evening events.
+        
+        ### Your goals:
+        - Help each product rank for relevant Greek SEO keywords.
+        - Entice users to click by highlighting the dress's uniqueness and appeal.
+        - Naturally weave in 2–3 SEO keywords (see list below), without keyword stuffing.
+        - Vary your sentence structure across products. Avoid repetition like always starting with “Κομψό φόρεμα...”.
+        - Do not repeat the product name or color unless it’s essential.
+        - Assume the customer has already seen the product image.
+        - Keep it elegant and clear.
+        
+        ### You are given:
+        - A product title
+        - A product link
+        - A short description (may include HTML)
+        - A long description (may include HTML)
+        - Image(s) of the product
+        - A fixed list of relevant Greek SEO keywords
+        
+        Return **only the final Greek meta description snippet**, optimized for both SEO and clicks. No commentary or explanation.
+        If you cannot fulfill this request because the product is not a dress please reply exactly with: "Skipping - not a dress"
+        If for whatever other reason, you cannot fulfill this request, then reply exactly with "I'm sorry, I can't assist with that. Reason: <the reason why you cannot fulfill the request>"
+                
+        Details:
+        Title: $productTitle  
+        Link: $productUrl  
+        Short description: $shortDescription  
+        Long description: $longDescription  
+        
+        Greek SEO Keywords:  
+        βραδινά φορέματα, φορέματα για γάμο, φορέματα για βάπτιση, φορέματα κουμπάρας, επίσημα φορέματα, φορέματα για γαμήλιες δεξιώσεις, κομψά φορέματα για εκδηλώσεις online, μακριά βραδινά φορέματα, plus size φορέματα για γάμο, μοντέρνα φορέματα για εκδηλώσεις, ρούχα χονδρικής online, βραδινά φορέματα χονδρική, for you fashion, foryoufashion.gr, for you φορέματα
+""".trimIndent()
+
+    val imageContent = imageUrls.map { imageUrl ->
+        mapOf(
+            "type" to "image_url",
+            "image_url" to mapOf(
+                "url" to imageUrl,
+                "detail" to "low"
+            )
+        )
+    }
+
+    val contentList = mutableListOf<Map<String, Any>>()
+    contentList.add(mapOf("type" to "text", "text" to textContent))
+    contentList.addAll(imageContent)
+
+    val body = mapOf(
+        "model" to "gpt-4o",
+        "messages" to listOf(
+            mapOf("role" to "user", "content" to contentList)
+        ),
+        "temperature" to 0.7
+    )
+
+    val jsonBody = mapper.writeValueAsString(body)
+
+    val request = Request.Builder()
+        .url("https://api.openai.com/v1/chat/completions")
+        .header("Authorization", "Bearer $openAiApiKey")
+        .header("Content-Type", "application/json")
+        .post(jsonBody.toRequestBody("application/json".toMediaType()))
+        .build()
+
+    return executeWithRetry {
+        client.newCall(request).execute().use { res ->
+            if (!res.isSuccessful) {
+                throw Exception("ERROR: ChatGPT API failed with status ${res.code}")
+            }
+
+            val responseJson = mapper.readTree(res.body!!.string())
+            responseJson["choices"].first().get("message").get("content").asText().trim()
         }
     }
 }
