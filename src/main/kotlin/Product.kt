@@ -130,13 +130,15 @@ data class Variation(
     val sale_price: String,
     val stock_status: String,
     val manage_stock: Boolean,
-    val meta_data: List<MetaData>
+    val meta_data: List<MetaData>,
+    val status: String
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Attribute(
     val id: Int? = null,
     val name: String,
+    val slug: String? = null,
     val variation: Boolean,
     val visible: Boolean,
     val option: String? = null,

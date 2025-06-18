@@ -168,7 +168,6 @@ fun main() {
             updateNeesAfikseisProducts(allProducts, credentials)
         }
 
-        checkForDuplicateImagesAcrossProducts(allProducts)
         val allOrders = fetchAllOrders(credentials)
         checkPaymentMethodsInLastMonths(allOrders)
         val allAttributes = getAllAttributes(credentials)
@@ -186,7 +185,6 @@ fun main() {
             // println("DEBUG: product SKU: ${product.sku}")
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
-            checkForMissingImagesAltText(product, credentials)
             checkForMissingGalleryVideo(product)
             checkForProductsWithImagesNotInMediaLibrary(product, allMedia)
             checkCasualForemataHasCasualStyleAttribute(product)
@@ -215,6 +213,7 @@ fun main() {
             checkForProductsInParentCategoryOnly(product)
             if (shouldPerformVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
+                checkAllVariationsAreEnabled(product, productVariations)
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
@@ -417,6 +416,15 @@ fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Att
                 )
                 println("LINK: ${product.permalink}")
             }
+        }
+    }
+    if (product.categories.any { it.slug=="foremata" }) {
+        val ylikoAttribute = product.attributes.find { it.slug=="pa_yliko" }
+        if (ylikoAttribute==null) {
+            logError(
+                "Λειπει το 'Υλικό' απο φορεμα",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} είναι στην κατηγορία 'φορέματα' και λείπει το χαρακτηριστικό 'Υλικό'.\nLINK: ${product.permalink}",
+            )
         }
     }
 }
@@ -636,7 +644,7 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
     product: Product,
     productVariations: List<Variation>,
 ) {
-    if (product.status!="draft" && product.status!="private") {
+    if (product.status!="draft" && product.status!="private" && product.sku !in listOf("57851-443")) {
         val productOutOfStock = product.stock_status=="outofstock"
         val allVariationsOutOfStock = productVariations.all { it.stock_status=="outofstock" }
         val sixMonthsAgo = LocalDate.now().minus(6, ChronoUnit.MONTHS)
@@ -929,27 +937,6 @@ fun updateTiktokVideoUrl(product: Product, videoUrl: String) {
     }
 }
 
-fun checkForMissingImagesAltText(product: Product, credentials: String) {
-    if (product.status!="draft") {
-        var hasMissingAltText = false
-        for (image in product.images) {
-            if (image.alt.isEmpty()) {
-                hasMissingAltText = true
-                logError(
-                    "SAKIS checkForMissingImagesAltText",
-                    "ERROR: Product SKU ${product.sku} has an image with missing alt text.",
-                    alsoEmail = false
-                )
-                println("LINK: (product) ${product.permalink}")
-                println("LINK: (image in media gallery) https://foryoufashion.gr/wp-admin/post.php?post=${image.id}&action=edit")
-            }
-        }
-        if (shouldPopulateMissingImageAltText && hasMissingAltText) {
-            populateMissingImageAltText(product, credentials)
-        }
-    }
-}
-
 fun checkAllMediaLibraryImagesForMissingAltText(allMedia: List<Media>) {
     for (media in allMedia) {
         if (media.media_type.startsWith("image") // Check only image media types
@@ -957,7 +944,7 @@ fun checkAllMediaLibraryImagesForMissingAltText(allMedia: List<Media>) {
         ) {
             logError(
                 "Λειπουν εναλλακτικα κειμενα για φωτογραφιες",
-                "ΣΦΑΛΜΑ: Η φωτογραφια LINK 'https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit' δεν εχει εναλλακτικο κειμενο. " +
+                "ΣΦΑΛΜΑ: Η φωτογραφια LINK https://foryoufashion.gr/wp-admin/post.php?post=${media.id}&action=edit δεν εχει εναλλακτικο κειμενο. " +
                         "Αν η εικονα χρειαζεται, τοτε βαλε μια συντομη περιγραφη της εικονας, αλλιως διεγραψε την.",
             )
         }
@@ -1157,26 +1144,31 @@ fun findUnusedImages(
 }
 
 fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
-    val cache = loadImageCache()
-    for (image in product.images) {
-        val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
-            cache[image.src] = it
-        }
+    if (product.sku !in listOf(
+            "59665-051", "58855-012", "59664-013", "59131-029", "58798-293", "58812-556", "58459-561"
+        )
+    ) {
+        val cache = loadImageCache()
+        for (image in product.images) {
+            val dimensions = cache[image.src] ?: getImageDimensions(image.src).also {
+                cache[image.src] = it
+            }
 
-        val ratio = dimensions.second.toDouble() / dimensions.first.toDouble()
-        if (ratio > 1.51 || ratio < 1.49) {
-            logError(
-                "Λαθος αναλογια υψους και πλατους για φωτογραφια",
-                "ΣΦΑΛΜΑ: Η εικόνα ${image.src} του προϊόντος ${product.sku} έχει λάθος αναλογία υψους και πλατους ($ratio). " +
-                        "Πλάτος εικόνας: ${dimensions.first}, ύψος εικόνας: ${dimensions.second}" +
-                        "\nΤσεκαρε την φωτογραφια αν φαινεται καλα μεσα στο προιον και απο κινητο και απο υπολογιστη. " +
-                        "Εαν φαινεται οκ τοτε ενημερωσε με για να την εξαιρεσω απο τον ελεγχο. Εαν κατι δεν φαινεται καλα " +
-                        "τοτε πες μου για να φτιαξω τη φωτογραφια." +
-                        "\nLINK: ${product.permalink}",
-            )
+            val ratio = dimensions.second.toDouble() / dimensions.first.toDouble()
+            if (ratio > 1.51 || ratio < 1.49) {
+                logError(
+                    "Λαθος αναλογια υψους και πλατους για φωτογραφια",
+                    "ΣΦΑΛΜΑ: Η εικόνα ${image.src} του προϊόντος ${product.sku} έχει λάθος αναλογία υψους και πλατους ($ratio). " +
+                            "Πλάτος εικόνας: ${dimensions.first}, ύψος εικόνας: ${dimensions.second}" +
+                            "\nΤσεκαρε την φωτογραφια αν φαινεται καλα μεσα στο προιον και απο κινητο και απο υπολογιστη. " +
+                            "Εαν φαινεται οκ τοτε ενημερωσε με για να την εξαιρεσω απο τον ελεγχο. Εαν κατι δεν φαινεται καλα " +
+                            "τοτε πες μου για να φτιαξω τη φωτογραφια." +
+                            "\nLINK: ${product.permalink}",
+                )
+            }
         }
+        saveImageCache(cache)
     }
-    saveImageCache(cache)
 }
 
 fun checkForImagesWithTooLowResolution(product: Product) {
@@ -1185,7 +1177,7 @@ fun checkForImagesWithTooLowResolution(product: Product) {
             "56062-097", "57459-332", "55627-443", "55627-465", "55627-396", "55627-097", "56031-488", "57401-465",
             "58028-028", "58723-040", "58635-016", "58634-016", "58631-022", "58684-006", "58630-011", "58687-003",
             "57469-007", "57384-488", "56484-501", "55077-007", "56062-556", "56127-396", "58746-246", "56032-012",
-            "55627-488", "58689-003", "56062-029", "56067-003", "59050-596",
+            "55627-488", "58689-003", "56062-029", "56067-003", "59050-596", "58458-556",
         )
     ) {
         val cache = loadImageCache()
@@ -1615,11 +1607,13 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                     val index = robots.get("index")?.asText() ?: ""
                     val follow = robots.get("follow")?.asText() ?: ""
                     if (index!="noindex" || follow!="nofollow") {
-                        logError(
-                            "SAKIS Yoast: Robots noindex/nofollow",
-                            "ERROR: Η σελίδα $url έχει robots tag με τιμές $index / $follow",
-                            alsoEmail = false
-                        )
+                        if (!(url=="https://foryoufashion.gr/cart/" && index=="noindex" && follow=="follow") && !(url=="https://foryoufashion.gr/checkout/" && index=="noindex" && follow=="follow")) {
+                            logError(
+                                "SAKIS Yoast: Robots noindex/nofollow",
+                                "ERROR: Η σελίδα $url έχει robots tag με τιμές $index / $follow",
+                                alsoEmail = false
+                            )
+                        }
                     }
                 }
             }
@@ -1857,6 +1851,7 @@ fun checkNameModelTag(product: Product) {
         && product.sku!="57140-003" && product.sku!="59468-281" && product.sku!="59469-281" && product.sku!="57630-556"
         && product.sku!="58747-246" && product.sku!="56068-396" && product.sku!="55627-027" && product.sku!="58205-007"
         && product.sku!="58746-246" && product.sku!="55627-016" && product.sku!="58722-436" && product.sku!="58727-040"
+        && product.sku!="58458-556"
     ) {
         val formatter = DateTimeFormatter.ISO_DATE_TIME
         val targetDate = LocalDate.of(2024, 9, 20) // When we started implementing this
@@ -1962,7 +1957,8 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         val startTargetDate = LocalDate.of(2025, 4, 20)
         val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         if (productCreationDate.isAfter(startTargetDate)) {
-            if (product.short_description.length < 140 || product.short_description.length > 300) {
+            val shortDescriptionLength = product.short_description.replace(Regex("<[^>]*>"), "").trim().length
+            if (shortDescriptionLength < 140 || shortDescriptionLength > 300) {
                 logError(
                     "Προιον με συντομη περιγραφη προιοντος με λαθος μηκος",
                     "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει σύντομη περιγραφή με μη έγκυρο μήκος (${product.short_description.length} χαρακτήρες)" +
@@ -1971,167 +1967,36 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
             }
         }
         if (product.sku !in listOf(
-                "51746-332",
-                "59431-1282",
-                "58736-005",
-                "58736-001",
-                "59370-003",
-                "59041-595",
-                "59182-514",
-                "59073-514",
-                "59072-514",
-                "58072-040",
-                "51746-332",
-                "53860-015",
-                "53860-014",
-                "53860-289",
-                "58746-246",
-                "59346-002",
-                "59356-054",
-                "59356-003",
-                "59435-369",
-                "59345-022",
-                "59388-1278",
-                "59343-003",
-                "55954-007",
-                "59260-005",
-                "59260-001",
-                "59441-003",
-                "58735-003",
-                "59238-003",
-                "58593-005",
-                "59235-005",
-                "59235-003",
-                "59235-004",
-                "58580-036",
-                "59434-003",
-                "59432-003",
-                "59432-369",
-                "58585-007",
-                "59433-402",
-                "55954-005",
-                "59237-1278",
-                "58735-004",
-                "59017-004",
-                "59017-281",
-                "58301-003",
-                "57967-003",
-                "58807-004",
-                "58693-003",
-                "58691-004",
-                "57256-003",
-                "58608-003",
-                "58635-016",
-                "58685-003",
-                "58686-003",
-                "58602-003",
-                "57966-003",
-                "58002-003",
-                "57869-005",
-                "58747-246",
-                "59427-022",
-                "59427-003",
-                "59425-051",
-                "59425-005",
-                "58072-040",
-                "59323-013",
-                "59422-005",
-                "59422-012",
-                "59422-010",
-                "59440-369",
-                "59440-003",
-                "59426-002",
-                "59436-060",
-                "59423-027",
-                "59439-369",
-                "59431-1282",
-                "59438-003",
-                "59450-002",
-                "59438-060",
-                "59458-005",
-                "59454-587",
-                "59412-1274",
-                "59411-003",
-                "59327-281",
-                "59337-529",
-                "59394-003",
-                "59430-007",
-                "59393-011",
-                "59396-003",
-                "58736-005",
-                "58736-001",
-                "59397-020",
-                "59370-003",
-                "59395-011",
-                "59041-595",
-                "59370-040",
-                "58696-289",
-                "59392-281",
-                "59401-060",
-                "59340-003",
-                "59401-005",
-                "59340-036",
-                "59404-251",
-                "59419-281",
-                "59403-005",
-                "59442-005",
-                "59407-587",
-                "59413-020",
-                "59414-003",
-                "59416-251",
-                "59459-003",
-                "59409-003",
-                "59410-003",
-                "59410-020",
-                "59332-005",
-                "59329-561",
-                "59333-588",
-                "59330-1282",
-                "59331-567",
-                "59324-002",
-                "59338-501",
-                "59335-002",
-                "59342-003",
-                "59183-514",
-                "59182-514",
-                "59072-514",
-                "59028-004",
-                "59043-051",
-                "59016-019",
-                "58996-005",
-                "59039-281",
-                "59039-003",
-                "58995-051",
-                "59040-004",
-                "59020-023",
-                "58983-005",
-                "58823-488",
-                "58721-003",
-                "58721-016",
-                "58719-001",
-                "58621-012",
-                "58696-003",
-                "58699-041",
-                "58723-040",
-                "58684-006",
-                "58630-011",
-                "58682-003",
-                "58681-006",
-                "58619-005",
-                "58620-006",
-                "58618-006",
-                "58064-040",
-                "57948-003",
-                "57211-060",
-                "57211-013",
-                "58057-002",
-                "58071-011",
-                "58071-029",
-                "57210-060",
-                "57155-003",
+                "51746-332", "59431-1282", "58736-005", "58736-001", "59370-003", "59041-595", "59182-514",
+                "59073-514", "59072-514", "58072-040", "51746-332", "53860-015", "53860-014", "53860-289",
+                "58746-246", "59346-002", "59356-054", "59356-003", "59435-369", "59345-022", "59388-1278",
+                "59343-003", "55954-007", "59260-005", "59260-001", "59441-003", "58735-003", "59238-003",
+                "58593-005", "59235-005", "59235-003", "59235-004", "58580-036", "59434-003", "59432-003",
+                "59432-369", "58585-007", "59433-402", "55954-005", "59237-1278", "58735-004", "59017-004",
+                "59017-281", "58301-003", "57967-003", "58807-004", "58693-003", "58691-004", "57256-003",
+                "58608-003", "58635-016", "58685-003", "58686-003", "58602-003", "57966-003", "58002-003",
+                "57869-005", "58747-246", "59427-022", "59427-003", "59425-051", "59425-005", "58072-040",
+                "59323-013", "59422-005", "59422-012", "59422-010", "59440-369", "59440-003", "59426-002",
+                "59436-060", "59423-027", "59439-369", "59431-1282", "59438-003", "59450-002", "59438-060",
+                "59458-005", "59454-587", "59412-1274", "59411-003", "59327-281", "59337-529", "59394-003",
+                "59430-007", "59393-011", "59396-003", "58736-005", "58736-001", "59397-020", "59370-003",
+                "59395-011", "59041-595", "59370-040", "58696-289", "59392-281", "59401-060", "59340-003",
+                "59401-005", "59340-036", "59404-251", "59419-281", "59403-005", "59442-005", "59407-587",
+                "59413-020", "59414-003", "59416-251", "59459-003", "59409-003", "59410-003", "59410-020",
+                "59332-005", "59329-561", "59333-588", "59330-1282", "59331-567", "59324-002", "59338-501",
+                "59335-002", "59342-003", "59183-514", "59182-514", "59072-514", "59028-004", "59043-051",
+                "59016-019", "58996-005", "59039-281", "59039-003", "58995-051", "59040-004", "59020-023",
+                "58983-005", "58823-488", "58721-003", "58721-016", "58719-001", "58621-012", "58696-003",
+                "58699-041", "58723-040", "58684-006", "58630-011", "58682-003", "58681-006", "58619-005",
+                "58620-006", "58618-006", "58064-040", "57948-003", "57211-060", "57211-013", "58057-002",
+                "58071-011", "58071-029", "57210-060", "57155-003", "58689-003", "58679-005", "58678-006", "58616-003",
+                "58615-012", "58612-006", "58611-012", "58611-003", "58610-003", "58609-003", "58604-006",
+                "58603-003", "58603-012", "58061-332", "58069-029", "57998-003", "58060-003", "57517-004",
+                "57151-023"
             )
         ) {
-            if (product.description.length < 250 || product.description.length > 550) {
+            val longDescriptionLength = product.description.replace(Regex("<[^>]*>"), "").trim().length
+            if (longDescriptionLength < 250 || longDescriptionLength > 550) {
                 logError(
                     "Προιον με περιγραφη προιοντος με λαθος μηκος",
                     "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει περιγραφή με μη έγκυρο μήκος (${product.description.length} χαρακτήρες)" +
@@ -2175,6 +2040,17 @@ private fun checkForStockManagementAtProductLevelOutOfVariations(product: Produc
             "ERROR: Product ${product.sku} is a variable product with stock management at the product level. It should be only at the variation level",
             alsoEmail = false
         )
+    }
+}
+
+fun checkAllVariationsAreEnabled(product: Product, productVariations: List<Variation>) {
+    for (variation in productVariations) {
+        if (variation.status.lowercase()!="publish") {
+            logError(
+                "Απενεργοποιημένη παραλλαγή",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει παραλλαγή (${variation.sku}) που είναι απενεργοποιημένη.\nLINK: ${product.permalink}"
+            )
+        }
     }
 }
 
@@ -2484,35 +2360,6 @@ private fun checkForMissingImages(product: Product) {
             }
         }
         saveMediaCache(cache)
-    }
-}
-
-private fun checkForDuplicateImagesAcrossProducts(products: List<Product>) {
-    val imageToProductsMap = mutableMapOf<String, MutableList<Product>>()
-    for (product in products) {
-        if (product.sku !in listOf(
-                "59183-514", "59182-514", "59341-003", "59492-561", "59492-488", "59481-561", "58797-561",
-                "59420-029", "59667-029"
-            )
-        ) { // known to contain duplicate images
-            val images = product.images
-            for (image in images) {
-                val imageUrl = image.src
-                imageToProductsMap.computeIfAbsent(imageUrl) { mutableListOf() }.add(product)
-            }
-        }
-        imageToProductsMap.forEach { (imageUrl, associatedProducts) ->
-            val distinctAssociatedProducts = associatedProducts.distinct()
-            if (distinctAssociatedProducts.size > 1) {
-                val productsWithSharedImage = distinctAssociatedProducts.map { product ->
-                    "-SKU: ${product.sku}, LINK: ${product.permalink}"
-                }.joinToString("\n")
-                logError(
-                    "Η ιδια φωτογραφια σε πολλα προιοντα",
-                    "ΣΦΑΛΜΑ: Η ιδια φωτογραφια χρησιμοποιειται σε περισσοτερα απο ενα προιοντα.\nΦωτογραφια: $imageUrl\nΠροιοντα με την ιδια φωτογραφια:\n$productsWithSharedImage",
-                )
-            }
-        }
     }
 }
 
@@ -2930,7 +2777,7 @@ fun checkPrivateProductsInStock(product: Product, productVariations: List<Variat
 fun checkForOldProductsThatAreOutOfStockAndMoveToPrivate(
     product: Product, productVariations: List<Variation>, credentials: String
 ) {
-    if (product.status!="private" && product.status!="draft") {
+    if (product.status!="private" && product.status!="draft" && product.sku !in listOf("57851-443")) {
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val productDate = LocalDate.parse(product.date_created, dateFormatter)
         val twoYearsAgo = LocalDate.now().minus(2, ChronoUnit.YEARS)
@@ -3209,7 +3056,7 @@ fun sendAlertEmail(subject: String, message: String, b2b: Boolean) {
 
 fun shouldSendEmailForCategory(category: String): Boolean {
     val lastSent = emailThrottleCache[category]
-    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 9
+    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 8
 }
 
 fun loadEmailThrottleCache(): MutableMap<String, LocalDate> {
