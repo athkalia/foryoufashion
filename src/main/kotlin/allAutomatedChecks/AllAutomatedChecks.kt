@@ -28,6 +28,7 @@ import com.twelvemonkeys.imageio.plugins.webp.WebPImageReaderSpi
 import forYouFashionFtpPassword
 import forYouFashionFtpUrl
 import forYouFashionFtpUsername
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.Month
@@ -48,7 +49,6 @@ import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.net.ftp.FTPFile
 import org.apache.commons.text.StringEscapeUtils
@@ -81,13 +81,12 @@ const val shouldSyncTiktokVideoLinkFromGallery = true
 const val shouldSyncWholesalePricesAcrossVariations = true
 const val shouldSyncWholesaleSalePricesAcrossVariations = true
 const val useChatGptForSeoSuggestions = true
+const val addMissingUpDifferentColourProductUpSells = true
 
 // One-off updates
-const val shouldAutomaticallyDeleteUnusedImages = false
 const val shouldCheckForLargeImagesOutsideMediaLibraryFromFTP = false
 const val shouldDeleteLargeImagesOutsideMediaLibraryFromFTP = false
 const val shouldUpdateProductsWithoutABrandToForYou = false
-
 
 val allApiUpdateVariables = listOf(
     shouldMoveOldOutOfStockProductsToPrivate,
@@ -151,6 +150,7 @@ fun main() {
     }
 
     val allProducts = fetchAllProducts(credentials)
+    checkSimilarProductColoursUpsellsForSameSkuPrefix(allProducts, credentials)
     val allMedia = getAllMedia(wordPressWriteCredentials, skipRecentMedia = false)
     if (shouldCheckForLargeImagesOutsideMediaLibraryFromFTP) {
         checkForImagesOutsideMediaLibraryFromFTP(allMedia, allProducts)
@@ -160,7 +160,7 @@ fun main() {
 
         if (checkMediaLibraryChecks) {
             val allNonRecentMedia = getAllMedia(wordPressWriteCredentials, skipRecentMedia = true)
-            checkForUnusedImagesInsideMediaLibrary(allNonRecentMedia, allProducts, wordPressWriteCredentials)
+            checkForUnusedImagesInsideMediaLibrary(allNonRecentMedia, allProducts)
             checkForMissingFilesInsideMediaLibraryEntries(allNonRecentMedia)
         }
 
@@ -178,10 +178,6 @@ fun main() {
             discountProductBasedOnLastSale(allProducts, allOrders, credentials)
         }
         for (product in allProducts) {
-            // offer and discount empty products, not sure what these are.
-            if (product.id==27948 || product.id==27947) {
-                continue
-            }
             // println("DEBUG: product SKU: ${product.sku}")
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
@@ -247,7 +243,7 @@ fun main() {
 
 fun flushBufferedEmailAlerts() {
     val truncatedBuffer = emailMessageBuffer.mapValues { (_, messages) ->
-        messages.take(40)
+        messages.take(50)
     }
     for ((category, messages) in truncatedBuffer) {
         if (shouldSendEmailForCategory(category)) {
@@ -258,7 +254,7 @@ fun flushBufferedEmailAlerts() {
         }
     }
     val truncatedBufferB2B = emailMessageBufferB2B.mapValues { (_, messages) ->
-        messages.take(40)
+        messages.take(50)
     }
     for ((category, messages) in truncatedBufferB2B) {
         if (shouldSendEmailForCategory(category)) {
@@ -418,11 +414,15 @@ fun checkForMissingAttributesInProduct(product: Product, allAttributes: List<Att
             }
         }
     }
-    if (product.categories.any { it.slug=="foremata" }) {
+    if (product.categories.any { it.slug=="foremata" || it.slug=="olosomes-formes" }) {
         val ylikoAttribute = product.attributes.find { it.slug=="pa_yliko" }
-        if (ylikoAttribute==null) {
+        if (ylikoAttribute==null && product.sku !in listOf(
+                "59643-589", "59122-514", "59050-596", "58684-006", "58630-011", "58681-006", "58619-005",
+                "58723-040"
+            )
+        ) {
             logError(
-                "Λειπει το 'Υλικό' απο φορεμα",
+                "Λειπει το 'Υλικό' απο το προιον",
                 "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} είναι στην κατηγορία 'φορέματα' και λείπει το χαρακτηριστικό 'Υλικό'.\nLINK: ${product.permalink}",
             )
         }
@@ -485,42 +485,42 @@ private fun checkAllVariationsHaveTheSamePrices(product: Product, productVariati
 }
 
 fun checkAllVariationsHaveTheSamePricesB2B(product: Product, productVariations: List<Variation>) {
-    val wholesalePricesList = mutableListOf<String>()
-    val wholesaleSalePricesList = mutableListOf<String>()
+    val wholesalePricesList = mutableListOf<BigDecimal>()
+    val wholesaleSalePricesList = mutableListOf<BigDecimal>()
     productVariations.forEach { variation ->
         // println("DEBUG: meta_data: $variation.metaData")
         val wholesalePrice = variation.meta_data.find {
             it.key=="wholesale_customer_wholesale_price"
-        }?.value.toString()
+        }?.value?.toString()
 
         val wholesaleSalePrice = variation.meta_data.find {
             it.key=="wholesale_customer_wholesale_sale_price"
-        }?.value.toString()
+        }?.value?.toString()
 
-        if (wholesalePrice.isNotBlank() && wholesalePrice!="null") {
-            wholesalePricesList.add(wholesalePrice)
+        wholesalePrice?.toBigDecimalOrNull()?.let {
+            wholesalePricesList.add(it.setScale(2))
         }
 
-        if (wholesaleSalePrice.isNotBlank() && wholesaleSalePrice!="null") {
-            wholesaleSalePricesList.add(wholesaleSalePrice)
+        wholesaleSalePrice?.toBigDecimalOrNull()?.let {
+            wholesaleSalePricesList.add(it.setScale(2))
         }
     }
     val wholesalePricesSet = wholesalePricesList.toSet()
     val wholesaleSalePricesSet = wholesaleSalePricesList.toSet()
+
     if (wholesalePricesSet.size > 1) {
         logError(
             "Λάθος B2B Wholesale Τιμές στις Παραλλαγές",
-            "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} έχει διαφορετικές αρχικές ΧΟΝΔΡΙΚΕΣ τιμές στις παραλλαγές του. Διαφορετικες τιμες: $wholesalePricesSet\nΣύνδεσμος: ${product.permalink}",
+            "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} έχει διαφορετικές αρχικές ΧΟΝΔΡΙΚΕΣ τιμές στις παραλλαγές του. Διαφορετικές τιμές: $wholesalePricesSet\nΣύνδεσμος: ${product.permalink}",
             b2b = true
         )
-
     } else if (shouldSyncWholesalePricesAcrossVariations && wholesalePricesSet.size==1 && wholesalePricesList.size!=productVariations.size) {
         productVariations.forEach { variation ->
             updateVariationWholesalePrice(
                 product.id,
                 variation.id,
                 "wholesale_customer_wholesale_price",
-                wholesalePricesSet.single()
+                wholesalePricesSet.single().toPlainString()
             )
         }
     }
@@ -528,17 +528,16 @@ fun checkAllVariationsHaveTheSamePricesB2B(product: Product, productVariations: 
     if (wholesaleSalePricesSet.size > 1) {
         logError(
             "Λάθος B2B Wholesale Sale Τιμές στις Παραλλαγές",
-            "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} έχει διαφορετικές εκπτωτικες ΧΟΝΔΡΙΚΕΣ τιμές στις παραλλαγές του. Διαφορετικες τιμες: $wholesaleSalePricesSet\nΣύνδεσμος: ${product.permalink}",
+            "ΣΦΑΛΜΑ: Το προϊόν με κωδικό ${product.sku} έχει διαφορετικές εκπτωτικές ΧΟΝΔΡΙΚΕΣ τιμές στις παραλλαγές του. Διαφορετικές τιμές: $wholesaleSalePricesSet\nΣύνδεσμος: ${product.permalink}",
             b2b = true
         )
-
     } else if (shouldSyncWholesaleSalePricesAcrossVariations && wholesaleSalePricesSet.size==1 && wholesaleSalePricesList.size!=productVariations.size) {
         productVariations.forEach { variation ->
             updateVariationWholesalePrice(
                 product.id,
                 variation.id,
                 "wholesale_customer_wholesale_sale_price",
-                wholesaleSalePricesSet.single()
+                wholesaleSalePricesSet.single().toPlainString()
             )
         }
     }
@@ -878,7 +877,7 @@ fun checkForMissingGalleryVideo(product: Product) {
             "59040-004", "59040-289", "59023-023", "59020-027", "59020-023", "59045-097", "58210-293", "58205-027",
             "55627-561", "58956-097", "58959-097", "58957-097", "58983-005", "59117-012", "58823-488", "57661-097",
             "59501-556", "55627-016", "58201-509", "57846-519", "56071-465", "57073-028", "57382-281", "56068-396",
-            "55627-027"
+            "55627-027", "51746-332", "53860-015", "53860-014", "53860-289"
         )
     ) {
         val startTargetDate = LocalDate.of(2024, 3, 1)
@@ -1019,10 +1018,10 @@ private fun checkIfImageExists(url: String): Boolean {
     }
 }
 
+// TODO Skip this until we clear all the photos without alt text first.
 fun checkForUnusedImagesInsideMediaLibrary(
     allNonRecentMedia: List<Media>,
     allProducts: List<Product>,
-    wordPressWriteCredentials: String
 ) {
     println("DEBUG: Total media files: ${allNonRecentMedia.size}")
 
@@ -1062,33 +1061,9 @@ fun checkForUnusedImagesInsideMediaLibrary(
     unusedImages.forEach {
         logError(
             "Φωτογραφιες που δεν χρησιμοποιουνται",
-            "Αυτη η φωτογραφια δεν φαινεται να χρησιμοποιειται, διαγραφη? https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit",
+            "Αυτη η φωτογραφια δεν φαινεται να χρησιμοποιειται, διαγραφη? https://foryoufashion.gr/wp-admin/post.php?post=${it.id}&action=edit\n" +
+                    "ΣΗΜΑΝΤΙΚΟ: Διαγραφουμε μονο φωτογραφιες που γνωριζουμε πως ηταν μεσα σε προιοντα που τα προιοντα διαγραφηκαν, τιποτα αλλο",
         )
-        if (shouldAutomaticallyDeleteUnusedImages) {
-            deleteUnusedImage(it, wordPressWriteCredentials)
-        }
-    }
-}
-
-fun deleteUnusedImage(unusedImage: Media, wordPressWriteCredentials: String) {
-    val client = OkHttpClient()
-    val deleteUrl = "https://foryoufashion.gr/wp-json/wp/v2/media/${unusedImage.id}?force=true"
-    val request = Request.Builder()
-        .url(deleteUrl)
-        .delete(RequestBody.create(null, ByteArray(0))) // Empty body for DELETE request
-        .header("Authorization", "Basic $wordPressWriteCredentials")
-        .build()
-
-    client.newCall(request).execute().use { response ->
-        if (response.isSuccessful) {
-            println("ACTION: Successfully deleted unusedImage ID: ${unusedImage.id}")
-        } else {
-            logError(
-                "deleteUnusedImage",
-                "ERROR: Failed to delete unusedImage ID: ${unusedImage.id}. Response code: ${response.code}"
-            )
-            println("ERROR: Response message: ${response.message}")
-        }
     }
 }
 
@@ -1145,7 +1120,7 @@ fun findUnusedImages(
 
 fun checkForImagesWithIncorrectWidthHeightRatio(product: Product) {
     if (product.sku !in listOf(
-            "59665-051", "58855-012", "59664-013", "59131-029", "58798-293", "58812-556", "58459-561"
+            "59665-051", "58855-012", "59664-013", "59131-029", "58798-293", "58812-556", "58459-561", "58859-488"
         )
     ) {
         val cache = loadImageCache()
@@ -1177,7 +1152,7 @@ fun checkForImagesWithTooLowResolution(product: Product) {
             "56062-097", "57459-332", "55627-443", "55627-465", "55627-396", "55627-097", "56031-488", "57401-465",
             "58028-028", "58723-040", "58635-016", "58634-016", "58631-022", "58684-006", "58630-011", "58687-003",
             "57469-007", "57384-488", "56484-501", "55077-007", "56062-556", "56127-396", "58746-246", "56032-012",
-            "55627-488", "58689-003", "56062-029", "56067-003", "59050-596", "58458-556",
+            "55627-488", "58689-003", "56062-029", "56067-003", "59050-596", "58458-556", "58859-488"
         )
     ) {
         val cache = loadImageCache()
@@ -1607,7 +1582,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                     val index = robots.get("index")?.asText() ?: ""
                     val follow = robots.get("follow")?.asText() ?: ""
                     if (index!="noindex" || follow!="nofollow") {
-                        if (!(url=="https://foryoufashion.gr/cart/" && index=="noindex" && follow=="follow") && !(url=="https://foryoufashion.gr/checkout/" && index=="noindex" && follow=="follow")) {
+                        if (!(url=="https://foryoufashion.gr/cart/" && index=="noindex" && follow=="follow" || url=="https://foryoufashion.gr/checkout/" && index=="noindex" && follow=="follow" || url=="https://foryoufashion.gr/my-account/" && index=="noindex" && follow=="follow")) {
                             logError(
                                 "SAKIS Yoast: Robots noindex/nofollow",
                                 "ERROR: Η σελίδα $url έχει robots tag με τιμές $index / $follow",
@@ -1946,8 +1921,9 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
     if (product.status!="draft" && product.status!="private") {
 //    println("DEBUG: long description ${product.description}")
 //    println("DEBUG: short description ${product.short_description}")
-        isValidHtml(product.short_description)
-        isValidHtml(product.description)
+        val hasValidHtmlInShortDescription = isValidHtml(product.short_description)
+        val hasValidHtmlInLongDescription = isValidHtml(product.description)
+        // TODO
         if (product.short_description.equals(product.description, ignoreCase = true)) {
             logError(
                 "Προιον με ιδιες συντομες και κανονικες περιγραφες",
@@ -1961,7 +1937,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
             if (shortDescriptionLength < 140 || shortDescriptionLength > 300) {
                 logError(
                     "Προιον με συντομη περιγραφη προιοντος με λαθος μηκος",
-                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει σύντομη περιγραφή με μη έγκυρο μήκος (${product.short_description.length} χαρακτήρες)" +
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει σύντομη περιγραφή με μη έγκυρο μήκος (${shortDescriptionLength} χαρακτήρες)" +
                             "\n Πρεπει να ειναι απο 140 μεχρι 300 χαρακτηρες. Μετρησε το εδω https://www.charactercountonline.com/\n LINK: ${product.permalink}."
                 )
             }
@@ -1992,14 +1968,14 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
                 "58071-011", "58071-029", "57210-060", "57155-003", "58689-003", "58679-005", "58678-006", "58616-003",
                 "58615-012", "58612-006", "58611-012", "58611-003", "58610-003", "58609-003", "58604-006",
                 "58603-003", "58603-012", "58061-332", "58069-029", "57998-003", "58060-003", "57517-004",
-                "57151-023"
+                "57151-023", "58687-003", "57144-060"
             )
         ) {
             val longDescriptionLength = product.description.replace(Regex("<[^>]*>"), "").trim().length
             if (longDescriptionLength < 250 || longDescriptionLength > 550) {
                 logError(
                     "Προιον με περιγραφη προιοντος με λαθος μηκος",
-                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει περιγραφή με μη έγκυρο μήκος (${product.description.length} χαρακτήρες)" +
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει περιγραφή με μη έγκυρο μήκος (${longDescriptionLength} χαρακτήρες)" +
                             "\n Πρεπει να ειναι απο 250 μεχρι 550 χαρακτηρες. Μετρησε το εδω https://www.charactercountonline.com/\n LINK: ${product.permalink}."
                 )
             }
@@ -2019,7 +1995,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
         if (product.short_description.contains("&nbsp;")) {
             logError(
-                "SAKIS checkForInvalidDescriptions 4",
+                "Resolved automatically - checkForInvalidDescriptions 4",
                 "ERROR: Product ${product.sku} has unnecessary line breaks in short description",
                 alsoEmail = false
             )
@@ -2441,7 +2417,7 @@ private fun updateProductDescriptions(
 
 fun checkForMissingPromitheutisTag(product: Product) {
     if (product.status!="private" && product.status!="draft" && product.sku !in listOf(
-            "3821", "9101", "2345", "8Ε0053", "3858", "3885", "5832", "7489",
+            "3821", "9101", "2345", "8Ε0053", "3858", "3885", "5832", "7489", "59705-606"
         )
     ) {
         val hasTag = product.tags.any { it.name.startsWith("ΠΡΟΜΗΘΕΥΤΗΣ_") }
@@ -3020,6 +2996,67 @@ fun checkPaymentMethodsInLastMonths(orders: List<Order>) {
     }
 }
 
+fun checkSimilarProductColoursUpsellsForSameSkuPrefix(allProducts: List<Product>, credentials: String) {
+    val idToSkuMap = allProducts.associateBy({ it.id }, { it.sku })
+    val productsGroupedByPrefix = allProducts.groupBy { it.sku.substringBefore('-') }
+    productsGroupedByPrefix.forEach { (prefix, productsWithSamePrefix) ->
+        productsWithSamePrefix.forEach { product ->
+            val currentUpsellIds = product.upsell_ids
+            val expectedUpsellIds = productsWithSamePrefix.map { it.id } - product.id
+
+            val missingUpsells = expectedUpsellIds - currentUpsellIds
+            val unexpectedUpsells = currentUpsellIds - expectedUpsellIds
+
+            if (missingUpsells.isNotEmpty()) {
+                logError(
+                    "Resolved automatically - Missing upsells",
+                    "Product ${product.sku} is missing upsells to: ${missingUpsells.map { idToSkuMap[it] }}\nLINK: ${product.permalink}",
+                    alsoEmail = false
+                )
+                if (addMissingUpDifferentColourProductUpSells) {
+                    addMissingUpsells(product, expectedUpsellIds, credentials)
+                }
+            }
+
+            // I think that deleted products end up staying in the list, even though they are invisible in the UI.
+            val unexpectedSkus = unexpectedUpsells.map { idToSkuMap[it] }.toSet() - null
+            if (unexpectedSkus.isNotEmpty()) {
+                logError(
+                    "Resolved automatically - Unexpected upsells",
+                    "Product ${product.sku} has upsells to unrelated products: $unexpectedSkus\nLINK: ${product.permalink}",
+                    alsoEmail = false
+                )
+                if (addMissingUpDifferentColourProductUpSells) {
+                    addMissingUpsells(product, expectedUpsellIds, credentials)
+                }
+            }
+        }
+    }
+}
+
+fun addMissingUpsells(product: Product, updatedUpsellIds: List<Int>, credentials: String) {
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+
+    val payload = mapOf("upsell_ids" to updatedUpsellIds.toList())
+    val requestBody = mapper.writeValueAsString(payload).toRequestBody("application/json".toMediaTypeOrNull())
+
+    val request = Request.Builder()
+        .url(url)
+        .put(requestBody)
+        .header("Authorization", credentials)
+        .build()
+
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                println("ERROR: Failed to update upsells for product ${product.id}. Response: ${response.body?.string()}")
+            } else {
+                println("ACTION: Updated upsells for product SKU ${product.sku}")
+            }
+        }
+    }
+}
+
 fun sendAlertEmail(subject: String, message: String, b2b: Boolean) {
     val username = "sakis@foryoufashion.gr"
     val props = Properties().apply {
@@ -3056,7 +3093,7 @@ fun sendAlertEmail(subject: String, message: String, b2b: Boolean) {
 
 fun shouldSendEmailForCategory(category: String): Boolean {
     val lastSent = emailThrottleCache[category]
-    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 8
+    return lastSent==null || ChronoUnit.DAYS.between(lastSent, LocalDate.now()) >= 6
 }
 
 fun loadEmailThrottleCache(): MutableMap<String, LocalDate> {
