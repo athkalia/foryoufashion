@@ -160,7 +160,8 @@ fun main() {
 
         if (checkMediaLibraryChecks) {
             val allNonRecentMedia = getAllMedia(wordPressWriteCredentials, skipRecentMedia = true)
-            checkForUnusedImagesInsideMediaLibrary(allNonRecentMedia, allProducts)
+            // TODO Skip this until we clear all the photos without alt text first.
+            // checkForUnusedImagesInsideMediaLibrary(allNonRecentMedia, allProducts)
             checkForMissingFilesInsideMediaLibraryEntries(allNonRecentMedia)
         }
 
@@ -1018,7 +1019,6 @@ private fun checkIfImageExists(url: String): Boolean {
     }
 }
 
-// TODO Skip this until we clear all the photos without alt text first.
 fun checkForUnusedImagesInsideMediaLibrary(
     allNonRecentMedia: List<Media>,
     allProducts: List<Product>,
@@ -1919,11 +1919,16 @@ fun addGenericPhotoshootTag(product: Product, genericTagSlug: String, credential
 
 private fun checkForInvalidDescriptions(product: Product, credentials: String) {
     if (product.status!="draft" && product.status!="private") {
-//    println("DEBUG: long description ${product.description}")
-//    println("DEBUG: short description ${product.short_description}")
+        //    println("DEBUG: long description ${product.description}")
+        //    println("DEBUG: short description ${product.short_description}")
         val hasValidHtmlInShortDescription = isValidHtml(product.short_description)
         val hasValidHtmlInLongDescription = isValidHtml(product.description)
-        // TODO
+        if (hasValidHtmlInShortDescription || hasValidHtmlInLongDescription) {
+            logError(
+                "SAKIS Invalid HTML",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει invalid HTML στις περιγραφες.\nLINK: ${product.permalink}"
+            )
+        }
         if (product.short_description.equals(product.description, ignoreCase = true)) {
             logError(
                 "Προιον με ιδιες συντομες και κανονικες περιγραφες",

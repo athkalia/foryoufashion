@@ -58,7 +58,8 @@ data class Product(
     val date_created: String? = null,
     val date_modified: String? = null,
     val meta_data: List<MetaData>,
-    val categories: List<Category>
+    val categories: List<Category>,
+    val upsell_ids: List<Int> = emptyList()
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

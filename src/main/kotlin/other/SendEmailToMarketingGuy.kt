@@ -17,31 +17,40 @@ import readOnlyConsumerKey
 import readOnlyConsumerSecret
 import sakisForYouFashionEmailPassword
 
-const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 5000.0
-const val monthlyMarketingPayment: Double = 400.0
+const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 4000.0
+const val monthlyMarketingPayment: Double = 350.0
 const val totalMarketingSpendIncludingMonthlyPayment =
     MANUAL_INPUT_totalMarketingExpensesForMonth + monthlyMarketingPayment
 const val test = true
-const val thisMonth = false
+const val thisMonth = true
 
 fun main(args: Array<String>) {
     val toEmail = if (test || thisMonth) "sakis@foryoufashion.gr" else "ads@conversion.gr"
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val month = if (thisMonth) getCurrentMonth() else getPreviousMonthDate()
-    val currentMonthOrders = fetchOrders(month, credentials)
-    val refundedOrdersPercentage = calculateRefundedOrdersPercentage(currentMonthOrders)
-    val completedRevenue = calculateCompletedRevenue(currentMonthOrders)
-    val refundedRevenue = calculateRefundedRevenue(currentMonthOrders)
+    val orders = fetchOrders(month, credentials)
+    val refundedOrderCountPercentage = calculateRefundedOrderCountPercentage(orders)
+    val refundedMoneyPercentage = calculateRefundedOrderMoneyPercentage(orders)
+    val completedRevenue = calculateCompletedRevenue(orders)
+    val refundedRevenue = calculateRefundedRevenue(orders)
 
     val monthAndYear = month.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val emailContent = generateEmailContent(
-        refundedOrdersPercentage,
+        refundedOrderCountPercentage,
+        refundedMoneyPercentage,
         completedRevenue,
         refundedRevenue,
         monthAndYear,
     )
+    println(emailContent)
     sendEmail(toEmail, emailContent, monthAndYear)
     println("ACTION: Email sent to $toEmail")
+}
+
+fun calculateRefundedOrderMoneyPercentage(orders: List<Order>): Double {
+    val refundedOrdersMoney = orders.filter { it.status=="refunded" }.sumOf { it.total.toDouble() }
+    val completedOrdersMoney = orders.filter { it.status=="completed" }.sumOf { it.total.toDouble() }
+    return (refundedOrdersMoney / (completedOrdersMoney + refundedOrdersMoney)) * 100
 }
 
 private fun getPreviousMonthDate(): LocalDate = LocalDate.now().minusMonths(1)
@@ -77,7 +86,7 @@ fun fetchOrders(previousMonthDate: LocalDate, credentials: String): List<Order> 
     return orders
 }
 
-fun calculateRefundedOrdersPercentage(orders: List<Order>): Double {
+fun calculateRefundedOrderCountPercentage(orders: List<Order>): Double {
     val refundedOrders = orders.count { it.status=="refunded" }
     val completedOrders = orders.count { it.status=="completed" }
     return (refundedOrders.toDouble() / (completedOrders + refundedOrders).toDouble()) * 100
@@ -93,7 +102,8 @@ fun calculateRefundedRevenue(orders: List<Order>): Double {
 }
 
 fun generateEmailContent(
-    refundedOrdersPercentage: Double,
+    refundedOrderCountPercentage: Double,
+    refundedMoneyPercentage: Double,
     completedOrdersRevenue: Double,
     refundedRevenue: Double,
     monthAndYear: String,
@@ -102,10 +112,11 @@ fun generateEmailContent(
         Καλησπέρα,
 
         Σας επισυνάπτω τις πωλήσεις από το site για το μήνα $monthAndYear
-        - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue+refundedRevenue)}
+        - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue + refundedRevenue)}
         - Επιστροφές χρημάτων: €${"%.2f".format(refundedRevenue)}
         - Έσοδα μετά τις επιστροφές: €${"%.2f".format(completedOrdersRevenue)}
-        - Ποσοστό επιστροφών: ${"%.2f".format(refundedOrdersPercentage)}%
+        - Ποσοστό επιστροφών σε αριθμο παραγγελιων: ${"%.2f".format(refundedOrderCountPercentage)}%
+        - Ποσοστό επιστροφών σε λεφτα: ${"%.2f".format(refundedMoneyPercentage)}%
         - Συνολικά έξοδα marketing για το μήνα: €${"%.2f".format(totalMarketingSpendIncludingMonthlyPayment)} 
         - Συνολικό πραγματικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / totalMarketingSpendIncludingMonthlyPayment)} 
 

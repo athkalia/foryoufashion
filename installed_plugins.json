@@ -145,7 +145,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.10.4",
+    "version": "4.10.5",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -181,7 +181,7 @@
   },
   {
     "name": "Query Monitor",
-    "version": "3.17.2",
+    "version": "3.18.0",
     "status": "inactive",
     "description": {
       "rendered": "The developer tools panel for WordPress. <cite>By <a href=\"https://querymonitor.com/\">John Blackbourn</a>.</cite>"
@@ -262,7 +262,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.1.4",
+    "version": "1.1.7",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -307,7 +307,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.86",
+    "version": "1.0.91",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -397,7 +397,7 @@
   },
   {
     "name": "WooCommerce AJAX Products Filter",
-    "version": "3.1.8.2",
+    "version": "3.1.9",
     "status": "active",
     "description": {
       "rendered": "Unlimited AJAX products filters to make your shop perfect <cite>By <a href=\"https://berocket.com?utm_source=paid_plugin&#038;utm_medium=plugins&#038;utm_campaign=ajax_filters\">BeRocket</a>.</cite>"
@@ -496,7 +496,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "25.3",
+    "version": "25.3.1",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
@@ -514,7 +514,7 @@
   },
   {
     "name": "Klaviyo",
-    "version": "3.6.0",
+    "version": "3.7.0",
     "status": "active",
     "description": {
       "rendered": "A plugin to automatically sync your WooCommerce sales, products and customers with Klaviyo. With Klaviyo you can set up abandoned cart emails, collect emails for your newsletter to grow your business. <cite>By <a href=\"https://www.klaviyo.com\">Klaviyo, Inc.</a>.</cite>"
