@@ -91,7 +91,7 @@
   },
   {
     "name": "Google Analytics for WooCommerce",
-    "version": "2.1.15",
+    "version": "2.1.16",
     "status": "active",
     "description": {
       "rendered": "Allows Google Analytics tracking code to be inserted into WooCommerce store pages. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
@@ -127,7 +127,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "14.7",
+    "version": "14.8",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -262,7 +262,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.1.7",
+    "version": "1.1.10",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -397,7 +397,7 @@
   },
   {
     "name": "WooCommerce AJAX Products Filter",
-    "version": "3.1.9",
+    "version": "3.1.9.1",
     "status": "active",
     "description": {
       "rendered": "Unlimited AJAX products filters to make your shop perfect <cite>By <a href=\"https://berocket.com?utm_source=paid_plugin&#038;utm_medium=plugins&#038;utm_campaign=ajax_filters\">BeRocket</a>.</cite>"
@@ -424,7 +424,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "3.0.6",
+    "version": "3.0.7",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -433,7 +433,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.7",
+    "version": "4.7.8",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -496,7 +496,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "25.3.1",
+    "version": "25.4",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"

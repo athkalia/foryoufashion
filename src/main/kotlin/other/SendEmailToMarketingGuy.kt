@@ -49,7 +49,8 @@ fun main(args: Array<String>) {
 
 fun calculateRefundedOrderMoneyPercentage(orders: List<Order>): Double {
     val refundedOrdersMoney = orders.filter { it.status=="refunded" }.sumOf { it.total.toDouble() }
-    val completedOrdersMoney = orders.filter { it.status=="completed" }.sumOf { it.total.toDouble() }
+    val completedOrdersMoney =
+        orders.filter { it.status=="completed" || it.status=="processing" }.sumOf { it.total.toDouble() }
     return (refundedOrdersMoney / (completedOrdersMoney + refundedOrdersMoney)) * 100
 }
 
@@ -88,12 +89,12 @@ fun fetchOrders(previousMonthDate: LocalDate, credentials: String): List<Order> 
 
 fun calculateRefundedOrderCountPercentage(orders: List<Order>): Double {
     val refundedOrders = orders.count { it.status=="refunded" }
-    val completedOrders = orders.count { it.status=="completed" }
+    val completedOrders = orders.count { it.status=="completed" || it.status=="processing" }
     return (refundedOrders.toDouble() / (completedOrders + refundedOrders).toDouble()) * 100
 }
 
 fun calculateCompletedRevenue(orders: List<Order>): Double {
-    val completedOrders = orders.filter { it.status=="completed" }
+    val completedOrders = orders.filter { it.status=="completed" || it.status=="processing" }
     return completedOrders.sumOf { it.total.toDouble() }
 }
 

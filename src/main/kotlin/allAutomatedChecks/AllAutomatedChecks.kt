@@ -215,7 +215,7 @@ fun main() {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
 //                        println("DEBUG: variation SKU: ${it.sku}")
-                        addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 30, credentials)
+                        addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 20, credentials)
                     }
                 }
                 checkForMissingSizeVariations(product, productVariations, credentials)
@@ -386,7 +386,6 @@ fun applyDiscountToVariationIfNecessary(
     if (existingSalePrice!=null && existingSalePrice <= adjustedSalePriceValue) {
         return
     }
-
     println("ACTION: Updating variation ${variation.sku} of product ${product.sku} with new sale price $adjustedSalePrice euros (${discountPercentage}% discount). Previous sale price was $existingSalePrice. Months since last sale: $monthsSinceLastSale")
     updateProductPrice(product.id, variationId = variation.id, adjustedSalePrice, PriceType.SALE_PRICE, credentials)
 }
@@ -644,7 +643,7 @@ fun checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(
     product: Product,
     productVariations: List<Variation>,
 ) {
-    if (product.status!="draft" && product.status!="private" && product.sku !in listOf("57851-443")) {
+    if (product.status!="draft" && product.status!="private" && product.sku !in listOf("57851-443", "58874-488")) {
         val productOutOfStock = product.stock_status=="outofstock"
         val allVariationsOutOfStock = productVariations.all { it.stock_status=="outofstock" }
         val sixMonthsAgo = LocalDate.now().minus(6, ChronoUnit.MONTHS)
@@ -878,7 +877,7 @@ fun checkForMissingGalleryVideo(product: Product) {
             "59040-004", "59040-289", "59023-023", "59020-027", "59020-023", "59045-097", "58210-293", "58205-027",
             "55627-561", "58956-097", "58959-097", "58957-097", "58983-005", "59117-012", "58823-488", "57661-097",
             "59501-556", "55627-016", "58201-509", "57846-519", "56071-465", "57073-028", "57382-281", "56068-396",
-            "55627-027", "51746-332", "53860-015", "53860-014", "53860-289"
+            "55627-027", "51746-332", "53860-015", "53860-014", "53860-289", "57385-556", "59169-019", "59490-007"
         )
     ) {
         val startTargetDate = LocalDate.of(2024, 3, 1)
@@ -902,7 +901,9 @@ fun checkForMissingGalleryVideo(product: Product) {
             if (!isGalleryVideoMissing && !isTikTokVideoMissing && tikTokVideo!=galleryVideo) {
                 logError(
                     "SAKIS Gallery video και TikTok video διαφέρουν",
-                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει διαφορετικά links για gallery_video και TikTok video.\nLINK: ${product.permalink}",
+                    "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει διαφορετικά links για gallery_video και TikTok video." +
+                            "\ngallery video:$galleryVideo, tiktok video:$tikTokVideo" +
+                            "\nLINK: ${product.permalink}",
                     alsoEmail = false
                 )
             }
@@ -1272,34 +1273,33 @@ fun checkForDraftProducts(product: Product) {
 }
 
 fun checkForInvalidSKUNumbers(product: Product, variation: Variation) {
-    if (product.status=="draft") {
-        return
-    }
-    if (product.sku in listOf( // Some wedding dresses - ignore
-            "7489", "2345", "9101", "5678", "1234", "3821", "8Ε0053", "3858", "3885", "5832", "QC368Bt50"
-        )
-    ) {
-        return
-    }
-    val finalProductRegex = Regex("^\\d{5}-\\d{3,4}$")
-    if (!product.sku.matches(finalProductRegex)) {
-        logError(
-            "Λαθος SKU για προιον",
-            "ΣΦΑΛΜΑ: Το SKU του προϊόντος ${product.sku} φαινεται να ειναι λανθασμενο\nLINK: ${product.permalink}"
-        )
-    }
-    val finalProductVariationRegex = Regex("^\\d{5}-\\d{3,4}-\\d{1,3}$")
-    if (!variation.sku.matches(finalProductVariationRegex)) {
-        logError(
-            "Λαθος SKU για προιον",
-            "ΣΦΑΛΜΑ: Το SKU της παραλλαγης ${variation.sku} φαινεται λανθασμενο\nLINK: ${product.permalink}"
-        )
-    }
-    if (!variation.sku.startsWith(product.sku)) {
-        logError(
-            "Λαθος SKU για προιον",
-            "ΣΦΑΛΜΑ: Το SKU της παραλλαγης ${variation.sku} φαινεται να ειναι διαφορετικο απο του προιοντος ${product.sku}\nLINK: ${product.permalink}"
-        )
+    if (product.status!="draft" && product.status!="private") {
+        if (product.sku in listOf( // Some wedding dresses - ignore
+                "7489", "2345", "9101", "5678", "1234", "3821", "8Ε0053", "3858", "3885", "5832", "QC368Bt50"
+            )
+        ) {
+            return
+        }
+        val finalProductRegex = Regex("^\\d{5}-\\d{3,4}$")
+        if (!product.sku.matches(finalProductRegex)) {
+            logError(
+                "Λαθος SKU για προιον",
+                "ΣΦΑΛΜΑ: Το SKU του προϊόντος ${product.sku} φαινεται να ειναι λανθασμενο\nLINK: ${product.permalink}"
+            )
+        }
+        val finalProductVariationRegex = Regex("^\\d{5}-\\d{3,4}-\\d{1,3}$")
+        if (!variation.sku.matches(finalProductVariationRegex)) {
+            logError(
+                "Λαθος SKU για προιον",
+                "ΣΦΑΛΜΑ: Το SKU της παραλλαγης ${variation.sku} φαινεται λανθασμενο\nLINK: ${product.permalink}"
+            )
+        }
+        if (!variation.sku.startsWith(product.sku)) {
+            logError(
+                "Λαθος SKU για προιον",
+                "ΣΦΑΛΜΑ: Το SKU της παραλλαγης ${variation.sku} φαινεται να ειναι διαφορετικο απο του προιοντος ${product.sku}\nLINK: ${product.permalink}"
+            )
+        }
     }
 }
 
@@ -1548,7 +1548,7 @@ fun checkAllCustomerFacingUrlsForSeoViaYoast(
                 if (ogImage==null || ogImageUrl==null || ogImageUrl.isBlank()) {
                     logError(
                         "SAKIS Yoast: Πρόβλημα με og:image",
-                        "ERROR: Η σελίδα $url δεν έχει og:image\nCheck with https://developers.facebook.com/tools/debug",
+                        "ERROR: Η σελίδα $url δεν έχει og:image. Check with https://developers.facebook.com/tools/debug",
                         alsoEmail = false
                     )
                 } else if (ogImageWidth==null || ogImageWidth.toInt() < 600) {
@@ -1923,7 +1923,7 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         //    println("DEBUG: short description ${product.short_description}")
         val hasValidHtmlInShortDescription = isValidHtml(product.short_description)
         val hasValidHtmlInLongDescription = isValidHtml(product.description)
-        if (hasValidHtmlInShortDescription || hasValidHtmlInLongDescription) {
+        if (!hasValidHtmlInShortDescription || !hasValidHtmlInLongDescription) {
             logError(
                 "SAKIS Invalid HTML",
                 "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει invalid HTML στις περιγραφες.\nLINK: ${product.permalink}"
@@ -1938,8 +1938,8 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         val startTargetDate = LocalDate.of(2025, 4, 20)
         val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         if (productCreationDate.isAfter(startTargetDate)) {
-            val shortDescriptionLength = product.short_description.replace(Regex("<[^>]*>"), "").trim().length
-            if (shortDescriptionLength < 140 || shortDescriptionLength > 300) {
+            val shortDescriptionLength = product.short_description.replace(Regex("<[^>]*>"), "").replace("\n","").trim().length
+            if (shortDescriptionLength < 140 || shortDescriptionLength > 305) {
                 logError(
                     "Προιον με συντομη περιγραφη προιοντος με λαθος μηκος",
                     "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει σύντομη περιγραφή με μη έγκυρο μήκος (${shortDescriptionLength} χαρακτήρες)" +
@@ -1973,10 +1973,10 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
                 "58071-011", "58071-029", "57210-060", "57155-003", "58689-003", "58679-005", "58678-006", "58616-003",
                 "58615-012", "58612-006", "58611-012", "58611-003", "58610-003", "58609-003", "58604-006",
                 "58603-003", "58603-012", "58061-332", "58069-029", "57998-003", "58060-003", "57517-004",
-                "57151-023", "58687-003", "57144-060"
+                "57151-023", "58687-003", "57144-060", "9101", "7489", "58677-007", "58001-003", "56405-011"
             )
         ) {
-            val longDescriptionLength = product.description.replace(Regex("<[^>]*>"), "").trim().length
+            val longDescriptionLength = product.description.replace(Regex("<[^>]*>"), "").replace("\n","").trim().length
             if (longDescriptionLength < 250 || longDescriptionLength > 550) {
                 logError(
                     "Προιον με περιγραφη προιοντος με λαθος μηκος",
@@ -2076,7 +2076,7 @@ private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Var
 
         if (regularPriceString.isNotEmpty() && !priceHasCorrectPennies(regularPriceString)) {
             logError(
-                "SAKIS checkForWrongPricesAndUpdateEndTo99 4",
+                "Resolved automatically - checkForWrongPricesAndUpdateEndTo99 4",
                 "ERROR: product SKU ${product.sku} regular price $regularPriceString has incorrect pennies",
                 alsoEmail = false
             )
@@ -2108,7 +2108,7 @@ private fun checkForWrongPricesAndUpdateEndTo99(product: Product, variation: Var
         }
         if (salePriceString.isNotEmpty() && !priceHasCorrectPennies(salePriceString)) {
             logError(
-                "SAKIS checkForWrongPricesAndUpdateEndTo99 6",
+                "Resolved automatically - checkForWrongPricesAndUpdateEndTo99 6",
                 "ERROR: product SKU ${product.sku} salePrice price $salePriceString has incorrect pennies",
                 alsoEmail = false
             )
@@ -2580,7 +2580,7 @@ private fun addTagProsfores(product: Product, prosforesTag: Tag, url: String, cr
         updatedTags.add(prosforesTag)
         val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
         println("ACTION: Adding Tag prosfores for product ${product.sku}")
-        println("DEBUG: Updating product ${product.id} with tags: $data")
+        // println("DEBUG: Updating product ${product.id} with tags: $data")
         val body = data.toRequestBody("application/json".toMediaTypeOrNull())
         val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
         executeWithRetry {
@@ -2644,23 +2644,25 @@ private fun checkProductCategories(credentials: String) {
 
 private fun checkProductAttributes(allAttributes: List<Attribute>, credentials: String) {
     for (attribute in allAttributes) {
-        val termsUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/attributes/${attribute.id}/terms"
-        val terms = executeWithRetry {
-            val request = Request.Builder().url(termsUrl).header("Authorization", credentials).build()
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("Unexpected code $response")
-                mapper.readValue<List<AttributeTerm>>(response.body?.string() ?: "")
+        val attributeName = attribute.name
+        if (attributeName!="Brand") {
+            val termsUrl = "https://foryoufashion.gr/wp-json/wc/v3/products/attributes/${attribute.id}/terms"
+            val terms = executeWithRetry {
+                val request = Request.Builder().url(termsUrl).header("Authorization", credentials).build()
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw IOException("Unexpected code $response")
+                    mapper.readValue<List<AttributeTerm>>(response.body?.string() ?: "")
+                }
             }
-        }
-
-        for (term in terms) {
-            val productCount = term.count
-            if (productCount < 10) {
-                logError(
-                    "SAKIS attributes with few products",
-                    "ERROR: Attribute '${attribute.name}' with term '${term.name}' contains only $productCount products.",
-                    alsoEmail = false
-                )
+            for (term in terms) {
+                val productCount = term.count
+                if (productCount < 10) {
+                    logError(
+                        "SAKIS attributes with few products",
+                        "ERROR: Attribute '$attributeName' with term '${term.name}' contains only $productCount products.",
+                        alsoEmail = false
+                    )
+                }
             }
         }
     }
