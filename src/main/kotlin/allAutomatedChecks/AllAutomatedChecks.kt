@@ -179,6 +179,9 @@ fun main() {
             discountProductBasedOnLastSale(allProducts, allOrders, credentials)
         }
         for (product in allProducts) {
+            //if (product.sku!="59689-521-1") {
+            //return
+            //}
             // println("DEBUG: product SKU: ${product.sku}")
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
@@ -211,6 +214,7 @@ fun main() {
             if (shouldPerformVariationChecks) {
                 val productVariations = getVariations(productId = product.id, credentials)
                 checkAllVariationsAreEnabled(product, productVariations)
+                checkPreordersProparaggelia(product, productVariations)
                 if (shouldUpdateProsforesProductTag) {
                     val firstVariation = productVariations.firstOrNull()
                     firstVariation?.let {
@@ -218,7 +222,7 @@ fun main() {
                         addProsforesTagForDiscountedProductsAndRemoveItForRest(product, it, 20, credentials)
                     }
                 }
-                checkForMissingSizeVariations(product, productVariations, credentials)
+                checkForMissingSizeVariations(product, productVariations)
                 checkForOldProductsThatAreOutOfStockAndMoveToPrivate(product, productVariations, credentials)
                 checkForProductsThatHaveBeenOutOfStockForAVeryLongTime(allOrders, product, productVariations)
                 checkAllVariationsHaveTheSamePrices(product, productVariations)
@@ -877,7 +881,8 @@ fun checkForMissingGalleryVideo(product: Product) {
             "59040-004", "59040-289", "59023-023", "59020-027", "59020-023", "59045-097", "58210-293", "58205-027",
             "55627-561", "58956-097", "58959-097", "58957-097", "58983-005", "59117-012", "58823-488", "57661-097",
             "59501-556", "55627-016", "58201-509", "57846-519", "56071-465", "57073-028", "57382-281", "56068-396",
-            "55627-027", "51746-332", "53860-015", "53860-014", "53860-289", "57385-556", "59169-019", "59490-007"
+            "55627-027", "51746-332", "53860-015", "53860-014", "53860-289", "57385-556", "59169-019", "59490-007",
+            "59645-604"
         )
     ) {
         val startTargetDate = LocalDate.of(2024, 3, 1)
@@ -1174,6 +1179,72 @@ fun checkForImagesWithTooLowResolution(product: Product) {
             }
         }
         saveImageCache(cache)
+    }
+}
+
+fun checkPreordersProparaggelia(product: Product, variations: List<Variation>) {
+    val availabilityDate = product.meta_data.find { it.key=="_availability_date" }?.value as? String
+    val preorderDays = product.meta_data.find { it.key=="_preorder_days" }?.value as? Int
+    val allowBackordersSet = variations.map { it.backorders_allowed }.toSet()
+
+    // If allow backorders is true, at least one metadata (_availability_date or _preorder_days) must exist
+    if (variations.any { it.backorders_allowed }) {
+        if (availabilityDate.isNullOrBlank() && preorderDays==null) {
+            logError(
+                "SAKIS Preorder Check 1",
+                "Product with SKU ${product.sku} allows backorders but lacks preorder metadata.",
+                alsoEmail = false
+            )
+        }
+    }
+
+    // _availability_date must not be in the past
+    availabilityDate?.let {
+        if (availabilityDate.isNotBlank()) {
+            val date = LocalDate.parse(it)
+            if (date.isBefore(LocalDate.now())) {
+                logError(
+                    "SAKIS Preorder Check 2", "Product with SKU ${product.sku} has availability date in the past.",
+                    alsoEmail = false
+                )
+            }
+
+            // _availability_date should not exceed 45 days in the future
+            if (date.isAfter(LocalDate.now().plusDays(45))) {
+                logError(
+                    "SAKIS Preorder Check 3",
+                    "Product with SKU ${product.sku} availability date exceeds 45 days from now.\nLINK: ${product.permalink}",
+                    alsoEmail = false
+                )
+            }
+        }
+    }
+
+    // _preorder_days should never be negative
+    preorderDays?.let {
+        if (it < 0) {
+            logError(
+                "Sakis Preorder Check 4", "Product with SKU ${product.sku} preorder_days is negative.\nLINK: ${product.permalink}",
+                alsoEmail = false
+            )
+        }
+    }
+
+    // All variations should have allow_backorders set consistently
+    if (allowBackordersSet.size > 1) {
+        logError(
+            "Sakis Preorder Check 5",
+            "Variations of product with SKU ${product.sku} have inconsistent allow backorders settings.\nLINK: ${product.permalink}",
+            alsoEmail = false
+        )
+    }
+
+    // If _availability_date exists, allow_backorders should not be false
+    if (!availabilityDate.isNullOrBlank() && variations.none { it.backorders_allowed }) {
+        logError(
+            "Sakis Preorder Check 6", "Availability date set but backorders not allowed.\nLINK: ${product.permalink}",
+            alsoEmail = false
+        )
     }
 }
 
@@ -1938,7 +2009,8 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         val startTargetDate = LocalDate.of(2025, 4, 20)
         val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         if (productCreationDate.isAfter(startTargetDate)) {
-            val shortDescriptionLength = product.short_description.replace(Regex("<[^>]*>"), "").replace("\n","").trim().length
+            val shortDescriptionLength =
+                product.short_description.replace(Regex("<[^>]*>"), "").replace("\n", "").trim().length
             if (shortDescriptionLength < 140 || shortDescriptionLength > 305) {
                 logError(
                     "Προιον με συντομη περιγραφη προιοντος με λαθος μηκος",
@@ -1976,7 +2048,8 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
                 "57151-023", "58687-003", "57144-060", "9101", "7489", "58677-007", "58001-003", "56405-011"
             )
         ) {
-            val longDescriptionLength = product.description.replace(Regex("<[^>]*>"), "").replace("\n","").trim().length
+            val longDescriptionLength =
+                product.description.replace(Regex("<[^>]*>"), "").replace("\n", "").trim().length
             if (longDescriptionLength < 250 || longDescriptionLength > 550) {
                 logError(
                     "Προιον με περιγραφη προιοντος με λαθος μηκος",
@@ -2714,7 +2787,7 @@ private fun checkForNonSizeAttributesUsedForVariationsEgColour(product: Product)
     }
 }
 
-fun checkForMissingSizeVariations(product: Product, productVariations: List<Variation>, credentials: String) {
+fun checkForMissingSizeVariations(product: Product, productVariations: List<Variation>) {
     val sizeAttributeName = "Μέγεθος"
     val sizeAttribute = product.attributes.find { it.name.equals(sizeAttributeName, ignoreCase = true) }
     val availableSizes = sizeAttribute?.options ?: emptyList()
@@ -2731,11 +2804,9 @@ fun checkForMissingSizeVariations(product: Product, productVariations: List<Vari
 
         if (!variationExists) {
             logError(
-                "SAKIS checkForMissingSizeVariations 1",
-                "ERROR: Product SKU ${product.sku} is missing a variation for size $size.",
-                alsoEmail = false
+                "Λειπει παραλλαγη",
+                "ΣΦΑΛΜΑ: Το προιον με SKU ${product.sku} δεν εχει παραλλαγη για το μεγεθος '$size'.\nLINK: ${product.permalink}",
             )
-            println("LINK: ${product.permalink}")
         }
     }
 }

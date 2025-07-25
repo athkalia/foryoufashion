@@ -1,8 +1,6 @@
 package other
 
 import javax.mail.*
-import javax.mail.internet.InternetAddress
-import javax.mail.internet.MimeMessage
 import Order
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -12,20 +10,14 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Properties
 import readOnlyConsumerKey
 import readOnlyConsumerSecret
-import sakisForYouFashionEmailPassword
 
-const val MANUAL_INPUT_totalMarketingExpensesForMonth: Double = 4000.0
-const val monthlyMarketingPayment: Double = 350.0
-const val totalMarketingSpendIncludingMonthlyPayment =
-    MANUAL_INPUT_totalMarketingExpensesForMonth + monthlyMarketingPayment
+const val totalMarketingSpendIncludingMonthlyPayment:Double = 3850.0
 const val test = true
 const val thisMonth = true
 
 fun main(args: Array<String>) {
-    val toEmail = if (test || thisMonth) "sakis@foryoufashion.gr" else "ads@conversion.gr"
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val month = if (thisMonth) getCurrentMonth() else getPreviousMonthDate()
     val orders = fetchOrders(month, credentials)
@@ -35,16 +27,14 @@ fun main(args: Array<String>) {
     val refundedRevenue = calculateRefundedRevenue(orders)
 
     val monthAndYear = month.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
-    val emailContent = generateEmailContent(
+    val content = generateContent(
         refundedOrderCountPercentage,
         refundedMoneyPercentage,
         completedRevenue,
         refundedRevenue,
         monthAndYear,
     )
-    println(emailContent)
-    sendEmail(toEmail, emailContent, monthAndYear)
-    println("ACTION: Email sent to $toEmail")
+    println(content)
 }
 
 fun calculateRefundedOrderMoneyPercentage(orders: List<Order>): Double {
@@ -102,7 +92,7 @@ fun calculateRefundedRevenue(orders: List<Order>): Double {
     return orders.filter { it.status=="refunded" }.sumOf { it.total.toDouble() }
 }
 
-fun generateEmailContent(
+fun generateContent(
     refundedOrderCountPercentage: Double,
     refundedMoneyPercentage: Double,
     completedOrdersRevenue: Double,
@@ -110,9 +100,7 @@ fun generateEmailContent(
     monthAndYear: String,
 ): String {
     return """
-        Καλησπέρα,
-
-        Σας επισυνάπτω τις πωλήσεις από το site για το μήνα $monthAndYear
+        $monthAndYear:
         - Έσοδα από ολοκληρωμένες παραγγελίες: €${"%.2f".format(completedOrdersRevenue + refundedRevenue)}
         - Επιστροφές χρημάτων: €${"%.2f".format(refundedRevenue)}
         - Έσοδα μετά τις επιστροφές: €${"%.2f".format(completedOrdersRevenue)}
@@ -120,43 +108,5 @@ fun generateEmailContent(
         - Ποσοστό επιστροφών σε λεφτα: ${"%.2f".format(refundedMoneyPercentage)}%
         - Συνολικά έξοδα marketing για το μήνα: €${"%.2f".format(totalMarketingSpendIncludingMonthlyPayment)} 
         - Συνολικό πραγματικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / totalMarketingSpendIncludingMonthlyPayment)} 
-
-        Φιλικά,
-        Σάκης
     """.trimIndent()
-}
-
-fun sendEmail(recipientEmail: String, content: String, monthAndYear: String) {
-    val username = "sakis@foryoufashion.gr"
-    val props = Properties()
-    props["mail.smtp.auth"] = "true"
-    props["mail.smtp.starttls.enable"] = "true"
-    props["mail.smtp.host"] = "mail.foryoufashion.gr"
-    props["mail.smtp.port"] = "587"
-
-    val session = Session.getInstance(props,
-        object : Authenticator() {
-            override fun getPasswordAuthentication(): PasswordAuthentication {
-                return PasswordAuthentication(username, sakisForYouFashionEmailPassword)
-            }
-        })
-
-    try {
-        val message = MimeMessage(session)
-        message.setFrom(InternetAddress(username))
-        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail))
-        if (test || thisMonth) {
-            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse("sakis@foryoufashion.gr"))
-        } else {
-            message.setRecipients(
-                Message.RecipientType.CC,
-                InternetAddress.parse("k.kaliakouda@foryoufashion.gr, sakis@foryoufashion.gr")
-            )
-        }
-        message.subject = "For You Fashion - Έσοδα μήνα $monthAndYear"
-        message.setText(content)
-        Transport.send(message)
-    } catch (e: MessagingException) {
-        throw RuntimeException(e)
-    }
 }

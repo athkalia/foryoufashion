@@ -82,7 +82,7 @@
   },
   {
     "name": "EWWW Image Optimizer",
-    "version": "8.1.4",
+    "version": "8.2.0",
     "status": "active",
     "description": {
       "rendered": "Smaller Images, Faster Sites, Happier Visitors. Comprehensive image optimization that doesn&#8217;t require a degree in rocket science. <cite>By <a href=\"https://ewww.io/\">Exactly WWW</a>.</cite>"
@@ -135,15 +135,6 @@
     "sakis_description": "missing"
   },
   {
-    "name": "Jetpack VideoPress",
-    "version": "2.4",
-    "status": "active",
-    "description": {
-      "rendered": "High quality, ad-free video. <cite>By <a href=\"https://jetpack.com/videopress/\">Automattic - Jetpack Video team</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
     "name": "MC4WP: Mailchimp for WordPress",
     "version": "4.10.5",
     "status": "active",
@@ -154,7 +145,7 @@
   },
   {
     "name": "Media Cleaner (Pro)",
-    "version": "6.8.9",
+    "version": "6.9.2",
     "status": "active",
     "description": {
       "rendered": "Clean your WordPress! Eliminate unused and broken media files. For a faster, and better website. <cite>By <a href=\"https://jordymeow.com\">Jordy Meow</a>.</cite>"
@@ -262,7 +253,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.1.10",
+    "version": "1.1.13",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -307,7 +298,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.91",
+    "version": "1.0.92",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -334,7 +325,7 @@
   },
   {
     "name": "Web Expert WooCommerce Google Merchant Product Data Feed",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "status": "active",
     "description": {
       "rendered": "Το Web Expert WooCommerce Google Merchant Product Data Feed είναι ένα πρόσθετο για το WooCommerce που δημιουργεί έγκυρη ροή δεδομένων για το Google Merchant. <cite>By <a href=\"http://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -397,7 +388,7 @@
   },
   {
     "name": "WooCommerce AJAX Products Filter",
-    "version": "3.1.9.1",
+    "version": "3.1.9.2",
     "status": "active",
     "description": {
       "rendered": "Unlimited AJAX products filters to make your shop perfect <cite>By <a href=\"https://berocket.com?utm_source=paid_plugin&#038;utm_medium=plugins&#038;utm_campaign=ajax_filters\">BeRocket</a>.</cite>"
@@ -433,7 +424,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.8",
+    "version": "4.7.9",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -442,7 +433,7 @@
   },
   {
     "name": "WooCommerce Smart COD",
-    "version": "1.7.3",
+    "version": "1.8.2",
     "status": "active",
     "description": {
       "rendered": "A powerful plugin that extends WooCommerce COD (Cash on Delivery) Gateway, supporting multiple extra fees and a multiple factor gateway restriction. <cite>By <a href=\"https://woosmartcod.com\">woosmartcod.com</a>.</cite>"
@@ -496,7 +487,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "25.4",
+    "version": "25.5",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"

@@ -131,6 +131,7 @@ data class Variation(
     val sale_price: String,
     val stock_status: String,
     val manage_stock: Boolean,
+    val backorders_allowed: Boolean,
     val meta_data: List<MetaData>,
     val status: String
 )
