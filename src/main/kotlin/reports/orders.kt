@@ -43,6 +43,9 @@ fun main() {
     val orders = fetchAllOrdersSince2024(credentials)
     println("DEBUG: Total orders fetched: ${orders.size}")
 
+    val topRefunders = generateTopRefundingCustomers(orders)
+    saveTopRefundersCsv(topRefunders)
+
     val orderStatusMap = generateOrderStatusData(orders)
     plotOrdersStatusesByMonth(orderStatusMap)
 
@@ -828,4 +831,51 @@ fun plotAdjustedProductSalesDataMonthly(modelSalesMap: Map<String, Map<String, D
     val chartFile = File(fileName)
     ChartUtils.saveChartAsPNG(chartFile, chart, 800, 600)
     println("ACTION: Adjusted monthly product sales plot saved as $fileName")
+}
+
+data class CustomerRefunds(val name: String, val email: String, val count: Int)
+
+private fun isRefunded(order: Order): Boolean {
+    // Count fully refunded OR partially refunded orders
+    return order.status=="refunded" || (order.refunds?.isNotEmpty()==true)
+}
+
+fun generateTopRefundingCustomers(orders: List<Order>): List<CustomerRefunds> {
+    data class Acc(val name: String, var count: Int)
+
+    val byEmail = mutableMapOf<String, Acc>()
+
+    orders.asSequence()
+        .filter(::isRefunded)
+        .forEach { order ->
+            val email = order.billing?.email?.trim()?.lowercase().orEmpty().ifBlank { "(missing)" }
+            val first = order.billing?.first_name?.trim().orEmpty()
+            val last = order.billing?.last_name?.trim().orEmpty()
+            val name = (listOf(first, last).filter { it.isNotBlank() }.joinToString(" ")).ifBlank { "(no name)" }
+
+            val acc = byEmail.getOrPut(email) { Acc(name = name, count = 0) }
+            // Prefer the longer/more informative name if we see a different one later
+            if (name.length > acc.name.length && name!="(no name)") {
+                byEmail[email] = acc.copy(name = name)
+            }
+            acc.count += 1
+        }
+
+    return byEmail.entries
+        .sortedByDescending { it.value.count }
+        .map { CustomerRefunds(name = it.value.name, email = it.key, count = it.value.count) }
+}
+
+fun saveTopRefundersCsv(rows: List<CustomerRefunds>) {
+    val fileName = "report_top_refunders.csv"
+    val file = File(fileName)
+    file.printWriter().use { out ->
+        out.println("Customer Name,Email,Refunded Order Count")
+        rows.forEach { r ->
+            val safeName = "\"${r.name.replace("\"", "\"\"")}\""
+            val safeEmail = "\"${r.email.replace("\"", "\"\"")}\""
+            out.println("$safeName,$safeEmail,${r.count}")
+        }
+    }
+    println("ACTION: Top refunding customers CSV saved as $fileName")
 }

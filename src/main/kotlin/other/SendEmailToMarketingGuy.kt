@@ -1,6 +1,5 @@
 package other
 
-import javax.mail.*
 import Order
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -13,11 +12,22 @@ import java.time.format.DateTimeFormatter
 import readOnlyConsumerKey
 import readOnlyConsumerSecret
 
-const val totalMarketingSpendIncludingMonthlyPayment:Double = 3850.0
-const val test = true
 const val thisMonth = true
 
 fun main(args: Array<String>) {
+    val agencyFee = 400.0
+    val marketingSpend = 5000
+    val totalMarketingSpendIncludingMonthlyPayment = agencyFee + marketingSpend
+    val adjustedMarketingSpend = if (thisMonth) {
+        val today = LocalDate.now()
+        val daysInMonth = today.lengthOfMonth()
+        val daysPassed = today.dayOfMonth
+        totalMarketingSpendIncludingMonthlyPayment * (daysPassed.toDouble() / daysInMonth.toDouble())
+    } else {
+        totalMarketingSpendIncludingMonthlyPayment
+    }
+    println("DEBUG: Calculated marketing spend: $adjustedMarketingSpend")
+
     val credentials = Credentials.basic(readOnlyConsumerKey, readOnlyConsumerSecret)
     val month = if (thisMonth) getCurrentMonth() else getPreviousMonthDate()
     val orders = fetchOrders(month, credentials)
@@ -33,6 +43,7 @@ fun main(args: Array<String>) {
         completedRevenue,
         refundedRevenue,
         monthAndYear,
+        adjustedMarketingSpend
     )
     println(content)
 }
@@ -45,7 +56,7 @@ fun calculateRefundedOrderMoneyPercentage(orders: List<Order>): Double {
 }
 
 private fun getPreviousMonthDate(): LocalDate = LocalDate.now().minusMonths(1)
-private fun getCurrentMonth(): LocalDate = LocalDate.now().minusMonths(0)
+private fun getCurrentMonth(): LocalDate = LocalDate.now()
 
 fun fetchOrders(previousMonthDate: LocalDate, credentials: String): List<Order> {
     println("Fetching orders..")
@@ -98,6 +109,7 @@ fun generateContent(
     completedOrdersRevenue: Double,
     refundedRevenue: Double,
     monthAndYear: String,
+    marketingSpend: Double
 ): String {
     return """
         $monthAndYear:
@@ -106,7 +118,7 @@ fun generateContent(
         - Έσοδα μετά τις επιστροφές: €${"%.2f".format(completedOrdersRevenue)}
         - Ποσοστό επιστροφών σε αριθμο παραγγελιων: ${"%.2f".format(refundedOrderCountPercentage)}%
         - Ποσοστό επιστροφών σε λεφτα: ${"%.2f".format(refundedMoneyPercentage)}%
-        - Συνολικά έξοδα marketing για το μήνα: €${"%.2f".format(totalMarketingSpendIncludingMonthlyPayment)} 
-        - Συνολικό πραγματικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / totalMarketingSpendIncludingMonthlyPayment)} 
+        - Συνολικά έξοδα marketing για το μήνα: €${"%.2f".format(marketingSpend)} 
+        - Συνολικό πραγματικό ROAS για όλο το site: ${"%.2f".format(completedOrdersRevenue / marketingSpend)} 
     """.trimIndent()
 }

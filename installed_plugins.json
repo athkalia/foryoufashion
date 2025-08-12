@@ -19,7 +19,7 @@
   },
   {
     "name": "Advanced Custom Fields PRO",
-    "version": "6.4.2",
+    "version": "6.4.3",
     "status": "active",
     "description": {
       "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
@@ -127,7 +127,7 @@
   },
   {
     "name": "Jetpack",
-    "version": "14.8",
+    "version": "14.9.1",
     "status": "active",
     "description": {
       "rendered": "Security, performance, and marketing tools made by WordPress experts. Jetpack keeps your site protected so you can focus on more important things. <cite>By <a href=\"https://jetpack.com\">Automattic.</a>.</cite>"
@@ -136,7 +136,7 @@
   },
   {
     "name": "MC4WP: Mailchimp for WordPress",
-    "version": "4.10.5",
+    "version": "4.10.6",
     "status": "active",
     "description": {
       "rendered": "Mailchimp for WordPress by ibericode. Adds various highly effective sign-up methods to your site. <cite>By <a href=\"https://www.ibericode.com/\">ibericode</a>.</cite>"
@@ -154,7 +154,7 @@
   },
   {
     "name": "Payment Plugins for Stripe WooCommerce",
-    "version": "3.3.87",
+    "version": "3.3.91",
     "status": "active",
     "description": {
       "rendered": "Accept Credit Cards, Google Pay, Apple Pay, ACH, Klarna and more using Stripe. <cite>By Payment Plugins, support@paymentplugins.com.</cite>"
@@ -172,7 +172,7 @@
   },
   {
     "name": "Query Monitor",
-    "version": "3.18.0",
+    "version": "3.19.0",
     "status": "inactive",
     "description": {
       "rendered": "The developer tools panel for WordPress. <cite>By <a href=\"https://querymonitor.com/\">John Blackbourn</a>.</cite>"
@@ -190,7 +190,7 @@
   },
   {
     "name": "Redis Object Cache",
-    "version": "2.5.4",
+    "version": "2.6.3",
     "status": "active",
     "description": {
       "rendered": "A persistent object cache backend powered by Redis. Supports Predis, PhpRedis, Relay, replication, sentinels, clustering and WP-CLI. <cite>By <a href=\"https://objectcache.pro/?ref=oss&#038;utm_source=wp-plugin&#038;utm_medium=author\">Till Krüss</a>.</cite>"
@@ -253,7 +253,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.1.13",
+    "version": "1.1.16",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -298,7 +298,7 @@
   },
   {
     "name": "Web Expert SoftOne ERP Bridge",
-    "version": "1.0.92",
+    "version": "1.0.94",
     "status": "active",
     "description": {
       "rendered": "Web Expert SoftOne ERP Bridge main unit <cite>By <a href=\"https://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -325,7 +325,7 @@
   },
   {
     "name": "Web Expert WooCommerce Google Merchant Product Data Feed",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "status": "active",
     "description": {
       "rendered": "Το Web Expert WooCommerce Google Merchant Product Data Feed είναι ένα πρόσθετο για το WooCommerce που δημιουργεί έγκυρη ροή δεδομένων για το Google Merchant. <cite>By <a href=\"http://www.webexpert.gr\">Web Expert</a>.</cite>"
@@ -343,7 +343,7 @@
   },
   {
     "name": "WooCommerce",
-    "version": "9.8.5",
+    "version": "10.0.4",
     "status": "active",
     "description": {
       "rendered": "Μια e-commerce πλατφόρμα που θα σας βοηθήσει να πουλήσετε τα πάντα. Όμορφα. <cite>By <a href=\"https://woocommerce.com\">Automattic</a>.</cite>"
@@ -361,7 +361,7 @@
   },
   {
     "name": "WooCommerce Advanced Bulk Edit",
-    "version": "5.5.3.1",
+    "version": "5.5.3.4",
     "status": "active",
     "description": {
       "rendered": "Edit your products both individually or in bulk. <cite>By <a href=\"https://wpmelon.com\">George Iron &amp; Yas G.</a>.</cite>"
@@ -415,7 +415,7 @@
   },
   {
     "name": "WooCommerce PayPal Payments",
-    "version": "3.0.7",
+    "version": "3.0.9",
     "status": "active",
     "description": {
       "rendered": "PayPal&#8217;s latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage. <cite>By <a href=\"https://woocommerce.com/\">WooCommerce</a>.</cite>"
@@ -424,7 +424,7 @@
   },
   {
     "name": "WooCommerce PDF Invoices, Packing Slips, Delivery Notes and Shipping Labels",
-    "version": "4.7.9",
+    "version": "4.8.0",
     "status": "active",
     "description": {
       "rendered": "Prints Packing List,Invoice,Delivery Note and Shipping Label. <cite>By <a href=\"https://www.webtoffee.com/\">WebToffee</a>.</cite>"
@@ -469,7 +469,7 @@
   },
   {
     "name": "WP Rocket",
-    "version": "3.18.3",
+    "version": "3.19.2.1",
     "status": "active",
     "description": {
       "rendered": "The best WordPress performance plugin. <cite>By <a href=\"https://wp-media.me\">WP Media</a>.</cite>"
@@ -487,7 +487,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "25.5",
+    "version": "25.6",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
@@ -523,7 +523,7 @@
   },
   {
     "name": "TikTok",
-    "version": "1.3.3",
+    "version": "1.3.5",
     "status": "active",
     "description": {
       "rendered": "With the TikTok x WooCommerce integration, it&#8217;s easier than ever to unlock innovative social commerce features for your business to drive traffic and sales to a highly engaged community. With guided &amp; simple setup prompts, you can sync your WooCommerce product catalog and promote it with custom ads without leaving your dashboard. Also, in just 1 click you can install the most-advanced TikTok pixel to unlock advanced visibility into detailed campaign performance tracking. Reach over 1 billion users, globally, and drive more e-commerce sales when you sell via one of the world’s most downloaded applications! <cite>By TikTok.</cite>"
@@ -550,7 +550,7 @@
   },
   {
     "name": "User Switching",
-    "version": "1.9.2",
+    "version": "1.10.0",
     "status": "active",
     "description": {
       "rendered": "Στιγμιαία εναλλαγή μεταξύ λογαριασμών χρηστών στο WordPress <cite>By <a href=\"https://johnblackbourn.com\">John Blackbourn</a>.</cite>"
@@ -577,7 +577,7 @@
   },
   {
     "name": "Table Field Add-on for ACF and SCF",
-    "version": "1.3.29",
+    "version": "1.3.30",
     "status": "active",
     "description": {
       "rendered": "This free Add-on adds a table field type for the plugins Advanced Custom Fields and Secure Custom Fields. <cite>By <a href=\"http://www.johannheyne.de\">Johann Heyne</a>.</cite>\n"

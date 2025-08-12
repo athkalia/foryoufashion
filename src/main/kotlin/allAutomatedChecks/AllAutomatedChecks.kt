@@ -1192,7 +1192,7 @@ fun checkPreordersProparaggelia(product: Product, variations: List<Variation>) {
         if (availabilityDate.isNullOrBlank() && preorderDays==null) {
             logError(
                 "SAKIS Preorder Check 1",
-                "Product with SKU ${product.sku} allows backorders but lacks preorder metadata.",
+                "Product with SKU ${product.sku} allows backorders but lacks preorder metadata.\nLINK: ${product.permalink}",
                 alsoEmail = false
             )
         }
@@ -1204,7 +1204,7 @@ fun checkPreordersProparaggelia(product: Product, variations: List<Variation>) {
             val date = LocalDate.parse(it)
             if (date.isBefore(LocalDate.now())) {
                 logError(
-                    "SAKIS Preorder Check 2", "Product with SKU ${product.sku} has availability date in the past.",
+                    "SAKIS Preorder Check 2", "Product with SKU ${product.sku} has availability date in the past.\nLINK: ${product.permalink}",
                     alsoEmail = false
                 )
             }
