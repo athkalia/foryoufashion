@@ -15,8 +15,8 @@ import readOnlyConsumerSecret
 const val thisMonth = true
 
 fun main(args: Array<String>) {
-    val agencyFee = 400.0
-    val marketingSpend = 5000
+    val agencyFee = 450.0
+    val marketingSpend = 4500
     val totalMarketingSpendIncludingMonthlyPayment = agencyFee + marketingSpend
     val adjustedMarketingSpend = if (thisMonth) {
         val today = LocalDate.now()

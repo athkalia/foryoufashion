@@ -43,6 +43,9 @@ fun main() {
     val orders = fetchAllOrdersSince2024(credentials)
     println("DEBUG: Total orders fetched: ${orders.size}")
 
+    val monthlyReturns = generateMonthlyReturnRatesSince2025(orders)
+    saveMonthlyReturnRatesTxt(monthlyReturns)
+
     val topRefunders = generateTopRefundingCustomers(orders)
     saveTopRefundersCsv(topRefunders)
 
@@ -86,6 +89,77 @@ fun main() {
     plotAdjustedMonetarySalesData(fwtografisiAdjustedMonetarySalesMap, fwtografisiTagToFilterBy)
     println("Finish time: ${LocalTime.now()}")
 }
+
+data class MonthlyReturns(
+    val month: String,
+    val totalOrders: Int,
+    val refundedOrders: Int,
+    val returnRatePct: Double
+)
+
+fun generateMonthlyReturnRatesSince2025(orders: List<Order>): List<MonthlyReturns> {
+    val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
+    val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+    val start = LocalDate.of(2025, 4, 1)
+    val currentMonth = YearMonth.now()
+
+    // Aggregate totals and refunds per month
+    val totals = mutableMapOf<String, Int>()
+    val refunds = mutableMapOf<String, Int>()
+
+    orders.forEach { order ->
+        val d = LocalDate.parse(order.date_created, dateFormatter)
+        if (!d.isBefore(start)) {
+            val ym = YearMonth.from(d)
+            if (ym!=currentMonth) { // exclude current month
+                val monthEntry = monthFormatter.format(d)
+                totals.merge(monthEntry, 1) { a, b -> a + b }
+                if (isRefunded(order)) {
+                    refunds.merge(monthEntry, 1) { a, b -> a + b }
+                }
+            }
+        }
+    }
+
+    // Build rows, sorted by month
+    return totals.keys.sorted()
+        .map { m ->
+            val totalCount = totals[m] ?: 0
+            val refundCount = refunds[m] ?: 0
+            val refundPercentage = if (totalCount==0) 0.0 else (refundCount.toDouble() / totalCount.toDouble()) * 100.0
+            MonthlyReturns(
+                month = m,
+                totalOrders = totalCount,
+                refundedOrders = refundCount,
+                returnRatePct = String.format("%.2f", refundPercentage).toDouble()
+            )
+        }
+}
+
+fun saveMonthlyReturnRatesTxt(
+    rows: List<MonthlyReturns>,
+    fileName: String = "report_monthly_return_rates_since_2025.txt"
+) {
+    val file = File(fileName)
+    file.printWriter().use { out ->
+        out.println("Monthly Return Rates")
+        out.println("Month      | Total | Refunded | Return Rate (%)")
+        out.println("-----------+-------+----------+----------------")
+        rows.forEach { r ->
+            out.println(
+                String.format(
+                    "%-10s | %5d | %8d | %14.2f",
+                    r.month,
+                    r.totalOrders,
+                    r.refundedOrders,
+                    r.returnRatePct
+                )
+            )
+        }
+    }
+    println("ACTION: Monthly return rates TXT saved as $fileName")
+}
+
 
 fun fetchAllOrdersSince2024(credentials: String): List<Order> {
     val client = OkHttpClient()
