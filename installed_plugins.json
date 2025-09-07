@@ -19,7 +19,7 @@
   },
   {
     "name": "Advanced Custom Fields PRO",
-    "version": "6.4.3",
+    "version": "6.5.0.1",
     "status": "active",
     "description": {
       "rendered": "Προσαρμόστε το WordPress με ισχυρά, επαγγελματικά και εύχρηστα πεδία. <cite>By <a href=\"https://wpengine.com/?utm_source=wordpress.org&#038;utm_medium=referral&#038;utm_campaign=plugin_directory&#038;utm_content=advanced_custom_fields\">WP Engine</a>.</cite>"
@@ -28,7 +28,7 @@
   },
   {
     "name": "AfterShip Tracking - All-In-One WooCommerce Order Tracking (Free plan available)",
-    "version": "1.17.17",
+    "version": "1.17.18",
     "status": "active",
     "description": {
       "rendered": "Track orders in one place. shipment tracking, automated notifications, order lookup, branded tracking page, delivery day prediction <cite>By <a href=\"http://aftership.com\">AfterShip</a>.</cite>"
@@ -91,7 +91,7 @@
   },
   {
     "name": "Google Analytics for WooCommerce",
-    "version": "2.1.16",
+    "version": "2.1.17",
     "status": "active",
     "description": {
       "rendered": "Allows Google Analytics tracking code to be inserted into WooCommerce store pages. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
@@ -162,13 +162,13 @@
     "sakis_description": "missing"
   },
   {
-    "name": "Pixel Caffeine",
-    "version": "2.1.3",
+    "name": "PixelYourSite",
+    "version": "11.0.2",
     "status": "active",
     "description": {
-      "rendered": "The simplest and easiest way to manage your Facebook Pixel. Create laser focused custom audiences on WordPress for 100% free. <cite>By <a href=\"https://adespresso.com/\">AdEspresso</a>.</cite>"
+      "rendered": "Meta Pixel &amp; CAPI, GA4, and GTM support with ZERO CODING. Track events, WooCommerce/EDD ready, with Pinterest &amp; Bing add-ons, plus consent support. <cite>By <a href=\"http://www.pixelyoursite.com\">PixelYourSite</a>.</cite>"
     },
-    "sakis_description": "Facebook pixel"
+    "sakis_description": "Meta pixel"
   },
   {
     "name": "Query Monitor",
@@ -190,7 +190,7 @@
   },
   {
     "name": "Redis Object Cache",
-    "version": "2.6.3",
+    "version": "2.6.5",
     "status": "active",
     "description": {
       "rendered": "A persistent object cache backend powered by Redis. Supports Predis, PhpRedis, Relay, replication, sentinels, clustering and WP-CLI. <cite>By <a href=\"https://objectcache.pro/?ref=oss&#038;utm_source=wp-plugin&#038;utm_medium=author\">Till Krüss</a>.</cite>"
@@ -253,7 +253,7 @@
   },
   {
     "name": "Web Expert Core",
-    "version": "1.1.16",
+    "version": "1.1.19",
     "status": "active",
     "description": {
       "rendered": "This plugin is used by Web Expert to enchant your website and monitor its status. Do not de-activate or delete. <cite>By <a href=\"https://www.webexpert.gr/\">Web Expert</a>.</cite>"
@@ -361,7 +361,7 @@
   },
   {
     "name": "WooCommerce Advanced Bulk Edit",
-    "version": "5.5.3.4",
+    "version": "5.5.4.2",
     "status": "active",
     "description": {
       "rendered": "Edit your products both individually or in bulk. <cite>By <a href=\"https://wpmelon.com\">George Iron &amp; Yas G.</a>.</cite>"
@@ -396,24 +396,6 @@
     "sakis_description": "missing"
   },
   {
-    "name": "WooCommerce Dynamic Pricing &amp; Discounts",
-    "version": "2.4.5",
-    "status": "active",
-    "description": {
-      "rendered": "All-purpose product pricing, cart discount and checkout fee tool for WooCommerce <cite>By <a href=\"http://www.rightpress.net\">RightPress</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
-    "name": "WooCommerce Legacy REST API",
-    "version": "1.0.5",
-    "status": "active",
-    "description": {
-      "rendered": "The legacy WooCommerce REST API, which used to be part of WooCommerce itself but is removed as of WooCommerce 9.0. <cite>By <a href=\"https://woocommerce.com\">WooCommerce</a>.</cite>"
-    },
-    "sakis_description": "missing"
-  },
-  {
     "name": "WooCommerce PayPal Payments",
     "version": "3.0.9",
     "status": "active",
@@ -433,7 +415,7 @@
   },
   {
     "name": "WooCommerce Smart COD",
-    "version": "1.8.2",
+    "version": "1.8.3",
     "status": "active",
     "description": {
       "rendered": "A powerful plugin that extends WooCommerce COD (Cash on Delivery) Gateway, supporting multiple extra fees and a multiple factor gateway restriction. <cite>By <a href=\"https://woosmartcod.com\">woosmartcod.com</a>.</cite>"
@@ -442,7 +424,7 @@
   },
   {
     "name": "Mailchimp for WooCommerce",
-    "version": "5.4",
+    "version": "5.5.1",
     "status": "active",
     "description": {
       "rendered": "Connects WooCommerce to Mailchimp to sync your store data, send targeted campaigns to your customers, and sell more stuff"
@@ -487,7 +469,7 @@
   },
   {
     "name": "Yoast SEO",
-    "version": "25.6",
+    "version": "25.8",
     "status": "active",
     "description": {
       "rendered": "Η πρώτη πραγματικά όλα-σε-ένα SEO λύση για WordPress, η οποία περιλαμβάνει ανάλυση περιεχομένου σελίδας, χάρτες XML και πολλά περισσότερα. <cite>By <a href=\"https://yoa.st/1uk\">Ομάδα Yoast</a>.</cite>"
@@ -504,17 +486,8 @@
     "sakis_description": ""
   },
   {
-    "name": "Klaviyo",
-    "version": "3.7.0",
-    "status": "active",
-    "description": {
-      "rendered": "A plugin to automatically sync your WooCommerce sales, products and customers with Klaviyo. With Klaviyo you can set up abandoned cart emails, collect emails for your newsletter to grow your business. <cite>By <a href=\"https://www.klaviyo.com\">Klaviyo, Inc.</a>.</cite>"
-    },
-    "sakis_description": "Integration with Klaviyo for email marketing"
-  },
-  {
     "name": "GTM4WP - A Google Tag Manager (GTM) plugin for WordPress",
-    "version": "1.21.1",
+    "version": "1.22",
     "status": "active",
     "description": {
       "rendered": "The first Google Tag Manager plugin for WordPress with business goals in mind <cite>By <a href=\"https://gtm4wp.com/\">Thomas Geiger</a>.</cite>"
@@ -541,7 +514,7 @@
   },
   {
     "name": "WooCommerce Wholesale Prices Premium",
-    "version": "2.0.4",
+    "version": "2.0.5",
     "status": "active",
     "description": {
       "rendered": "WooCommerce Premium Extension for the Woocommerce Wholesale Prices Plugin <cite>By <a href=\"http://rymera.com.au/\">Rymera Web Co</a>.</cite>\n"

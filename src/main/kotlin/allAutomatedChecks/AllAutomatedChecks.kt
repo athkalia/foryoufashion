@@ -82,6 +82,7 @@ const val shouldSyncWholesalePricesAcrossVariations = true
 const val shouldSyncWholesaleSalePricesAcrossVariations = true
 const val useChatGptForSeoSuggestions = true
 const val addMissingUpDifferentColourProductUpSells = true
+const val shouldUpdateBestSellersProductTag = true
 
 // One-off updates
 const val shouldCheckForLargeImagesOutsideMediaLibraryFromFTP = false
@@ -98,7 +99,8 @@ val allApiUpdateVariables = listOf(
     shouldDiscountProductPriceBasedOnLastSaleDate,
     shouldDeleteLargeImagesOutsideMediaLibraryFromFTP,
     shouldAddGenericPhotoshootTag,
-    shouldUpdateProductsWithoutABrandToForYou
+    shouldUpdateProductsWithoutABrandToForYou,
+    shouldUpdateBestSellersProductTag
 )
 
 private const val CACHE_FILE_PATH = "product_images_dimensions_cache.csv"
@@ -171,6 +173,9 @@ fun main() {
 
         val allOrders = fetchAllOrders(credentials)
         checkPaymentMethodsInLastMonths(allOrders)
+        if (shouldUpdateBestSellersProductTag) {
+            checkBestSellersProductsAndUpdateTags(allProducts, allOrders, credentials)
+        }
         val allAttributes = getAllAttributes(credentials)
         checkProductCategories(credentials)
         checkProductAttributes(allAttributes, credentials)
@@ -182,7 +187,7 @@ fun main() {
             //if (product.sku!="59689-521-1") {
             //return
             //}
-            // println("DEBUG: product SKU: ${product.sku}")
+            println("DEBUG: product SKU: ${product.sku}")
             checkNameModelTag(product)
             checkForInvalidDescriptions(product, credentials)
             checkForMissingGalleryVideo(product)
@@ -194,7 +199,7 @@ fun main() {
             checkOneSizeIsOnlySize(product)
             checkForMikosAttributeInForemataCategory(product)
             checkForMissingAttributesInProduct(product, allAttributes, credentials)
-            checkForMissingImages(product)
+            checkForImageCount(product)
             checkForMissingPromitheutisTag(product)
             checkForTyposInProductText(product)
             checkForDuplicateImagesInAProduct(product)
@@ -246,6 +251,22 @@ fun main() {
     flushBufferedEmailAlerts()
 }
 
+fun checkBestSellersProductsAndUpdateTags(allProducts: List<Product>, orders: List<Order>, credentials: String) {
+    val bestSellerWindowMonths = 3L
+    val bestSellersTag = Tag(id = 1666, slug = "best-sellers", name = "Best Sellers")
+    val bestSellerIds = computeBestSellersProductIds(orders, bestSellerWindowMonths)
+    // println("DEBUG: $bestSellerIds")
+    val eligible = allProducts.filter { it.status!="draft" && it.status!="private" }
+    eligible.forEach { product ->
+        val isBestSeller = bestSellerIds.contains(product.id)
+        val hasBestSellersTag = product.tags.any { it.slug==bestSellersTag.slug }
+        when {
+            isBestSeller && !hasBestSellersTag -> addBestSellerTag(product, bestSellersTag, credentials)
+            !isBestSeller && hasBestSellersTag -> removeBestSellerTag(product, bestSellersTag, credentials)
+        }
+    }
+}
+
 fun flushBufferedEmailAlerts() {
     val truncatedBuffer = emailMessageBuffer.mapValues { (_, messages) ->
         messages.take(50)
@@ -270,6 +291,70 @@ fun flushBufferedEmailAlerts() {
         }
     }
     saveEmailThrottleCache()
+}
+
+fun computeBestSellersProductIds(orders: List<Order>, lookbackMonths: Long): Set<Int> {
+    val BEST_SELLER_TOP_N = 40
+    val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
+    val xMonthsAgo = LocalDate.now().minusMonths(lookbackMonths)
+
+    // Sum quantities by parent product id for completed/processing orders
+    val qtyByProductId = mutableMapOf<Int, Int>()
+    orders.forEach { order ->
+        val orderDate = LocalDate.parse(order.date_created, dateFormatter)
+        if (!orderDate.isBefore(xMonthsAgo) && order.status.lowercase() in setOf("completed", "processing")) {
+            order.line_items.forEach { lineItem ->
+                val productId = lineItem.product_id
+                // Deleted products have '0' as their product id
+                if (productId!=0) {
+                    qtyByProductId[productId] = qtyByProductId.getOrDefault(productId, 0) + lineItem.quantity
+                }
+            }
+        }
+    }
+
+    if (qtyByProductId.isEmpty()) return emptySet()
+
+    // take top N by units sold
+    val top = qtyByProductId.entries
+        .sortedByDescending { it.value }
+        .take(BEST_SELLER_TOP_N)
+        .map { it.key }
+        .toSet()
+
+    return top
+}
+
+fun addBestSellerTag(product: Product, tag: Tag, credentials: String) {
+    if (product.tags.any { it.slug==tag.slug || it.name.equals(tag.name, true) }) return
+    val updatedTags = product.tags.toMutableList().apply { add(tag) }
+    val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+    val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string() ?: ""
+            if (!response.isSuccessful) throw IOException("Error adding BEST SELLERS tag to ${product.id}: $responseBody")
+            println("ACTION: Tag 'BEST SELLERS' added to product SKU ${product.sku}")
+        }
+    }
+}
+
+fun removeBestSellerTag(product: Product, tag: Tag, credentials: String) {
+    if (product.tags.none { it.slug==tag.slug || it.name.equals(tag.name, true) }) return
+    val updatedTags = product.tags.filter { it.slug!=tag.slug && !it.name.equals(tag.name, true) }
+    val data = mapper.writeValueAsString(mapOf("tags" to updatedTags))
+    val url = "https://foryoufashion.gr/wp-json/wc/v3/products/${product.id}"
+    val body = data.toRequestBody("application/json".toMediaTypeOrNull())
+    val request = Request.Builder().url(url).put(body).header("Authorization", credentials).build()
+    executeWithRetry {
+        client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string() ?: ""
+            if (!response.isSuccessful) throw IOException("Error removing BEST SELLERS tag from ${product.id}: $responseBody")
+            println("ACTION: Tag 'BEST SELLERS' removed from product SKU ${product.sku}")
+        }
+    }
 }
 
 fun checkCasualForemataHasCasualStyleAttribute(product: Product) {
@@ -1204,7 +1289,8 @@ fun checkPreordersProparaggelia(product: Product, variations: List<Variation>) {
             val date = LocalDate.parse(it)
             if (date.isBefore(LocalDate.now())) {
                 logError(
-                    "SAKIS Preorder Check 2", "Product with SKU ${product.sku} has availability date in the past.\nLINK: ${product.permalink}",
+                    "SAKIS Preorder Check 2",
+                    "Product with SKU ${product.sku} has availability date in the past.\nLINK: ${product.permalink}",
                     alsoEmail = false
                 )
             }
@@ -1224,7 +1310,8 @@ fun checkPreordersProparaggelia(product: Product, variations: List<Variation>) {
     preorderDays?.let {
         if (it < 0) {
             logError(
-                "Sakis Preorder Check 4", "Product with SKU ${product.sku} preorder_days is negative.\nLINK: ${product.permalink}",
+                "Sakis Preorder Check 4",
+                "Product with SKU ${product.sku} preorder_days is negative.\nLINK: ${product.permalink}",
                 alsoEmail = false
             )
         }
@@ -1945,7 +2032,6 @@ fun checkPhotoshootTags(product: Product, credentials: String) {
         )
         println("LINK: ${product.permalink}")
         if (shouldAddGenericPhotoshootTag) {
-            println("ACTION: Adding generic tag '$genericFwtografisiTagName' to product SKU ${product.sku}.")
             addGenericPhotoshootTag(product, genericFwtografisiTagSlug, credentials)
         }
     }
@@ -1979,10 +2065,10 @@ fun addGenericPhotoshootTag(product: Product, genericTagSlug: String, credential
         client.newCall(request).execute().use { response ->
             val responseBody = response.body?.string() ?: ""
             if (!response.isSuccessful) {
-                println("Error adding generic tag to product ${product.id}: $responseBody")
+                println("Error adding generic tag '$genericTagSlug' to product ${product.sku}: $responseBody")
                 throw IOException("Unexpected code $response")
             } else {
-                println("ACTION: Generic tag added to product ${product.id}.")
+                println("ACTION: Generic tag '$genericTagSlug' added to product ${product.sku}.")
             }
         }
     }
@@ -2008,7 +2094,14 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
         }
         val startTargetDate = LocalDate.of(2025, 4, 20)
         val productCreationDate = LocalDate.parse(product.date_created, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        if (productCreationDate.isAfter(startTargetDate)) {
+        if (productCreationDate.isAfter(startTargetDate) && product.sku !in listOf(
+                "51746-514",
+                "59481-007",
+                "59535-051",
+                "58797-007",
+                "59539-052"
+            )
+        ) {
             val shortDescriptionLength =
                 product.short_description.replace(Regex("<[^>]*>"), "").replace("\n", "").trim().length
             if (shortDescriptionLength < 140 || shortDescriptionLength > 305) {
@@ -2045,7 +2138,8 @@ private fun checkForInvalidDescriptions(product: Product, credentials: String) {
                 "58071-011", "58071-029", "57210-060", "57155-003", "58689-003", "58679-005", "58678-006", "58616-003",
                 "58615-012", "58612-006", "58611-012", "58611-003", "58610-003", "58609-003", "58604-006",
                 "58603-003", "58603-012", "58061-332", "58069-029", "57998-003", "58060-003", "57517-004",
-                "57151-023", "58687-003", "57144-060", "9101", "7489", "58677-007", "58001-003", "56405-011"
+                "57151-023", "58687-003", "57144-060", "9101", "7489", "58677-007", "58001-003", "56405-011",
+                "51746-514"
             )
         ) {
             val longDescriptionLength =
@@ -2367,7 +2461,7 @@ fun checkForProductsWithImagesNotInMediaLibrary(product: Product, allMedia: List
     }
 }
 
-private fun checkForMissingImages(product: Product) {
+private fun checkForImageCount(product: Product) {
     if (product.status!="private" && product.status!="draft" && product.sku !in listOf(
             "58747-246", "58746-246", "59183-514", "59182-514", "59117-012", "59050-596", "59043-051", "59040-004",
             "58983-005", "56062-097", "56062-443", "56062-029", "55627-443", "58210-007", "58721-016", "58691-004",
@@ -2386,10 +2480,21 @@ private fun checkForMissingImages(product: Product) {
             )
         }
 
-        if (galleryImagesMissing) {
+        if (galleryImagesMissing && product.sku !in listOf("51746-514")) {
             logError(
                 "Προιον με λιγες φωτογραφιες",
                 "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει μόνο ${images.size} εικόνες.\nLINK: ${product.permalink}"
+            )
+        }
+
+        if (images.size > 10 && product.sku !in listOf(
+                "59692-488", "59657-016", "59132-561", "59482-547", "59525-332",
+                "59541-012", "59509-600", "59542-052","59534-60", "59294-003"
+            )
+        ) {
+            logError(
+                "Προϊον με παρα πολλες φωτογραφιες",
+                "ΣΦΑΛΜΑ: Το προϊόν με SKU ${product.sku} έχει ${images.size} εικόνες (μέγιστο: 10).\nLINK: ${product.permalink}",
             )
         }
 
@@ -2589,7 +2694,7 @@ fun addNeesAfikseisTag(product: Product, neesAfikseisTag: Tag, credentials: Stri
                 println("Error adding 'nees-afikseis' tag to product ${product.id}: $responseBody")
                 throw IOException("Unexpected code $response")
             } else {
-                println("ACTION: Tag 'nees-afikseis' added to product ${product.id}")
+                println("ACTION: Tag 'nees-afikseis' added to product ${product.sku}")
             }
         }
     }
@@ -2609,7 +2714,7 @@ fun removeNeesAfikseisTag(product: Product, neesAfikseisTag: Tag, credentials: S
                 println("Error removing 'nees-afikseis' tag from product ${product.id}: $responseBody")
                 throw IOException("Unexpected code $response")
             } else {
-                println("ACTION: Tag 'nees-afikseis' removed from product ${product.id}")
+                println("ACTION: Tag 'nees-afikseis' removed from product ${product.sku}")
             }
         }
     }
@@ -2812,6 +2917,7 @@ fun checkForMissingSizeVariations(product: Product, productVariations: List<Vari
 }
 
 fun checkPrivateProductsInStock(product: Product, productVariations: List<Variation>) {
+    // todo ignore draft products that have not been created yet.
     val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
     val productCreationDate = LocalDate.parse(product.date_created, dateFormatter)
     val threeMonthsAgo = LocalDate.now().minusMonths(3)
